@@ -17,6 +17,7 @@ No case-level or personal fields leave the machine: only aggregated counts.
 from __future__ import annotations
 
 import argparse
+import io
 import json
 import logging
 import re
@@ -25,7 +26,7 @@ import tarfile
 import time
 from collections import Counter
 from pathlib import Path
-from typing import IO, Final, Iterator
+from typing import IO, Callable, Final, Iterator
 
 import numpy as np
 import pandas as pd
@@ -36,82 +37,143 @@ from taxonomy import CASE_CATEGORIES, DDL_CASE_COLS, DDL_JUDGE_COLS, STAGE_PATTE
 LOG: Final = logging.getLogger("compress_ddl")
 CHUNK: Final = 1_000_000
 MAX_PART_BYTES: Final = 24 * 1024 * 1024
-CASE_FILE_RE: Final = re.compile(r"cases_(\d{4})\.(csv|csv\.gz|dta|parquet)$", re.I)
+TABLE_RE: Final = re.compile(r"\.(csv|csv\.gz|dta)$", re.I)
 ARCHIVE_RE: Final = re.compile(r"\.(tar\.gz|tgz|tar)$", re.I)
 WANTED: Final = frozenset({*DDL_CASE_COLS, "year"})
 LABEL_COLS: Final = ("type_name", "purpose_name")
 
 
 # ----------------------------------------------------------------------------------------- discovery
+def _is_case(name: str) -> bool:
+    n = name.lower()
+    return "case" in n and not any(x in n for x in ("key", "act", "judge"))
+
+
+def _is_judge(name: str) -> bool:
+    n = name.lower()
+    return "judge" in n and not any(x in n for x in ("key", "case"))
+
+
+def _is_key(name: str) -> bool:
+    return "key" in name.lower()
+
+
+def _prefer_csv(paths: list[Path]) -> list[Path]:
+    """DDL ships every dataset twice (csv/ and dta/); keep the CSV copies when both exist."""
+    csv = [p for p in paths if "csv" in (q.lower() for q in p.parts) or re.search(r"\.csv(\.gz)?$", p.name, re.I)]
+    return sorted(csv) if csv else sorted(paths)
+
+
 def discover(src: Path) -> dict[str, list[Path]]:
-    files = [p for p in src.rglob("*") if p.is_file()]
+    files = [p for p in src.rglob("*") if p.is_file() and not p.name.startswith(".")]
+    tables = [p for p in files if TABLE_RE.search(p.name)]
+    archives = [p for p in files if ARCHIVE_RE.search(p.name)]
     out = {
-        "cases": sorted(p for p in files if CASE_FILE_RE.search(p.name)),
-        "archives": sorted(p for p in files if ARCHIVE_RE.search(p.name) and "case" in p.name.lower()),
-        "judges": sorted(p for p in files if "judge" in p.name.lower() and "key" not in p.name.lower()
-                         and "case" not in p.name.lower() and re.search(r"\.(csv|csv\.gz|dta|parquet)$", p.name, re.I)),
-        "keys": sorted(p for p in files if "key" in p.name.lower() and re.search(r"\.(csv|csv\.gz|dta)$", p.name, re.I)),
+        "cases": _prefer_csv([p for p in tables + archives if _is_case(p.name)]),
+        "judges": _prefer_csv([p for p in tables + archives if _is_judge(p.name)]),
+        "keys": _prefer_csv([p for p in tables + archives if _is_key(p.name)]),
     }
-    out["other"] = sorted(set(files) - {p for v in out.values() for p in v})
+    out["skipped"] = sorted(set(files) - {p for v in out.values() for p in v})
     return out
 
 
-def _read_table(path: Path) -> pd.DataFrame:
-    if path.suffix.lower() == ".dta":
-        return pd.read_stata(path)
-    if path.suffix.lower() == ".parquet":
-        return pd.read_parquet(path)
-    return pd.read_csv(path, low_memory=False)
+def _read_bytes_table(fh: IO[bytes], name: str) -> pd.DataFrame:
+    if name.lower().endswith(".dta"):
+        return pd.read_stata(io.BytesIO(fh.read()))
+    return pd.read_csv(fh, low_memory=False, compression="gzip" if name.lower().endswith(".gz") else None)
 
 
-def iter_case_chunks(paths: list[Path], archives: list[Path]) -> Iterator[tuple[str, pd.DataFrame]]:
+def read_small_tables(sources: list[Path], pred: Callable[[str], bool]) -> list[tuple[str, pd.DataFrame]]:
+    """Small tables (keys, judges) from plain files or from inside .tar.gz archives."""
+    out: list[tuple[str, pd.DataFrame]] = []
+    for p in sources:
+        if ARCHIVE_RE.search(p.name):
+            with tarfile.open(p, "r:*") as tf:
+                for m in tf.getmembers():
+                    base = Path(m.name).name
+                    if m.isfile() and not base.startswith(".") and TABLE_RE.search(base) and pred(base):
+                        fh = tf.extractfile(m)
+                        if fh is not None:
+                            out.append((base, _read_bytes_table(fh, base)))
+        else:
+            with open(p, "rb") as fh:
+                out.append((p.name, _read_bytes_table(fh, p.name)))
+    return out
+
+
+class _Unseekable(io.RawIOBase):
+    """Adapter so pandas can read a member of a streamed (non-seekable) tar.gz."""
+
+    def __init__(self, fh: IO[bytes]) -> None:
+        self._fh = fh
+
+    def readable(self) -> bool:
+        return True
+
+    def seekable(self) -> bool:
+        return False
+
+    def readinto(self, b: bytearray) -> int:  # type: ignore[override]
+        data = self._fh.read(len(b))
+        b[: len(data)] = data
+        return len(data)
+
+
+def iter_case_chunks(sources: list[Path]) -> Iterator[tuple[str, pd.DataFrame]]:
+    """Stream case rows in 1M-row chunks from plain files or straight out of .tar.gz (no unpacking)."""
+
     def usecols(c: str) -> bool:
         return c in WANTED
 
-    for p in paths:
-        name = p.name.lower()
-        if name.endswith(".dta"):
-            for ch in pd.read_stata(p, chunksize=CHUNK, columns=None):
-                yield p.name, ch[[c for c in ch.columns if c in WANTED]]
-        elif name.endswith(".parquet"):
-            yield p.name, pd.read_parquet(p, columns=None).pipe(lambda d: d[[c for c in d.columns if c in WANTED]])
+    def from_handle(fh: IO[bytes], name: str) -> Iterator[pd.DataFrame]:
+        if name.lower().endswith(".dta"):
+            for ch in pd.read_stata(io.BytesIO(fh.read()), chunksize=CHUNK):
+                yield ch[[c for c in ch.columns if c in WANTED]].astype("string")
         else:
-            for ch in pd.read_csv(p, usecols=usecols, chunksize=CHUNK, dtype=str):
-                yield p.name, ch
-    for a in archives:
-        with tarfile.open(a, "r:*") as tf:
-            for m in tf:
-                if m.isfile() and CASE_FILE_RE.search(Path(m.name).name):
-                    fh: IO[bytes] | None = tf.extractfile(m)
-                    if fh is None:
-                        continue
-                    comp = "gzip" if m.name.lower().endswith(".gz") else None
-                    for ch in pd.read_csv(fh, usecols=usecols, chunksize=CHUNK, dtype=str, compression=comp):
-                        yield Path(m.name).name, ch
+            comp = "gzip" if name.lower().endswith(".gz") else None
+            yield from pd.read_csv(fh, usecols=usecols, chunksize=CHUNK, dtype=str, compression=comp)
+
+    for p in sources:
+        if ARCHIVE_RE.search(p.name):
+            LOG.info("streaming %s ...", p.name)
+            with tarfile.open(p, "r|*") as tf:  # sequential: never extracts to disk
+                for m in tf:
+                    base = Path(m.name).name
+                    if m.isfile() and not base.startswith(".") and TABLE_RE.search(base) and _is_case(base):
+                        fh = tf.extractfile(m)
+                        if fh is not None:
+                            stream = io.BufferedReader(_Unseekable(fh), buffer_size=1 << 20)
+                            for ch in from_handle(stream, base):
+                                yield base, ch
+        else:
+            with open(p, "rb") as fh:
+                for ch in from_handle(fh, p.name):
+                    yield p.name, ch
 
 
 # ----------------------------------------------------------------------------------------- decoding
 class KeyDecoder:
     """Maps numeric label codes (type_name=17) to strings via DDL *_key files when the case files hold codes."""
 
-    def __init__(self, key_paths: list[Path]) -> None:
+    def __init__(self, key_tables: list[tuple[str, pd.DataFrame]]) -> None:
         self.maps: dict[str, tuple[list[str], dict[tuple, str]]] = {}
         for col in LABEL_COLS:
-            cands = [p for p in key_paths if col in p.name.lower()]
+            cands = [(n, k) for n, k in key_tables if col in n.lower()]
             if not cands:
                 continue
-            k = _read_table(cands[0])
+            name, k = cands[0]
+            k = k.copy()
             k.columns = [c.lower() for c in k.columns]
             if col not in k.columns:
                 continue
             label_cols = [c for c in k.columns if c.endswith("_s")] or [
-                c for c in k.columns if c not in (col, "year", "count") and k[c].dtype == object]
+                c for c in k.columns if c not in (col, "year", "count") and not pd.api.types.is_numeric_dtype(k[c])]
             if not label_cols:
                 continue
             on = ["year", col] if "year" in k.columns else [col]
             keys = [tuple(str(v).split(".")[0] for v in row) for row in k[on].itertuples(index=False)]
             self.maps[col] = (on, dict(zip(keys, k[label_cols[0]].astype(str))))
-            LOG.info("key file %s: %d codes for %s (join on %s)", cands[0].name, len(keys), col, on)
+            LOG.info("key file %s: %d codes for %s (join on %s)", name, len(keys), col, on)
 
     def decode(self, df: pd.DataFrame, col: str) -> pd.Series:
         s = df[col]
@@ -140,12 +202,14 @@ def compress(src: Path, out: Path) -> None:
     found = discover(src)
     report: dict[str, object] = {"src": str(src), "files": {k: [f"{p.relative_to(src)} ({p.stat().st_size / 1e6:.1f} MB)"
                                                              for p in v][:200] for k, v in found.items()}}
-    if not found["cases"] and not found["archives"]:
-        raise SystemExit(f"No cases_YYYY.csv / .csv.gz / .dta / archive found under {src}. Files seen: "
-                         f"{[p.name for p in found['other'][:30]]}")
-    LOG.info("found %d case files, %d case archives, %d judge files, %d key files",
-             len(found["cases"]), len(found["archives"]), len(found["judges"]), len(found["keys"]))
-    dec = KeyDecoder(found["keys"])
+    if not found["cases"]:
+        raise SystemExit(f"No case files or case archives found under {src}. Files seen: "
+                         f"{[p.name for p in found['skipped'][:30]]}")
+    LOG.info("using case sources %s, judge sources %s, key sources %s",
+             [p.name for p in found["cases"]], [p.name for p in found["judges"]], [p.name for p in found["keys"]])
+    key_tables = read_small_tables(found["keys"], _is_key)
+    report["key_tables"] = {n: list(k.columns) for n, k in key_tables}
+    dec = KeyDecoder(key_tables)
     out.mkdir(parents=True, exist_ok=True)
 
     cube_parts: list[pd.DataFrame] = []
@@ -156,7 +220,7 @@ def compress(src: Path, out: Path) -> None:
     stats = {"rows": 0, "rows_bad_filing": 0, "rows_decided_before_filing": 0}
     filing_years: Counter[int] = Counter()
     max_decided = pd.Timestamp.min
-    for fname, ch in iter_case_chunks(found["cases"], found["archives"]):
+    for fname, ch in iter_case_chunks(found["cases"]):
         columns_seen.setdefault(fname, list(ch.columns))
         need = {"state_code", "dist_code", "date_of_filing", "date_of_decision", "type_name"}
         missing = need - set(ch.columns)
@@ -210,12 +274,13 @@ def compress(src: Path, out: Path) -> None:
     _audit(purpose_counts, STAGE_PATTERNS, out / "audit_purpose_labels.csv")
 
     judge_cols = {}
-    if found["judges"]:
-        j = _read_table(found["judges"][0])
-        judge_cols = {found["judges"][0].name: list(j.columns)}
+    judge_tables = read_small_tables(found["judges"], _is_judge)
+    if judge_tables:
+        jname, j = judge_tables[0]
+        judge_cols = {jname: list(j.columns)}
         keep = [c for c in DDL_JUDGE_COLS if c in j.columns]
         j[keep].to_csv(out / "judges.csv.gz", index=False, compression="gzip")
-        LOG.info("judges: %d rows from %s", len(j), found["judges"][0].name)
+        LOG.info("judges: %d rows from %s", len(j), jname)
     else:
         LOG.warning("no judges file found; working-judge features will be missing")
 
@@ -265,10 +330,24 @@ def main() -> None:
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
     if args.list_only:
-        for k, v in discover(args.src).items():
+        found = discover(args.src)
+        for k, v in found.items():
             print(f"\n== {k} ({len(v)})")
             for p in v[:50]:
                 print(f"  {p.relative_to(args.src)}  {p.stat().st_size / 1e6:.1f} MB")
+        for k in ("judges", "keys"):
+            for p in found[k]:
+                if ARCHIVE_RE.search(p.name):
+                    with tarfile.open(p, "r:*") as tf:
+                        print(f"\n-- inside {p.relative_to(args.src)}:", [m.name for m in tf.getmembers() if m.isfile()][:40])
+        for p in found["cases"][:1]:
+            if ARCHIVE_RE.search(p.name):
+                print(f"\n-- first files inside {p.relative_to(args.src)} (scanning, may take a minute):")
+                with tarfile.open(p, "r|*") as tf:
+                    for i, m in enumerate(tf):
+                        print(f"   {m.name}  {m.size / 1e6:.1f} MB")
+                        if i >= 12:
+                            break
         return
     compress(args.src, args.out)
 
