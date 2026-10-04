@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import glob
+import json
 import logging
 from dataclasses import dataclass
 from pathlib import Path
@@ -94,6 +95,9 @@ class Config:
     seed: int = 20260928
     # structural breaks: rows whose origin-to-target window (t, t+h] touches one are excluded from fit/calibration
     break_windows: tuple[tuple[str, str], ...] = (("2020-03", "2021-06"),)  # COVID physical-court closure
+    # DDL-only runs: origins before this are dropped (stock is left-truncated: pre-2010 filings are absent)
+    min_origin: pd.Period | None = None
+    min_months_on_ecourts: int = 24  # training rows; forecasts require 36
 
 
 def abs_month(p: pd.Period) -> int:
@@ -176,7 +180,11 @@ def normalise_ddl_cases(raw: pd.DataFrame, rename: Mapping[str, str] = DDL_CASE_
 def load_ddl_judges(path: Path, rename: Mapping[str, str] = DDL_JUDGE_COLS) -> pd.DataFrame:
     df = pd.read_csv(path).rename(columns=dict(rename))
     for c in ("start", "end"):
-        df[c] = pd.to_datetime(df[c], errors="coerce")
+        raw = df[c].astype("string")
+        parsed = pd.to_datetime(raw, format="%d-%m-%Y", errors="coerce")
+        if parsed.notna().sum() < 0.5 * raw.notna().sum():
+            parsed = pd.to_datetime(raw, errors="coerce", dayfirst=True)
+        df[c] = parsed
     if "judge_position" not in df:
         df["judge_position"] = "na"
     df["district_id"] = district_key(df["state_code"], df["dist_code"])
@@ -645,6 +653,11 @@ def engineer_features(
         f["share_criminal"] = s_crim
         f["is_njdg"] = (panel["source"].to_numpy() == "njdg").reshape(shape).astype(np.float64)
         f["month_of_year"] = (panel["t"].to_numpy().reshape(shape) % 12 + 1).astype(np.float64)
+        # months since the district's records start on eCourts (onboarding dumps look like fake backlog surges)
+        typical = np.nanpercentile(np.where(a > 0, a, np.nan), 90, axis=1, keepdims=True)
+        active = np.nan_to_num(a) >= 0.1 * np.nan_to_num(typical, nan=np.inf)
+        first = np.where(active.any(1), active.argmax(1), shape[1])
+        f["months_on_ecourts"] = (np.arange(shape[1])[None, :] - first[:, None]).astype(np.float64)
         f["d_rate_12"] = d12 / 12.0
         f["a_trend"] = trend
         f["growth_12_past"] = np.where(np.isfinite(f["growth_12_past"]), f["growth_12_past"], np.nan)
@@ -715,6 +728,8 @@ def purged_split(data: pd.DataFrame, h: int, cfg: Config) -> tuple[pd.DataFrame,
     cal is halved: early-stopping half (es) / conformal half (cq).
     """
     v0 = abs_month(cfg.val_start)
+    if cfg.min_origin is not None:
+        data = data.loc[data["t"] >= abs_month(cfg.min_origin)]
     clean = data.loc[~break_mask(data["t"], h, cfg)]
     eligible = clean.loc[clean["t"] + h < v0]
     origins = np.sort(eligible["t"].unique())
@@ -741,7 +756,7 @@ def _params(tau: float, seed: int) -> dict[str, object]:
 
 def fit_suite(frame: pd.DataFrame, target: str, h: int, cfg: Config) -> tuple[QuantileSuite | None, list[dict[str, object]]]:
     y_col, anchor = f"y_{target}_{h}", f"anchor_{target}_{h}"
-    data = frame.loc[frame[y_col].notna() & frame[anchor].notna()]
+    data = frame.loc[frame[y_col].notna() & frame[anchor].notna() & (frame["months_on_ecourts"] >= cfg.min_months_on_ecourts)]
     tr, es, cq, va, clean = purged_split(data, h, cfg)
     if len(tr) < 200 or va.empty:
         LOG.warning("%s h=%d: insufficient rows (train=%d, val=%d); skipped", target, h, len(tr), len(va))
@@ -949,13 +964,52 @@ def policy_levers(latest: pd.DataFrame, fc: pd.DataFrame, drivers: pd.DataFrame,
     return out
 
 
+# ----------------------------------------------------------------------------------------- persistence
+def save_model_bundle(path: Path, suites: Mapping[tuple[str, int], QuantileSuite], cfg: Config,
+                      weights: WorkloadWeights, elast: Mapping[str, float], data_label: str) -> None:
+    """One LightGBM text file per (target, horizon, quantile) + manifest.json with everything needed to predict."""
+    path.mkdir(parents=True, exist_ok=True)
+    manifest: dict[str, object] = {
+        "data": data_label, "lightgbm_version": lgb.__version__,
+        "config": {k: str(v) for k, v in vars(cfg).items()},
+        "workload_omega": weights.omega.tolist(), "tail_hazard": weights.tail_hazard,
+        "elasticities": dict(elast), "suites": [],
+    }
+    for (target, h), suite in suites.items():
+        files = {}
+        for tau, bst in suite.boosters.items():
+            name = f"{target}_h{h}_q{int(round(tau * 100))}.txt"
+            bst.save_model(str(path / name))
+            files[str(tau)] = name
+        manifest["suites"].append({"target": target, "horizon": h, "features": suite.features,  # type: ignore[union-attr]
+                                   "anchor": suite.anchor, "shifts": {str(k): v for k, v in suite.shifts.items()},
+                                   "files": files})
+    (path / "manifest.json").write_text(json.dumps(manifest, indent=2))
+    LOG.info("saved model bundle (%d suites) to %s", len(suites), path)
+
+
+def load_model_bundle(path: Path) -> dict[tuple[str, int], QuantileSuite]:
+    manifest = json.loads((path / "manifest.json").read_text())
+    return {
+        (s["target"], s["horizon"]): QuantileSuite(
+            s["target"], s["horizon"], s["features"], s["anchor"],
+            {float(t): lgb.Booster(model_file=str(path / f)) for t, f in s["files"].items()},
+            {float(t): v for t, v in s["shifts"].items()})
+        for s in manifest["suites"]
+    }
+
+
 # ----------------------------------------------------------------------------------------- orchestration
-def run(cfg: Config, ddl_parquet: Path, judges_csv: Path, njdg_csv: Path, edges_csv: Path | None, out: Path,
+def run(cfg: Config, ddl_parquet: Path, judges_csv: Path, njdg_csv: Path | None, edges_csv: Path | None, out: Path,
         compact: bool = False) -> None:
     out.mkdir(parents=True, exist_ok=True)
     fit_end_t = conservative_train_end(cfg)
     ddl, weights = build_ddl_panel(ddl_parquet, judges_csv, cfg, fit_end_t, compact=compact)
-    panel = harmonise(ddl, load_njdg(njdg_csv), cfg, weights)
+    if njdg_csv is not None:
+        panel = harmonise(ddl, load_njdg(njdg_csv), cfg, weights)
+    else:
+        LOG.warning("DDL-only run: no NJDG anchor, so pre-2010 pending cases are absent from the stock")
+        panel = ddl.assign(coverage_kappa=1.0, state_code=ddl["district_id"] // 1000)
     w = spatial_weights(edges_csv, panel["district_id"].unique()) if edges_csv else None
     frame = engineer_features(panel, weights, cfg, w)
     frame.to_parquet(out / "panel_features.parquet", index=False)
@@ -972,7 +1026,12 @@ def run(cfg: Config, ddl_parquet: Path, judges_csv: Path, njdg_csv: Path, edges_
     LOG.info("validation metrics:\n%s", pd.DataFrame(metrics).round(4).to_string(index=False))
 
     t_last = int(frame.loc[frame["pending"].notna(), "t"].max())
-    latest = frame.loc[frame["t"] == t_last].reset_index(drop=True)
+    latest = frame.loc[frame["t"] == t_last]
+    young = latest["months_on_ecourts"] < 36
+    if young.any():
+        LOG.warning("%d districts on eCourts < 36 months at origin excluded from forecasts: %s",
+                    int(young.sum()), latest.loc[young, "district_id"].tolist())
+    latest = latest.loc[~young].reset_index(drop=True)
     fc = pd.DataFrame({"district_id": latest["district_id"], "origin": str(period_of(t_last))})
     for (target, h), suite in suites.items():
         q = suite.predict(latest)
@@ -1003,6 +1062,8 @@ def run(cfg: Config, ddl_parquet: Path, judges_csv: Path, njdg_csv: Path, edges_
     pd.Series(elast).to_csv(out / "elasticities.csv")
     levers = policy_levers(latest.loc[flagged.to_numpy()], fc.loc[flagged], drivers, elast, cfg)
     levers.to_csv(out / "policy_levers.csv")
+    save_model_bundle(out / "model", suites, cfg, weights, elast,
+                      "DDL 2010-2018 only" if njdg_csv is None else "DDL 2010-2018 + NJDG")
     LOG.info("policy levers (top 10 by q90 excess):\n%s",
              levers.sort_values("excess_disposals_needed", ascending=False).head(10).round(2).to_string())
 
@@ -1017,12 +1078,17 @@ def main() -> None:
     ap.add_argument("--edges", type=Path, default=None)
     ap.add_argument("--out", type=Path, default=Path("outputs"))
     ap.add_argument("--val-start", default="2022-01")
+    ap.add_argument("--ddl-only", action="store_true", help="train on DDL 2010-2018 alone (no NJDG)")
     ap.add_argument("--synthetic", action="store_true", help="generate DDL/NJDG-schema synthetic inputs and run")
     ap.add_argument("-v", "--verbose", action="store_true")
     args = ap.parse_args()
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO,
                         format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     cfg = Config(val_start=pd.Period(args.val_start, "M"))
+    if args.ddl_only:
+        # 2010-2018 window: 12-month horizon only (24/36 leave no room for train/cal/val with embargoes)
+        cfg = Config(val_start=pd.Period("2017-01", "M"), horizons=(12,), policy_horizon=12, break_windows=(),
+                     min_origin=pd.Period("2013-01", "M"), flag_growth_q90=float(np.log(1.05)))
     if args.synthetic:
         from synthetic_ddl import simulate
 
@@ -1034,8 +1100,8 @@ def main() -> None:
         convert_ddl_csv_to_parquet(args.ddl_csv_glob, args.ddl_parquet)
     if args.ddl_compact is not None and args.ddl_judges is None:
         args.ddl_judges = args.ddl_compact / "judges.csv.gz"
-    if args.ddl_judges is None or args.njdg is None:
-        ap.error("--ddl-judges and --njdg are required (or use --synthetic)")
+    if args.ddl_judges is None or (args.njdg is None and not args.ddl_only):
+        ap.error("--ddl-judges and --njdg are required (or use --ddl-only / --synthetic)")
     if args.ddl_compact is not None:
         run(cfg, args.ddl_compact, args.ddl_judges, args.njdg, args.edges, args.out, compact=True)
     else:

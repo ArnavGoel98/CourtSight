@@ -1,0 +1,129 @@
+{
+  "data": "DDL 2010-2018 only",
+  "lightgbm_version": "4.7.0",
+  "config": {
+    "ddl_start": "2010-01",
+    "ddl_end": "2018-12",
+    "val_start": "2017-01",
+    "cal_months": "12",
+    "horizons": "(12,)",
+    "quantiles": "(0.1, 0.5, 0.9)",
+    "policy_horizon": "12",
+    "rmst_horizon_m": "96",
+    "min_snapshot_obs": "30",
+    "flag_growth_q90": "0.04879016416943204",
+    "backlog_reduction": "0.0",
+    "appointment_lag_m": "3",
+    "ramp_tau_m": "4.0",
+    "seed": "20260928",
+    "break_windows": "()",
+    "min_origin": "2013-01",
+    "min_months_on_ecourts": "24"
+  },
+  "workload_omega": [
+    [
+      1.076821030769043,
+      1.2100858030864192,
+      1.269307615742258,
+      1.2719672838822083,
+      1.2719672838822083,
+      1.2719672838822083,
+      1.2719672838822083
+    ],
+    [
+      0.8609935208620074,
+      1.0937593233828653,
+      1.1368645833606255,
+      1.1395259075780249,
+      1.1395259075780249,
+      1.1395259075780249,
+      1.1395259075780249
+    ]
+  ],
+  "tail_hazard": 0.0162144326572454,
+  "elasticities": {
+    "eps_judges": 0.15349634969681292,
+    "eps_judges_se": 0.03934818232870214,
+    "eps_judges_pooled": 0.16723707316255268,
+    "eps_gap": -1.0,
+    "eps_gap_source": 0.0
+  },
+  "suites": [
+    {
+      "target": "growth",
+      "horizon": 12,
+      "features": [
+        "idvr_12",
+        "vacancy_rate",
+        "log_hearing_gap",
+        "age_bowley_skew",
+        "workload_per_judge",
+        "pretrial_share",
+        "filing_shock_z",
+        "state_loo_growth_12_past",
+        "state_loo_idvr_12",
+        "state_loo_vacancy_rate",
+        "state_loo_filing_shock_z",
+        "log_pending",
+        "growth_12_past",
+        "share_age_gt5y",
+        "share_criminal",
+        "log_working_judges",
+        "inflow_trend_growth",
+        "disposal_momentum",
+        "is_njdg",
+        "month_of_year",
+        "anchor_growth_12"
+      ],
+      "anchor": "anchor_growth_12",
+      "shifts": {
+        "0.1": -0.012396956955986652,
+        "0.5": -0.015481406703879638,
+        "0.9": -0.011098977811621752
+      },
+      "files": {
+        "0.1": "growth_h12_q10.txt",
+        "0.5": "growth_h12_q50.txt",
+        "0.9": "growth_h12_q90.txt"
+      }
+    },
+    {
+      "target": "cr",
+      "horizon": 12,
+      "features": [
+        "idvr_12",
+        "vacancy_rate",
+        "log_hearing_gap",
+        "age_bowley_skew",
+        "workload_per_judge",
+        "pretrial_share",
+        "filing_shock_z",
+        "state_loo_growth_12_past",
+        "state_loo_idvr_12",
+        "state_loo_vacancy_rate",
+        "state_loo_filing_shock_z",
+        "log_pending",
+        "growth_12_past",
+        "share_age_gt5y",
+        "share_criminal",
+        "log_working_judges",
+        "inflow_trend_growth",
+        "disposal_momentum",
+        "is_njdg",
+        "month_of_year",
+        "anchor_cr_12"
+      ],
+      "anchor": "anchor_cr_12",
+      "shifts": {
+        "0.1": 0.0004950616423022321,
+        "0.5": 0.021739110030654207,
+        "0.9": 0.010156028687222984
+      },
+      "files": {
+        "0.1": "cr_h12_q10.txt",
+        "0.5": "cr_h12_q50.txt",
+        "0.9": "cr_h12_q90.txt"
+      }
+    }
+  ]
+}
