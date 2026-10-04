@@ -28,6 +28,8 @@ import pyarrow.csv as pacsv
 import pyarrow.dataset as ds
 import scipy.sparse as sp
 
+from taxonomy import CASE_CATEGORIES, DDL_CASE_COLS, DDL_JUDGE_COLS, STAGE_PATTERNS, STAGES, classify
+
 LOG: Final = logging.getLogger("pendency")
 FloatArr = npt.NDArray[np.float64]
 IntArr = npt.NDArray[np.int64]
@@ -37,33 +39,9 @@ AGE_EDGES_Y: Final[tuple[float, ...]] = (0.0, 1.0, 3.0, 5.0, 10.0, 20.0, 30.0, 4
 AGE_BUCKETS: Final[tuple[str, ...]] = (
     "age_0_1", "age_1_3", "age_3_5", "age_5_10", "age_10_20", "age_20_30", "age_30p",
 )
-STAGES: Final[tuple[str, ...]] = ("service", "charge", "interlocutory", "evidence", "arguments", "judgment")
 PRETRIAL_STAGES: Final[tuple[str, ...]] = ("service", "charge", "interlocutory")
 STAGE_SHARE_COLS: Final[tuple[str, ...]] = tuple(f"share_{s}" for s in STAGES)
 
-# DDL judicial-data column names -> canonical names. Verify against the release README; override via CLI.
-DDL_CASE_COLS: Final[Mapping[str, str]] = {
-    "ddl_case_id": "case_id",
-    "state_code": "state_code",
-    "dist_code": "dist_code",
-    "court_no": "court_no",
-    "type_name": "type_name",
-    "purpose_name": "purpose_name",
-    "date_of_filing": "filed",
-    "date_of_decision": "decided",
-    "date_first_list": "first_list",
-    "date_last_list": "last_list",
-    "date_next_list": "next_list",
-}
-DDL_JUDGE_COLS: Final[Mapping[str, str]] = {
-    "ddl_judge_id": "judge_id",
-    "state_code": "state_code",
-    "dist_code": "dist_code",
-    "court_no": "court_no",
-    "judge_position": "judge_position",
-    "start_date": "start",
-    "end_date": "end",
-}
 DATE_COLS: Final[tuple[str, ...]] = ("filed", "decided", "first_list", "last_list", "next_list")
 
 NJDG_REQUIRED: Final[tuple[str, ...]] = (
@@ -71,27 +49,6 @@ NJDG_REQUIRED: Final[tuple[str, ...]] = (
     *AGE_BUCKETS, "working_judges", "sanctioned_judges",
 )
 NJDG_OPTIONAL: Final[tuple[str, ...]] = ("hearing_gap_days", *STAGE_SHARE_COLS)
-
-# First match wins. Audit against the top-N type_name / purpose_name strings (>95% of volume) per state.
-CASE_CATEGORIES: Final[tuple[tuple[str, str], ...]] = (
-    ("crim_bail", r"bail"),
-    ("crim_ni138", r"n\.?\s?i\.?\s?act|\b138\b|cheque"),
-    ("crim_sessions", r"sessions|\bs\.?\s?c\.?\b|ndps|pocso|spl\.?\s?case|special case"),
-    ("civ_mact", r"m\.?\s?a\.?\s?c\.?\s?[tp]|motor accident"),
-    ("civ_family", r"matrimonial|divorce|h\.?\s?m\.?\s?a|guardian|family|maintenance|\b125\b"),
-    ("civ_execution", r"execution|\bex\.?\s?p|\be\.?\s?p\.?\b"),
-    ("civ_suit", r"suit|\bo\.?\s?s\.?\b|original|\bc\.?\s?s\.?\b"),
-    ("crim_magisterial", r"crim|crl|\bc\.?\s?c\.?\b|complaint|summary|petty|\bs\.?\s?t\.?\b|police report"),
-    ("civ_misc", r"misc|arbitration|succession|land acq|civil|appeal|petition"),
-)
-STAGE_PATTERNS: Final[tuple[tuple[str, str], ...]] = (
-    ("judgment", r"judg|verdict|pronounce|orders?\b"),
-    ("arguments", r"argu|final hearing"),
-    ("evidence", r"evidence|witness|\bp\.?\s?e\.?\b|\bd\.?\s?e\.?\b|examination|cross|\b313\b|statement of accused"),
-    ("charge", r"charge|plea|framing|consideration"),
-    ("service", r"summon|notice|service|appearance|warrant|process|\bnbw\b|abscond|attendance|copy"),
-    ("interlocutory", r"\bi\.?\s?a\.?\b|interim|stay|misc|application|reply|written statement|objection|hearing"),
-)
 
 FEATURES: Final[tuple[str, ...]] = (
     # top-8 engineered
@@ -202,15 +159,6 @@ def iter_ddl_partitions(parquet_dir: Path, rename: Mapping[str, str] = DDL_CASE_
         yield normalise_ddl_cases(tbl.to_pandas(), rename)
 
 
-def classify(labels: pd.Series, rules: Sequence[tuple[str, str]], default: str) -> npt.NDArray[np.str_]:
-    """Regex taxonomy evaluated on unique strings only (|uniques| << |rows|)."""
-    codes, uniques = pd.factorize(labels.astype("string").fillna(""), sort=False)
-    u = pd.Series(np.asarray(uniques, dtype=object), dtype="string").str.lower()
-    conds = [u.str.contains(p, regex=True).fillna(False).to_numpy(dtype=bool) for _, p in rules]
-    out = np.select(conds, [n for n, _ in rules], default=default)
-    return out[codes]
-
-
 def normalise_ddl_cases(raw: pd.DataFrame, rename: Mapping[str, str] = DDL_CASE_COLS) -> pd.DataFrame:
     df = raw.rename(columns=dict(rename))
     for c in DATE_COLS:
@@ -260,25 +208,31 @@ def _bucket_masks(m: int) -> FloatArr:
 
 
 def cube_to_panel(cases: pd.DataFrame, grid: MonthGrid) -> pd.DataFrame:
+    """Case-level rows -> district-month panel (one case = weight 1)."""
+    return counts_to_panel(cases["district_id"].to_numpy(), grid.index(cases["filed"]), grid.index(cases["decided"]),
+                           cases["is_criminal"].to_numpy(dtype=bool), np.ones(len(cases)), grid)
+
+
+def counts_to_panel(district: IntArr, f: FloatArr, d: FloatArr, crim: npt.NDArray[np.bool_], w: FloatArr,
+                    grid: MonthGrid) -> pd.DataFrame:
     """Exact stock-flow reconstruction from N[i, f, d] = #cases filed in month f, decided in month d.
 
     pending_i(m) = sum_{f<=m} sum_{d>m} N[i,f,d];  age buckets by (m - f);  identity
     pending(m) - pending(m-1) = instituted(m) - disposed(m) holds by construction.
+    f, d are month indices on `grid` (d = NaN when undecided); w = case counts per row.
     """
     m_n = grid.n
-    f = grid.index(cases["filed"])
-    d = grid.index(cases["decided"])
     ok = (f >= 0) & (f < m_n)
-    codes, dists = pd.factorize(cases["district_id"].to_numpy()[ok])
+    codes, dists = pd.factorize(district[ok])
     fi = f[ok].astype(np.int64)
     di = d[ok]
     di = np.where(np.isnan(di) | (di >= m_n), m_n, di).astype(np.int64)  # m_n = censored / beyond panel
-    crim = cases["is_criminal"].to_numpy(dtype=bool)[ok]
+    cr, wt = crim[ok], w[ok].astype(np.float64)
     shape = (len(dists), m_n, m_n + 1)
     flat = np.ravel_multi_index((codes.astype(np.int64), fi, di), shape)
     size = int(np.prod(shape))
-    cube = np.bincount(flat, minlength=size).reshape(shape).astype(np.float64)
-    cube_c = np.bincount(flat[crim], minlength=size).reshape(shape).astype(np.float64)
+    cube = np.bincount(flat, weights=wt, minlength=size).reshape(shape)
+    cube_c = np.bincount(flat[cr], weights=wt[cr], minlength=size).reshape(shape)
 
     masks = _bucket_masks(m_n)
 
@@ -316,18 +270,21 @@ class SurvivalStats:
         return cls(horizon, z.copy(), z.copy())
 
     def update(self, cases: pd.DataFrame, grid: MonthGrid, fit_end_idx: int) -> None:
-        f = grid.index(cases["filed"])
-        d = grid.index(cases["decided"])
+        self.update_counts(grid.index(cases["filed"]), grid.index(cases["decided"]),
+                           cases["is_criminal"].to_numpy(dtype=bool), np.ones(len(cases)), fit_end_idx)
+
+    def update_counts(self, f: FloatArr, d: FloatArr, crim: npt.NDArray[np.bool_], w: FloatArr, fit_end_idx: int) -> None:
         ok = (f >= 0) & (f < fit_end_idx)
-        f, d = f[ok], d[ok]
-        cls = cases["is_criminal"].to_numpy(dtype=np.int64)[ok]
+        f, d, w = f[ok], d[ok], w[ok].astype(np.float64)
+        cls = crim[ok].astype(np.int64)
         event = ~np.isnan(d) & (d < fit_end_idx)
         dur = np.where(event, d, fit_end_idx) - f
         dur_c = np.minimum(dur, self.horizon + 1).astype(np.int64)
         evt = event & (dur <= self.horizon)
         for k in (0, 1):
-            self.dur_hist[k] += np.bincount(dur_c[cls == k], minlength=self.horizon + 2)
-            self.evt_hist[k] += np.bincount(dur_c[(cls == k) & evt], minlength=self.horizon + 2)
+            m = cls == k
+            self.dur_hist[k] += np.bincount(dur_c[m], weights=w[m], minlength=self.horizon + 2)
+            self.evt_hist[k] += np.bincount(dur_c[m & evt], weights=w[m & evt], minlength=self.horizon + 2)
 
 
 @dataclass(frozen=True)
@@ -429,18 +386,61 @@ def _trailing_sum_by_district(df: pd.DataFrame, cols: Sequence[str], window: int
     )
 
 
+def ym_index(ym: npt.ArrayLike, grid: MonthGrid) -> FloatArr:
+    """YYYYMM ints (0 = missing) -> month index on `grid`."""
+    a = np.asarray(ym, dtype=np.int64)
+    return np.where(a > 0, (a // 100) * 12 + (a % 100) - 1 - grid.t0, np.nan).astype(np.float64)
+
+
+def compact_snapshot(path: Path, grid: MonthGrid) -> pd.DataFrame:
+    """snapshot.parquet from compress_ddl.py -> same frame as snapshot_observations()."""
+    cols = ["district_id", "t", "n_gap", "sum_log_gap", *[f"n_{s}" for s in STAGES]]
+    if not path.exists():
+        return pd.DataFrame(columns=cols)
+    s = pd.read_parquet(path)
+    idx = ym_index(s["t_ym"], grid)
+    s = s.loc[(idx >= 0) & (idx < grid.n)].assign(t=lambda x: ym_index(x["t_ym"], grid).astype(np.int64) + grid.t0)
+    stage = s.pivot_table(index=["district_id", "t"], columns="stage", values="n", aggfunc="sum", fill_value=0)
+    gap = s.groupby(["district_id", "t"])[["n_gap", "sum_log_gap"]].sum()
+    out = gap.join(stage.reindex(columns=list(STAGES), fill_value=0).add_prefix("n_")).reset_index()
+    return out[cols].astype({"district_id": np.int64, "t": np.int64})
+
+
+def iter_compact_states(compact_dir: Path) -> Iterator[pd.DataFrame]:
+    files = sorted((compact_dir / "cube").glob("state=*.parquet"))
+    if not files:
+        raise FileNotFoundError(f"no cube/state=*.parquet under {compact_dir}")
+    by_state: dict[str, list[Path]] = {}
+    for f in files:
+        by_state.setdefault(f.stem.split("_")[0], []).append(f)
+    for state, parts in sorted(by_state.items()):
+        cube = pd.concat([pd.read_parquet(p) for p in parts], ignore_index=True)
+        LOG.info("%s: %d cube cells, %d cases", state, len(cube), int(cube["n"].sum()))
+        yield cube
+
+
 def build_ddl_panel(
-    parquet_dir: Path, judges_csv: Path, cfg: Config, fit_end_t: int
+    ddl_dir: Path, judges_csv: Path, cfg: Config, fit_end_t: int, compact: bool = False
 ) -> tuple[pd.DataFrame, WorkloadWeights]:
+    """ddl_dir = hive parquet of raw cases, or (compact=True) the output folder of compress_ddl.py."""
     grid = MonthGrid(cfg.ddl_start, cfg.ddl_end)
     fit_end_idx = int(np.clip(fit_end_t - grid.t0, 12, grid.n))
     horizon = int(min(cfg.rmst_horizon_m, fit_end_idx - 1))
     stats = SurvivalStats.empty(horizon)
     panels, snaps = [], []
-    for part in iter_ddl_partitions(parquet_dir):
-        panels.append(cube_to_panel(part, grid))
-        snaps.append(snapshot_observations(part, grid))
-        stats.update(part, grid, fit_end_idx)
+    if compact:
+        for cube in iter_compact_states(ddl_dir):
+            f, d = ym_index(cube["f"], grid), ym_index(cube["d"], grid)
+            crim, w = cube["crim"].to_numpy(dtype=bool), cube["n"].to_numpy(dtype=np.float64)
+            dist = cube["district_id"].to_numpy(dtype=np.int64)
+            panels.append(counts_to_panel(dist, f, d, crim, w, grid))
+            stats.update_counts(f, d, crim, w, fit_end_idx)
+        snaps.append(compact_snapshot(ddl_dir / "snapshot.parquet", grid))
+    else:
+        for part in iter_ddl_partitions(ddl_dir):
+            panels.append(cube_to_panel(part, grid))
+            snaps.append(snapshot_observations(part, grid))
+            stats.update(part, grid, fit_end_idx)
     panel = pd.concat(panels, ignore_index=True)
     snap = pd.concat(snaps, ignore_index=True)
     panel = panel.merge(snap, on=["district_id", "t"], how="left").sort_values(["district_id", "t"])
@@ -950,10 +950,11 @@ def policy_levers(latest: pd.DataFrame, fc: pd.DataFrame, drivers: pd.DataFrame,
 
 
 # ----------------------------------------------------------------------------------------- orchestration
-def run(cfg: Config, ddl_parquet: Path, judges_csv: Path, njdg_csv: Path, edges_csv: Path | None, out: Path) -> None:
+def run(cfg: Config, ddl_parquet: Path, judges_csv: Path, njdg_csv: Path, edges_csv: Path | None, out: Path,
+        compact: bool = False) -> None:
     out.mkdir(parents=True, exist_ok=True)
     fit_end_t = conservative_train_end(cfg)
-    ddl, weights = build_ddl_panel(ddl_parquet, judges_csv, cfg, fit_end_t)
+    ddl, weights = build_ddl_panel(ddl_parquet, judges_csv, cfg, fit_end_t, compact=compact)
     panel = harmonise(ddl, load_njdg(njdg_csv), cfg, weights)
     w = spatial_weights(edges_csv, panel["district_id"].unique()) if edges_csv else None
     frame = engineer_features(panel, weights, cfg, w)
@@ -1010,6 +1011,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--ddl-csv-glob", help="raw DDL case CSVs, e.g. 'ddl/cases/cases_*.csv' (converted once)")
     ap.add_argument("--ddl-parquet", type=Path, default=Path("data/ddl_parquet"))
+    ap.add_argument("--ddl-compact", type=Path, help="output folder of compress_ddl.py (replaces --ddl-csv-glob/--ddl-parquet)")
     ap.add_argument("--ddl-judges", type=Path)
     ap.add_argument("--njdg", type=Path)
     ap.add_argument("--edges", type=Path, default=None)
@@ -1030,9 +1032,14 @@ def main() -> None:
         args.ddl_parquet = args.out / "synthetic_inputs" / "ddl_parquet"
     if args.ddl_csv_glob:
         convert_ddl_csv_to_parquet(args.ddl_csv_glob, args.ddl_parquet)
+    if args.ddl_compact is not None and args.ddl_judges is None:
+        args.ddl_judges = args.ddl_compact / "judges.csv.gz"
     if args.ddl_judges is None or args.njdg is None:
         ap.error("--ddl-judges and --njdg are required (or use --synthetic)")
-    run(cfg, args.ddl_parquet, args.ddl_judges, args.njdg, args.edges, args.out)
+    if args.ddl_compact is not None:
+        run(cfg, args.ddl_compact, args.ddl_judges, args.njdg, args.edges, args.out, compact=True)
+    else:
+        run(cfg, args.ddl_parquet, args.ddl_judges, args.njdg, args.edges, args.out)
 
 
 if __name__ == "__main__":

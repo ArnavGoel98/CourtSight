@@ -13,6 +13,27 @@ python pendency_forecast.py \
   --edges data/district_edges.csv --out outputs/
 ```
 
+## Using the real DDL data when it's too big to upload
+
+The ~5 GB DDL download is shrunk on your own computer into a small package of aggregated counts (tens of MB):
+
+```
+# 1. Get the code (or download the three files compress_ddl.py, taxonomy.py from GitHub)
+git clone https://github.com/Arnavthemighty/areudumb && cd areudumb
+git checkout claude/hopeful-wright-qibytw
+pip install pandas pyarrow
+
+# 2. Check what it finds, then shrink (Windows: use "C:\path\to\folder")
+python court_pendency/compress_ddl.py --src "/path/to/unzipped/ddl" --list-only
+python court_pendency/compress_ddl.py --src "/path/to/unzipped/ddl" --out court_pendency/ddl_compact
+
+# 3. Send it: commit court_pendency/ddl_compact/ and push, or upload the folder's files on GitHub
+#    (Add file -> Upload files); every file is kept under 24 MB.
+```
+
+Then train with `python pendency_forecast.py --ddl-compact ddl_compact --njdg <njdg_monthly.csv> --out outputs/`.
+Only aggregated counts leave your computer, no case-level rows or names.
+
 Inputs
 - DDL judicial data: per-year case CSVs + judges file; column map in `DDL_CASE_COLS` / `DDL_JUDGE_COLS`
   (check it against the release README before running on real data).
