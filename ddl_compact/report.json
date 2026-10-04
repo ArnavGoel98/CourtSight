@@ -1,0 +1,248 @@
+{
+  "src": "/Users/arnav/Documents/Uploads/justice_data",
+  "files": {
+    "cases": [
+      "csv/cases/cases.tar.gz (1408.8 MB)"
+    ],
+    "judges": [
+      "csv/judges_clean.tar.gz (0.9 MB)"
+    ],
+    "keys": [
+      "csv/keys/keys.tar.gz (66.5 MB)"
+    ],
+    "skipped": [
+      "csv/acts_sections.tar.gz (567.4 MB)",
+      "dta/acts_sections.tar.gz (528.0 MB)",
+      "dta/cases/cases.tar.gz (2433.2 MB)",
+      "dta/judges_clean.tar.gz (2.7 MB)",
+      "dta/keys/keys.tar.gz (120.7 MB)",
+      "license.txt (0.0 MB)"
+    ]
+  },
+  "key_tables": {
+    "disp_name_key.csv": [
+      "year",
+      "disp_name",
+      "disp_name_s",
+      "count"
+    ],
+    "type_name_key.csv": [
+      "year",
+      "type_name",
+      "type_name_s",
+      "count"
+    ],
+    "judge_case_merge_key.csv": [
+      "ddl_case_id",
+      "ddl_filing_judge_id",
+      "ddl_decision_judge_id"
+    ],
+    "section_key.csv": [
+      "section_s",
+      "count",
+      "section"
+    ],
+    "cases_district_key.csv": [
+      "year",
+      "state_code",
+      "state_name",
+      "dist_code",
+      "district_name",
+      "pc11_state_name",
+      "pc11_state_id",
+      "pc11_district_name",
+      "pc11_district_id"
+    ],
+    "cases_court_key.csv": [
+      "year",
+      "state_code",
+      "state_name",
+      "district_name",
+      "dist_code",
+      "court_no",
+      "court_name"
+    ],
+    "purpose_name_key.csv": [
+      "year",
+      "purpose_name",
+      "purpose_name_s",
+      "count"
+    ],
+    "cases_state_key.csv": [
+      "year",
+      "state_code",
+      "state_name",
+      "pc11_state_name",
+      "pc11_state_id"
+    ],
+    "act_key.csv": [
+      "act_s",
+      "count",
+      "act"
+    ]
+  },
+  "rows": {
+    "rows": 80935944,
+    "rows_bad_filing": 0,
+    "rows_decided_before_filing": 108114
+  },
+  "filing_years": {
+    "2010": 4269735,
+    "2011": 5196466,
+    "2012": 6384991,
+    "2013": 7544644,
+    "2014": 8865825,
+    "2015": 10468926,
+    "2016": 11342371,
+    "2017": 13045505,
+    "2018": 13709367
+  },
+  "max_decision_date (collection date proxy)": "9201-09-27",
+  "districts": 632,
+  "cube_rows": 5128125,
+  "case_columns": {
+    "cases_2010.csv": [
+      "ddl_case_id",
+      "year",
+      "state_code",
+      "dist_code",
+      "court_no",
+      "type_name",
+      "purpose_name",
+      "date_of_filing",
+      "date_of_decision",
+      "date_first_list",
+      "date_last_list",
+      "date_next_list"
+    ],
+    "cases_2018.csv": [
+      "ddl_case_id",
+      "year",
+      "state_code",
+      "dist_code",
+      "court_no",
+      "type_name",
+      "purpose_name",
+      "date_of_filing",
+      "date_of_decision",
+      "date_first_list",
+      "date_last_list",
+      "date_next_list"
+    ],
+    "cases_2017.csv": [
+      "ddl_case_id",
+      "year",
+      "state_code",
+      "dist_code",
+      "court_no",
+      "type_name",
+      "purpose_name",
+      "date_of_filing",
+      "date_of_decision",
+      "date_first_list",
+      "date_last_list",
+      "date_next_list"
+    ],
+    "cases_2015.csv": [
+      "ddl_case_id",
+      "year",
+      "state_code",
+      "dist_code",
+      "court_no",
+      "type_name",
+      "purpose_name",
+      "date_of_filing",
+      "date_of_decision",
+      "date_first_list",
+      "date_last_list",
+      "date_next_list"
+    ],
+    "cases_2011.csv": [
+      "ddl_case_id",
+      "year",
+      "state_code",
+      "dist_code",
+      "court_no",
+      "type_name",
+      "purpose_name",
+      "date_of_filing",
+      "date_of_decision",
+      "date_first_list",
+      "date_last_list",
+      "date_next_list"
+    ],
+    "cases_2012.csv": [
+      "ddl_case_id",
+      "year",
+      "state_code",
+      "dist_code",
+      "court_no",
+      "type_name",
+      "purpose_name",
+      "date_of_filing",
+      "date_of_decision",
+      "date_first_list",
+      "date_last_list",
+      "date_next_list"
+    ],
+    "cases_2013.csv": [
+      "ddl_case_id",
+      "year",
+      "state_code",
+      "dist_code",
+      "court_no",
+      "type_name",
+      "purpose_name",
+      "date_of_filing",
+      "date_of_decision",
+      "date_first_list",
+      "date_last_list",
+      "date_next_list"
+    ],
+    "cases_2014.csv": [
+      "ddl_case_id",
+      "year",
+      "state_code",
+      "dist_code",
+      "court_no",
+      "type_name",
+      "purpose_name",
+      "date_of_filing",
+      "date_of_decision",
+      "date_first_list",
+      "date_last_list",
+      "date_next_list"
+    ],
+    "cases_2016.csv": [
+      "ddl_case_id",
+      "year",
+      "state_code",
+      "dist_code",
+      "court_no",
+      "type_name",
+      "purpose_name",
+      "date_of_filing",
+      "date_of_decision",
+      "date_first_list",
+      "date_last_list",
+      "date_next_list"
+    ]
+  },
+  "judge_columns": {
+    "judges_clean.csv": [
+      "ddl_judge_id",
+      "state_code",
+      "dist_code",
+      "court_no",
+      "judge_position",
+      "female_judge",
+      "start_date",
+      "end_date"
+    ]
+  },
+  "decoded_with_key_files": [
+    "purpose_name",
+    "type_name"
+  ],
+  "seconds": 686
+}
