@@ -99,7 +99,7 @@
   },
   "max_decision_date (collection date proxy)": "9201-09-27",
   "districts": 632,
-  "cube_rows": 5128125,
+  "cube_rows": 5393431,
   "case_columns": {
     "cases_2010.csv": [
       "ddl_case_id",
@@ -244,5 +244,5 @@
     "purpose_name",
     "type_name"
   ],
-  "seconds": 686
+  "seconds": 239
 }
