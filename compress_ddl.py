@@ -209,6 +209,14 @@ def compress(src: Path, out: Path) -> None:
              [p.name for p in found["cases"]], [p.name for p in found["judges"]], [p.name for p in found["keys"]])
     key_tables = read_small_tables(found["keys"], _is_key)
     report["key_tables"] = {n: list(k.columns) for n, k in key_tables}
+    out.mkdir(parents=True, exist_ok=True)
+    for name, k in key_tables:
+        if "district" in name.lower() and {"state_code", "dist_code"} <= set(k.columns):
+            # district names <-> eCourts codes (+ Census 2011 ids): needed to match NJDG exports, which use names
+            keep = [c for c in ("year", "state_code", "state_name", "dist_code", "district_name",
+                                "pc11_state_id", "pc11_district_id", "pc11_district_name") if c in k.columns]
+            k[keep].drop_duplicates().to_csv(out / "district_key.csv", index=False)
+            LOG.info("district key: %d rows from %s", len(k), name)
     dec = KeyDecoder(key_tables)
     out.mkdir(parents=True, exist_ok=True)
 
