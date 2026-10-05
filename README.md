@@ -8,15 +8,28 @@ Trained model: [`models/ddl_2010_2018/`](models/ddl_2010_2018/).
 
 ![Forecast accuracy](results/ddl_2010_2018/charts/forecast_accuracy.png)
 ![District clearance forecast](results/ddl_2010_2018/charts/district_clearance.png)
-![Drivers of worst-case growth](results/ddl_2010_2018/charts/risk_drivers.png)
+![What the worst-case model relies on](results/ddl_2010_2018/charts/risk_drivers.png)
 
-The forecasts cover Dec 2018 → Dec 2019 because the public data ends in 2018; adding NJDG district
-figures extends them to the present. Pre-2010 cases are not in the data, and the judge-requirement
-estimates (`policy_levers.csv`) are not reliable without NJDG.
+The forecasts cover Dec 2018 → Dec 2019 because the public data ends in 2018. They were committed before any
+2019 data was looked at, so they can be graded against what actually happened (`grade_2019.py`, using NJDG
+district data). Pre-2010 cases are not in the data; the judge-requirement levers are withheld because the
+judge effect is not identified from DDL alone (see RESULTS.md). Data licences: [`DATA_LICENSE.md`](DATA_LICENSE.md).
+
+### Grading the 2019 forecast (run locally; Dataful data is paid and stays off GitHub)
+```
+pip install pandas pyarrow openpyxl
+python court_pendency/prepare_dataful.py --src ~/Downloads/dataful --out court_pendency/dataful   # 21265 + 21282
+python court_pendency/grade_2019.py --dataful court_pendency/dataful \
+    --district-key court_pendency/ddl_compact/district_key.csv
+# review results/ddl_2010_2018/grading_2019/crosswalk_review.csv; add unmatched districts to
+# court_pendency/crosswalk_overrides.csv (state, district_as_per_source, district_id) and re-run.
+# Commit only results/ddl_2010_2018/grading_2019/ (aggregate scores + names), never court_pendency/dataful/.
+```
 
 Direct multi-horizon (12/24/36-month) quantile forecasts (q10/q50/q90) of district-level backlog growth and
-clearance ratio, with TreeSHAP driver decomposition and fixed-effects disposal elasticities that are
-converted into bench, hearing-cadence and surge-capacity levers.
+clearance ratio, benchmarked against trend continuation and a linear quantile regression, with TreeSHAP
+attribution and disposal elasticities (fixed-effects OLS and a shift-share IV). The elasticities are turned into
+bench, hearing-cadence and surge-capacity levers only when the judge effect is identified.
 
 ```
 pip install -r requirements.txt
@@ -57,5 +70,8 @@ Inputs
   NJDG publishes snapshots, not history, so this file has to be built by archiving snapshots month by month.
 - Edges: undirected district adjacency (`src_state,src_dist,dst_state,dst_dist`), e.g. Queen contiguity on SHRUG pc11 polygons.
 
-Outputs: `panel_features.parquet`, `validation_metrics.csv`, `forecasts.csv`, `shap_q90_flagged.csv`,
-`drivers_flagged.csv`, `elasticities.csv`, `policy_levers.csv`.
+Outputs: `panel_features.parquet`, `validation_metrics.csv` (per validation year and pooled; LightGBM vs the
+trend baseline and a linear quantile regression, with 95% High-Court bootstrap ranges), `forecasts.csv` (model,
+linear and trend forecasts), `origin_state.csv`, `hearing_at_scrape.csv` (descriptive only), `shap_q90_flagged.csv`,
+`drivers_flagged.csv`, `elasticities.csv` (FE-OLS, shift-share IV, first-stage F), and `policy_levers.csv` only
+when the judge elasticity is identified (first-stage F >= 10, plausible value).

@@ -52,7 +52,7 @@ def _to_date(month_idx: np.ndarray, rng: np.random.Generator) -> pd.DatetimeInde
     return pd.DatetimeIndex(months) + pd.to_timedelta(rng.integers(0, 28, len(month_idx)), unit="D")
 
 
-def simulate(out_dir: Path, n_states: int = 5, dists_per_state: int = 8, seed: int = 7) -> dict[str, Path]:
+def simulate(out_dir: Path, n_states: int = 8, dists_per_state: int = 5, seed: int = 7) -> dict[str, Path]:
     rng = np.random.default_rng(seed)
     out_dir.mkdir(parents=True, exist_ok=True)
     n_t = _idx(SIM_END) + 1
@@ -80,17 +80,25 @@ def simulate(out_dir: Path, n_states: int = 5, dists_per_state: int = 8, seed: i
     rows = []
     jid = 0
     freeze_lo, freeze_hi = _idx(pd.Period("2015-01", "M")), _idx(pd.Period("2019-12", "M"))
+    # cadres are recruited separately: each district has its own cadre mix and each (state, cadre) has a 3-year
+    # recruitment freeze at a random time, which stretches vacancies (the shift-share variation for the IV)
+    cadres = ("District Judge", "Civil Judge Senior Division", "JMFC")
+    mix = rng.dirichlet(np.full(len(cadres), 1.5), n_d)
+    cadre_freeze = rng.integers(24, n_t - 72, (n_states, len(cadres)))
     for i in range(n_d):
         for s in range(seats[i]):
+            k = int(rng.choice(len(cadres), p=mix[i]))
+            f0 = cadre_freeze[state[i] - 1, k]
             cur = -int(rng.integers(0, 36))
             while cur < n_t:
                 ten = 24 + int(rng.poisson(12))
                 a, b = max(cur, 0), min(cur + ten, n_t) - 1
                 if b >= a:
                     occ[i, a : b + 1] += 1
-                    rows.append((jid, state[i], dist[i], s + 1, "Civil Judge" if s % 2 else "JMFC", a, b))
+                    rows.append((jid, state[i], dist[i], s + 1, cadres[k], a, b))
                     jid += 1
                 freeze = 2.0 if (state[i] == 2 and freeze_lo <= cur + ten <= freeze_hi) else 1.0
+                freeze *= 10.0 if f0 <= cur + ten <= f0 + 48 else 1.0
                 cur += ten + 1 + int(rng.geometric(1 / (vac_mean[i] * freeze)))
     judges = pd.DataFrame(rows, columns=["ddl_judge_id", "state_code", "dist_code", "court_no", "judge_position", "s", "e"])
 

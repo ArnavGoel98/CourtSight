@@ -18,7 +18,12 @@
     "seed": "20260928",
     "break_windows": "()",
     "min_origin": "2013-01",
-    "min_months_on_ecourts": "24"
+    "min_months_on_ecourts": "24",
+    "val_folds": "(('2016-01', 6), ('2017-01', 12))",
+    "exclude_features": "('share_age_gt5y', 'age_bowley_skew', 'workload_per_judge', 'vacancy_rate', 'log_working_judges', 'pending_lt3_per_judge', 'state_loo_vacancy_rate')",
+    "bootstrap_draws": "1000",
+    "min_first_stage_f": "10.0",
+    "iv_base_year": "2013"
   },
   "workload_omega": [
     [
@@ -42,11 +47,28 @@
   ],
   "tail_hazard": 0.0162144326572454,
   "elasticities": {
-    "eps_judges": 0.15349634969681292,
-    "eps_judges_se": 0.03934818232870214,
-    "eps_judges_pooled": 0.16723707316255268,
+    "eps_judges_ols": 0.14707042753722657,
+    "eps_judges_ols_se": 0.03626858960302202,
+    "eps_judges_ols_pooled": 0.1856016863166566,
     "eps_gap": -1.0,
-    "eps_gap_source": 0.0
+    "eps_gap_source": 0.0,
+    "eps_judges_iv": -0.004268962823133157,
+    "eps_judges_iv_se": 0.5186366181944605,
+    "eps_judges_iv_first_stage_coef": 0.3562803153172664,
+    "eps_judges_iv_first_stage_f": 6.23294403137194,
+    "eps_judges_iv_n": 25279.0,
+    "eps_judges_iv_clusters": 29.0,
+    "eps_judges_identified": 0.0,
+    "eps_judges": NaN,
+    "judges_recorded_dec_2010": 2757.0,
+    "judges_recorded_dec_2011": 4170.0,
+    "judges_recorded_dec_2012": 6325.0,
+    "judges_recorded_dec_2013": 9443.0,
+    "judges_recorded_dec_2014": 11940.0,
+    "judges_recorded_dec_2015": 13254.0,
+    "judges_recorded_dec_2016": 14532.0,
+    "judges_recorded_dec_2017": 15448.0,
+    "judges_recorded_dec_2018": 16324.0
   },
   "suites": [
     {
@@ -54,32 +76,96 @@
       "horizon": 12,
       "features": [
         "idvr_12",
-        "vacancy_rate",
-        "log_hearing_gap",
-        "age_bowley_skew",
-        "workload_per_judge",
-        "pretrial_share",
         "filing_shock_z",
         "state_loo_growth_12_past",
         "state_loo_idvr_12",
-        "state_loo_vacancy_rate",
         "state_loo_filing_shock_z",
         "log_pending",
         "growth_12_past",
-        "share_age_gt5y",
         "share_criminal",
-        "log_working_judges",
         "inflow_trend_growth",
         "disposal_momentum",
         "is_njdg",
         "month_of_year",
+        "share_age_1_3_of_lt3",
         "anchor_growth_12"
       ],
       "anchor": "anchor_growth_12",
       "shifts": {
-        "0.1": -0.0054146107044630715,
-        "0.5": -0.0177813757743627,
-        "0.9": -0.010261750844908879
+        "0.1": -0.040106582739703175,
+        "0.5": -0.018930046812632162,
+        "0.9": -0.003552694814803553
+      },
+      "drift_resid_q": {
+        "0.1": -0.2292502774445106,
+        "0.5": -0.05103825971878173,
+        "0.9": 0.09190232548637849
+      },
+      "linear": {
+        "cols": [
+          "growth_12_past",
+          "idvr_12",
+          "log_pending",
+          "filing_shock_z",
+          "inflow_trend_growth",
+          "disposal_momentum",
+          "state_loo_growth_12_past"
+        ],
+        "median": [
+          0.21689073951702298,
+          1.548369759942673,
+          9.76324799612154,
+          0.918407211028632,
+          0.18297086530322892,
+          0.42537804067429025,
+          0.22787539442324448
+        ],
+        "scale": [
+          0.20536006520390743,
+          362.51090460451115,
+          1.495584664013029,
+          2.047582946347422,
+          0.24453448175897025,
+          1.261587264100417,
+          0.14172794156410093
+        ],
+        "coef": {
+          "0.1": [
+            -0.17715270121847232,
+            -0.15055628459133177,
+            0.011452983339540791,
+            0.02517418688422814,
+            -0.015736584337744264,
+            -0.028300041205122313,
+            0.0007907078731186837,
+            0.01680130115790384
+          ],
+          "0.5": [
+            -0.05719584135969941,
+            -0.12614043418422263,
+            0.00938984374890093,
+            -0.02350878291539321,
+            -0.007880208665299746,
+            -0.01940105855961679,
+            -0.006634754076961641,
+            0.018563394791077475
+          ],
+          "0.9": [
+            0.06044108231502613,
+            -0.13124201789602274,
+            0.003491127389017621,
+            -0.07230357265666186,
+            0.005950313560805846,
+            -0.006178262145107753,
+            -0.01207816864942624,
+            0.023809931325443942
+          ]
+        },
+        "shifts": {
+          "0.1": -0.07649232071496584,
+          "0.5": -0.03355033604567534,
+          "0.9": -0.013219114972580936
+        }
       },
       "files": {
         "0.1": "growth_h12_q10.txt",
@@ -92,32 +178,96 @@
       "horizon": 12,
       "features": [
         "idvr_12",
-        "vacancy_rate",
-        "log_hearing_gap",
-        "age_bowley_skew",
-        "workload_per_judge",
-        "pretrial_share",
         "filing_shock_z",
         "state_loo_growth_12_past",
         "state_loo_idvr_12",
-        "state_loo_vacancy_rate",
         "state_loo_filing_shock_z",
         "log_pending",
         "growth_12_past",
-        "share_age_gt5y",
         "share_criminal",
-        "log_working_judges",
         "inflow_trend_growth",
         "disposal_momentum",
         "is_njdg",
         "month_of_year",
+        "share_age_1_3_of_lt3",
         "anchor_cr_12"
       ],
       "anchor": "anchor_cr_12",
       "shifts": {
-        "0.1": -0.002060824899456242,
-        "0.5": 0.01288892413107734,
-        "0.9": 0.007760267474214433
+        "0.1": 0.010812448721665535,
+        "0.5": 0.023742421858882534,
+        "0.9": 0.05687976566465425
+      },
+      "drift_resid_q": {
+        "0.1": -0.11489501769289646,
+        "0.5": 0.06879356075177465,
+        "0.9": 0.3418970829056844
+      },
+      "linear": {
+        "cols": [
+          "growth_12_past",
+          "idvr_12",
+          "log_pending",
+          "filing_shock_z",
+          "inflow_trend_growth",
+          "disposal_momentum",
+          "state_loo_growth_12_past"
+        ],
+        "median": [
+          0.21689073951702298,
+          1.5483513467499406,
+          9.763305521936266,
+          0.9184680851063829,
+          0.1830201826441858,
+          0.4253622596681418,
+          0.22786171724994156
+        ],
+        "scale": [
+          0.2053563196802547,
+          362.51923933895404,
+          1.4944608400453636,
+          2.047655445395889,
+          0.24414474029895827,
+          1.261617176203239,
+          0.14170653178629672
+        ],
+        "coef": {
+          "0.1": [
+            -0.09271862993325092,
+            0.10168503766679046,
+            -7.165249677476636e-06,
+            0.06834830022149524,
+            0.01934598687904663,
+            0.018000020506836533,
+            -0.00013144792243236758,
+            -0.01871788462027138
+          ],
+          "0.5": [
+            0.07486952680844389,
+            0.10474891108851712,
+            -0.010030221333640971,
+            0.03822284955519456,
+            0.0263614079699543,
+            0.010705303867078832,
+            0.022035243768062207,
+            -0.008243877076192875
+          ],
+          "0.9": [
+            0.276883800705866,
+            0.16810420952444044,
+            -0.011663579224192502,
+            0.00040568169488434984,
+            0.014269479575689388,
+            0.003161114441957687,
+            0.02959282039721558,
+            -0.012705640895474121
+          ]
+        },
+        "shifts": {
+          "0.1": 0.0003178938414778454,
+          "0.5": 0.02632699624435708,
+          "0.9": 0.06917473032489874
+        }
       },
       "files": {
         "0.1": "cr_h12_q10.txt",

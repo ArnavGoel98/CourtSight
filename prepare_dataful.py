@@ -9,7 +9,8 @@ Download these datasets from dataful.in in your browser (CSV, XLSX or PARQUET), 
     21277  pending cases by district x case stage            (optional)
 Then:
     python3 court_pendency/prepare_dataful.py --src ~/Downloads/dataful --out court_pendency/dataful
-The output is a few parquet files (well under 25 MB each) plus report.json to commit and push.
+The output is a few parquet files plus report.json. Dataful data is paid and this repo is public, so the output
+folder is git-ignored: keep it on your computer and run grade_2019.py there; publish only its aggregate summary.
 """
 from __future__ import annotations
 

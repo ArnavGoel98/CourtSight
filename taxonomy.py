@@ -68,3 +68,14 @@ def classify(labels: pd.Series, rules: Sequence[tuple[str, str]], default: str) 
     conds = [u.str.contains(p, regex=True).fillna(False).to_numpy(dtype=bool) for _, p in rules]
     out = np.select(conds, [n for n, _ in rules], default=default)
     return out[codes]
+
+# Judicial cadres (first match wins). Recruitment differs by cadre: civil judges (junior division) / magistrates
+# enter through state PSC/High Court exams in batches; senior division and district judges mostly by promotion
+# plus a separate direct-recruitment quota. Cadre mix x state cadre intake is the shift-share instrument.
+JUDGE_CADRES: Final[tuple[tuple[str, str], ...]] = (
+    ("district", r"district|sessions|\bmsj\b|family|motor acc|mact|pocso|ndps|sc st|\bcbi\b|fast track|special judge"
+     r"|labour|industrial|principal judge|chief judge"),
+    ("senior", r"senior|chief judicial|chief metropolitan|\bsub\b|sub court|subdivisional|\bsdjm\b|small cause"
+     r"|\bacjm\b|\bcjm\b|\bcjsd\b"),
+    ("junior", r"junior|judicial magistrate|jmfc|munsi|metropolitan magistrate|taluka|\bcjjd\b|civil judge and judicial"),
+)

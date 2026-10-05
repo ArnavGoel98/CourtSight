@@ -8,7 +8,15 @@ Stages
   4. model     direct multi-horizon LightGBM quantile suites (pinball loss), purged temporal splits,
                split-conformal recalibration, non-crossing by monotone rearrangement
   5. explain   TreeSHAP family decomposition: structural capacity deficit vs transient filing shock
-  6. policy    two-way FE disposal elasticities -> bench / hearing-cadence / surge-capacity levers
+  6. policy    two-way FE + shift-share IV disposal elasticities -> bench / hearing-cadence / surge levers
+               (levers are written only when the judge elasticity is identified: strong first stage, plausible value)
+
+DDL-only caveats handled in code
+  - DDL stores each pending case's *latest* hearing (as of the 2019-20 scrape), so hearing-stage / hearing-gap
+    snapshots cannot be dated back in time without look-ahead; they are descriptive only (scrape_summary) and
+    never model features. NJDG monthly aggregates (contemporaneous) are the only source of those features.
+  - Pre-2010 filings are absent, so the observed stock, age shape and workload are left-truncated; DDL-only runs
+    drop truncation-sensitive features and use age/workload measured inside the fully observed < 3-year window.
 """
 from __future__ import annotations
 
@@ -16,7 +24,8 @@ import argparse
 import glob
 import json
 import logging
-from dataclasses import dataclass
+import warnings
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Final, Iterator, Mapping, Sequence
 
@@ -28,8 +37,9 @@ import pyarrow as pa
 import pyarrow.csv as pacsv
 import pyarrow.dataset as ds
 import scipy.sparse as sp
+from scipy.optimize import linprog
 
-from taxonomy import CASE_CATEGORIES, DDL_CASE_COLS, DDL_JUDGE_COLS, STAGE_PATTERNS, STAGES, classify
+from taxonomy import CASE_CATEGORIES, DDL_CASE_COLS, DDL_JUDGE_COLS, JUDGE_CADRES, STAGE_PATTERNS, STAGES, classify
 
 LOG: Final = logging.getLogger("pendency")
 FloatArr = npt.NDArray[np.float64]
@@ -59,12 +69,27 @@ FEATURES: Final[tuple[str, ...]] = (
     "w_lag_growth_12_past", "state_loo_idvr_12", "state_loo_vacancy_rate", "state_loo_filing_shock_z",
     "log_pending", "growth_12_past", "share_age_gt5y", "share_criminal", "log_working_judges",
     "inflow_trend_growth", "disposal_momentum", "is_njdg", "month_of_year",
+    # truncation-robust: measured inside the < 3-year age window, fully observed at every DDL origin >= 2013-01
+    "share_age_1_3_of_lt3", "pending_lt3_per_judge",
 )
+# DDL-only: these depend on the unobserved pre-2010 stock (age > 5y is empty before 2015 by construction)
+TRUNCATION_SENSITIVE: Final[tuple[str, ...]] = ("share_age_gt5y", "age_bowley_skew", "workload_per_judge")
+# DDL-only: judge postings are recorded mostly for recent years (2.8k seats in Dec 2010 vs 16.3k in Dec 2018 while
+# real strength was ~flat), so within-district judge counts trace record coverage, not capacity
+JUDGE_RECORD_SENSITIVE: Final[tuple[str, ...]] = (
+    "vacancy_rate", "log_working_judges", "pending_lt3_per_judge", "state_loo_vacancy_rate",
+)
+# small, transparent benchmark: linear quantile regression on the innovation over the same drift anchor
+LINEAR_BASELINE_FEATURES: Final[tuple[str, ...]] = (
+    "growth_12_past", "idvr_12", "log_pending", "filing_shock_z", "inflow_trend_growth", "disposal_momentum",
+    "state_loo_growth_12_past",
+)
+CADRES: Final[tuple[str, ...]] = tuple(n for n, _ in JUDGE_CADRES)
 FEATURE_FAMILY: Final[Mapping[str, str]] = {
     "vacancy_rate": "capacity", "log_working_judges": "capacity", "workload_per_judge": "capacity",
     "log_hearing_gap": "capacity", "disposal_momentum": "capacity",
     "pretrial_share": "procedural", "age_bowley_skew": "procedural", "share_age_gt5y": "procedural",
-    "share_criminal": "procedural",
+    "share_criminal": "procedural", "share_age_1_3_of_lt3": "procedural", "pending_lt3_per_judge": "capacity",
     "filing_shock_z": "transient_shock", "state_loo_filing_shock_z": "transient_shock",
     "month_of_year": "transient_shock",
     "inflow_trend_growth": "demand_trend",
@@ -98,6 +123,13 @@ class Config:
     # DDL-only runs: origins before this are dropped (stock is left-truncated: pre-2010 filings are absent)
     min_origin: pd.Period | None = None
     min_months_on_ecourts: int = 24  # training rows; forecasts require 36
+    # rolling-origin validation: (first origin of a 12-month validation year, calibration months); empty -> val_start
+    val_folds: tuple[tuple[str, int], ...] = ()
+    exclude_features: tuple[str, ...] = ()
+    bootstrap_draws: int = 1000
+    # judge-elasticity identification gate for policy levers
+    min_first_stage_f: float = 10.0
+    iv_base_year: int = 2013  # cadre shares fixed in this year; IV sample starts 12 months later
 
 
 def abs_month(p: pd.Period) -> int:
@@ -187,6 +219,7 @@ def load_ddl_judges(path: Path, rename: Mapping[str, str] = DDL_JUDGE_COLS) -> p
         df[c] = parsed
     if "judge_position" not in df:
         df["judge_position"] = "na"
+    df["cadre"] = classify(df["judge_position"], JUDGE_CADRES, "other")
     df["district_id"] = district_key(df["state_code"], df["dist_code"])
     return df.loc[df["start"].notna()]
 
@@ -334,24 +367,54 @@ def fit_workload_weights(stats: SurvivalStats) -> WorkloadWeights:
     return WorkloadWeights(omega=omega, tail_hazard=pooled_tail)
 
 
-def snapshot_observations(cases: pd.DataFrame, grid: MonthGrid) -> pd.DataFrame:
-    """Hearing-gap and stage observations from cases undecided at scrape, dated at month(last_list)."""
+def snapshot_observations(cases: pd.DataFrame) -> pd.DataFrame:
+    """Cases undecided at scrape, dated at month(last_list): same long schema as compress_ddl's snapshot.parquet.
+
+    Only the *latest* hearing of each still-pending case survives in DDL, so a month-t count depends on what
+    happened after t (cases heard again later move out of t). Use for scrape-time description, never as a feature.
+    """
     live = cases.loc[cases["decided"].isna() & cases["last_list"].notna()]
-    t = grid.index(live["last_list"])
-    ok = (t >= 0) & (t < grid.n)
-    live, t = live.loc[ok], t[ok].astype(np.int64) + grid.t0
     gap = (live["next_list"] - live["last_list"]).dt.days.to_numpy(dtype=np.float64)
     has_gap = np.isfinite(gap) & (gap > 0)
     frame = pd.DataFrame(
         {
             "district_id": live["district_id"].to_numpy(),
-            "t": t,
+            "t_ym": (live["last_list"].dt.year * 100 + live["last_list"].dt.month).to_numpy(dtype=np.int64),
+            "stage": live["stage"].to_numpy(),
+            "n": 1.0,
             "n_gap": has_gap.astype(np.float64),
             "sum_log_gap": np.where(has_gap, np.log(np.clip(gap, 1, 730)), 0.0),
-            **{f"n_{s}": (live["stage"].to_numpy() == s).astype(np.float64) for s in STAGES},
         }
     )
-    return frame.groupby(["district_id", "t"], as_index=False).sum()
+    return frame.groupby(["district_id", "t_ym", "stage"], as_index=False).sum()
+
+
+def scrape_summary(snap: pd.DataFrame, min_obs: int) -> pd.DataFrame:
+    """Per district: hearing gap and stage mix of live cases in the 12 months up to that district's scrape month.
+
+    The scrape month is the last month holding >= 20% of the district's peak monthly count (drops far-future typos).
+    Describes the court at data collection (2019-20 for DDL); it is not a time series.
+    """
+    cols = ["scrape_month", "hearing_gap_at_scrape_days", *[f"share_{s}" for s in STAGES]]
+    if snap.empty:
+        return pd.DataFrame(columns=cols, index=pd.Index([], name="district_id"))
+    s = snap.loc[(snap["t_ym"] >= 201001) & (snap["t_ym"] <= 202112)].astype({"n": np.float64})
+    s["m"] = (s["t_ym"] // 100) * 12 + s["t_ym"] % 100 - 1
+    per_m = s.groupby(["district_id", "m"])["n"].sum().reset_index()
+    peak = per_m.groupby("district_id")["n"].transform("max")
+    scrape_m = per_m.loc[per_m["n"] >= 0.2 * peak].groupby("district_id")["m"].max()
+    s = s.join(scrape_m.rename("m_star"), on="district_id")
+    s = s.loc[(s["m"] > s["m_star"] - 12) & (s["m"] <= s["m_star"])]
+    g = s.groupby("district_id")[["n_gap", "sum_log_gap"]].sum()
+    st = s.pivot_table(index="district_id", columns="stage", values="n", aggfunc="sum", fill_value=0.0)
+    st = st.reindex(columns=list(STAGES), fill_value=0.0)
+    n_st = st.sum(axis=1)
+    out = pd.DataFrame(index=g.index)
+    out["scrape_month"] = scrape_m.reindex(out.index).map(lambda m: str(period_of(int(m))))
+    out["hearing_gap_at_scrape_days"] = np.where(g["n_gap"] >= min_obs, np.exp(g["sum_log_gap"] / g["n_gap"].clip(lower=1)), np.nan)
+    for c in STAGES:
+        out[f"share_{c}"] = np.where(n_st.reindex(out.index) >= min_obs, st[c].reindex(out.index) / n_st.reindex(out.index).clip(lower=1), np.nan)
+    return out[cols]
 
 
 def judges_panel(judges: pd.DataFrame, grid: MonthGrid, lookback: int = 36) -> pd.DataFrame:
@@ -378,7 +441,7 @@ def judges_panel(judges: pd.DataFrame, grid: MonthGrid, lookback: int = 36) -> p
     sanctioned = np.zeros((len(dists), m_n))
     np.add.at(working, dcode, occ)
     np.add.at(sanctioned, dcode, staffed)
-    return pd.DataFrame(
+    out = pd.DataFrame(
         {
             "district_id": np.repeat(np.asarray(dists, dtype=np.int64), m_n),
             "t": np.tile(grid.t0 + np.arange(m_n, dtype=np.int64), len(dists)),
@@ -386,12 +449,15 @@ def judges_panel(judges: pd.DataFrame, grid: MonthGrid, lookback: int = 36) -> p
             "sanctioned_judges": sanctioned.reshape(-1),
         }
     )
-
-
-def _trailing_sum_by_district(df: pd.DataFrame, cols: Sequence[str], window: int) -> pd.DataFrame:
-    return df.groupby("district_id", sort=False)[list(cols)].transform(
-        lambda s: s.rolling(window, min_periods=1).sum()
-    )
+    # occupied seats by cadre (a seat takes the cadre of its posting); feeds the shift-share instrument
+    seat_cadre = pd.Series(j["cadre"].to_numpy()).groupby(seat).first().to_numpy() if "cadre" in j else None
+    for name in CADRES:
+        by = np.zeros((len(dists), m_n))
+        if seat_cadre is not None:
+            m = seat_cadre == name
+            np.add.at(by, dcode[m], occ[m])
+        out[f"working_{name}"] = by.reshape(-1)
+    return out
 
 
 def ym_index(ym: npt.ArrayLike, grid: MonthGrid) -> FloatArr:
@@ -400,18 +466,11 @@ def ym_index(ym: npt.ArrayLike, grid: MonthGrid) -> FloatArr:
     return np.where(a > 0, (a // 100) * 12 + (a % 100) - 1 - grid.t0, np.nan).astype(np.float64)
 
 
-def compact_snapshot(path: Path, grid: MonthGrid) -> pd.DataFrame:
-    """snapshot.parquet from compress_ddl.py -> same frame as snapshot_observations()."""
-    cols = ["district_id", "t", "n_gap", "sum_log_gap", *[f"n_{s}" for s in STAGES]]
+def compact_snapshot(path: Path) -> pd.DataFrame:
+    """snapshot.parquet from compress_ddl.py (same long schema as snapshot_observations())."""
     if not path.exists():
-        return pd.DataFrame(columns=cols)
-    s = pd.read_parquet(path)
-    idx = ym_index(s["t_ym"], grid)
-    s = s.loc[(idx >= 0) & (idx < grid.n)].assign(t=lambda x: ym_index(x["t_ym"], grid).astype(np.int64) + grid.t0)
-    stage = s.pivot_table(index=["district_id", "t"], columns="stage", values="n", aggfunc="sum", fill_value=0)
-    gap = s.groupby(["district_id", "t"])[["n_gap", "sum_log_gap"]].sum()
-    out = gap.join(stage.reindex(columns=list(STAGES), fill_value=0).add_prefix("n_")).reset_index()
-    return out[cols].astype({"district_id": np.int64, "t": np.int64})
+        return pd.DataFrame(columns=["district_id", "t_ym", "stage", "n", "n_gap", "sum_log_gap"])
+    return pd.read_parquet(path)
 
 
 def iter_compact_states(compact_dir: Path) -> Iterator[pd.DataFrame]:
@@ -429,7 +488,7 @@ def iter_compact_states(compact_dir: Path) -> Iterator[pd.DataFrame]:
 
 def build_ddl_panel(
     ddl_dir: Path, judges_csv: Path, cfg: Config, fit_end_t: int, compact: bool = False
-) -> tuple[pd.DataFrame, WorkloadWeights]:
+) -> tuple[pd.DataFrame, WorkloadWeights, pd.DataFrame]:
     """ddl_dir = hive parquet of raw cases, or (compact=True) the output folder of compress_ddl.py."""
     grid = MonthGrid(cfg.ddl_start, cfg.ddl_end)
     fit_end_idx = int(np.clip(fit_end_t - grid.t0, 12, grid.n))
@@ -443,29 +502,23 @@ def build_ddl_panel(
             dist = cube["district_id"].to_numpy(dtype=np.int64)
             panels.append(counts_to_panel(dist, f, d, crim, w, grid))
             stats.update_counts(f, d, crim, w, fit_end_idx)
-        snaps.append(compact_snapshot(ddl_dir / "snapshot.parquet", grid))
+        snaps.append(compact_snapshot(ddl_dir / "snapshot.parquet"))
     else:
         for part in iter_ddl_partitions(ddl_dir):
             panels.append(cube_to_panel(part, grid))
-            snaps.append(snapshot_observations(part, grid))
+            snaps.append(snapshot_observations(part))
             stats.update(part, grid, fit_end_idx)
-    panel = pd.concat(panels, ignore_index=True)
-    snap = pd.concat(snaps, ignore_index=True)
-    panel = panel.merge(snap, on=["district_id", "t"], how="left").sort_values(["district_id", "t"])
-    obs_cols = ["n_gap", "sum_log_gap", *[f"n_{s}" for s in STAGES]]
-    panel[obs_cols] = panel[obs_cols].fillna(0.0)
-    roll = _trailing_sum_by_district(panel, obs_cols, 12)
-    n_stage = roll[[f"n_{s}" for s in STAGES]].sum(axis=1)
-    enough_gap = roll["n_gap"] >= cfg.min_snapshot_obs
-    panel["hearing_gap_days"] = np.where(enough_gap, np.exp(roll["sum_log_gap"] / roll["n_gap"].clip(lower=1)), np.nan)
+    panel = pd.concat(panels, ignore_index=True).sort_values(["district_id", "t"])
+    scrape = scrape_summary(pd.concat(snaps, ignore_index=True), cfg.min_snapshot_obs)
+    # DDL cannot date hearing stage / gap without look-ahead: model features come from NJDG rows only
+    panel["hearing_gap_days"] = np.nan
     for s in STAGES:
-        panel[f"share_{s}"] = np.where(n_stage >= cfg.min_snapshot_obs, roll[f"n_{s}"] / n_stage.clip(lower=1), np.nan)
-    panel = panel.drop(columns=obs_cols)
+        panel[f"share_{s}"] = np.nan
     judges = judges_panel(load_ddl_judges(judges_csv), grid)
     panel = panel.merge(judges, on=["district_id", "t"], how="left")
     panel["source"] = "ddl"
     LOG.info("DDL panel: %d districts x %d months", panel["district_id"].nunique(), grid.n)
-    return panel.reset_index(drop=True), fit_workload_weights(stats)
+    return panel.reset_index(drop=True), fit_workload_weights(stats), scrape
 
 
 # ------------------------------------------------------------- 2b. seam: legacy stock + coverage
@@ -612,6 +665,21 @@ def _spatial_lag(x: FloatArr, w: sp.csr_matrix) -> FloatArr:
         return np.where(den > 0, num / den, np.nan)
 
 
+def months_on_ecourts(a: FloatArr) -> FloatArr:
+    """Leak-free onboarding clock: at origin t, months since the first active month judged with data <= t
+    (active = filings >= 10% of the 90th percentile of positive monthly filings so far; -1 before onboarding)."""
+    a0 = np.nan_to_num(a)
+    pos = np.where(a0 > 0, a0, np.nan)
+    out = np.empty(a.shape)
+    for t in range(a.shape[1]):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)  # all-NaN rows before any filing
+            typical = np.nanpercentile(pos[:, : t + 1], 90, axis=1)
+        active = a0[:, : t + 1] >= 0.1 * np.nan_to_num(typical, nan=np.inf)[:, None]
+        out[:, t] = np.where(active.any(1), t - active.argmax(1), -1.0)
+    return out
+
+
 def engineer_features(
     panel: pd.DataFrame, weights: WorkloadWeights, cfg: Config, w: sp.csr_matrix | None
 ) -> pd.DataFrame:
@@ -643,6 +711,9 @@ def engineer_features(
         f["workload_per_judge"] = wu / c
         f["age_bowley_skew"] = bowley_skew(bk)
         f["share_age_gt5y"] = bk[..., 3:].sum(-1) / p
+        lt3 = bk[..., 0] + bk[..., 1]
+        f["share_age_1_3_of_lt3"] = bk[..., 1] / lt3
+        f["pending_lt3_per_judge"] = lt3 / c
         f["log_hearing_gap"] = np.log(g("hearing_gap_days"))
         f["pretrial_share"] = sum(g(f"share_{s}") for s in PRETRIAL_STAGES)
         f["filing_shock_z"] = (_roll(a, 3, "mean") - trend) / np.maximum(iqr / 1.349, 1.0)
@@ -653,11 +724,9 @@ def engineer_features(
         f["share_criminal"] = s_crim
         f["is_njdg"] = (panel["source"].to_numpy() == "njdg").reshape(shape).astype(np.float64)
         f["month_of_year"] = (panel["t"].to_numpy().reshape(shape) % 12 + 1).astype(np.float64)
-        # months since the district's records start on eCourts (onboarding dumps look like fake backlog surges)
-        typical = np.nanpercentile(np.where(a > 0, a, np.nan), 90, axis=1, keepdims=True)
-        active = np.nan_to_num(a) >= 0.1 * np.nan_to_num(typical, nan=np.inf)
-        first = np.where(active.any(1), active.argmax(1), shape[1])
-        f["months_on_ecourts"] = (np.arange(shape[1])[None, :] - first[:, None]).astype(np.float64)
+        # months since the district's records start on eCourts (onboarding dumps look like fake backlog surges);
+        # uses data <= t only: a month is "active" once filings reach 10% of the 90th percentile observed so far
+        f["months_on_ecourts"] = months_on_ecourts(a)
         f["d_rate_12"] = d12 / 12.0
         f["a_trend"] = trend
         f["growth_12_past"] = np.where(np.isfinite(f["growth_12_past"]), f["growth_12_past"], np.nan)
@@ -676,9 +745,87 @@ def engineer_features(
 
 
 # ----------------------------------------------------------------------------------------- 4. model
-def pinball(y: FloatArr, q: FloatArr, tau: float) -> float:
+def pinball_rows(y: FloatArr, q: FloatArr, tau: float) -> FloatArr:
     u = y - q
-    return float(np.mean(np.maximum(tau * u, (tau - 1.0) * u)))
+    return np.maximum(tau * u, (tau - 1.0) * u)
+
+
+def pinball(y: FloatArr, q: FloatArr, tau: float) -> float:
+    return float(np.mean(pinball_rows(y, q, tau)))
+
+
+def cluster_bootstrap_skill(loss: FloatArr, loss_ref: FloatArr, clusters: npt.ArrayLike, draws: int,
+                            seed: int) -> tuple[float, float]:
+    """95% percentile interval of 1 - sum(loss)/sum(loss_ref), resampling whole clusters (High Courts).
+
+    Districts in one High Court share shocks and overlapping 12-month windows share months, so rows are far from
+    independent; resampling ~30 High Court blocks gives honest (wide) intervals.
+    """
+    codes, _ = pd.factorize(np.asarray(clusters))
+    if len(codes) == 0:
+        return float("nan"), float("nan")
+    s_m = np.bincount(codes, weights=loss)
+    s_r = np.bincount(codes, weights=loss_ref)
+    k = len(s_m)
+    w = np.random.default_rng(seed).multinomial(k, np.full(k, 1.0 / k), size=draws).astype(np.float64)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        sk = 1.0 - (w @ s_m) / (w @ s_r)
+    lo, hi = np.nanquantile(sk, [0.025, 0.975])
+    return float(lo), float(hi)
+
+
+def linear_quantile_fit(x: FloatArr, y: FloatArr, tau: float, max_rows: int = 20000, seed: int = 0) -> FloatArr:
+    """Linear quantile regression (intercept first) as an LP: min tau*1'u + (1-tau)*1'v, Xb + u - v = y."""
+    if len(y) > max_rows:
+        idx = np.random.default_rng(seed).choice(len(y), max_rows, replace=False)
+        x, y = x[idx], y[idx]
+    n = len(y)
+    xd = np.column_stack([np.ones(n), x])
+    k = xd.shape[1]
+    a_eq = sp.hstack([sp.csr_matrix(xd), sp.identity(n, format="csr"), -sp.identity(n, format="csr")], format="csr")
+    c = np.concatenate([np.zeros(k), np.full(n, tau), np.full(n, 1.0 - tau)])
+    bounds = [(None, None)] * k + [(0.0, None)] * (2 * n)
+    res = linprog(c, A_eq=a_eq, b_eq=y, bounds=bounds, method="highs")
+    if not res.success:
+        raise RuntimeError(f"quantile LP failed: {res.message}")
+    return np.asarray(res.x[:k], dtype=np.float64)
+
+
+@dataclass
+class LinearQuantileBaseline:
+    """Benchmark: y = anchor + X b(tau), X standardised with training medians filling gaps; same conformal step."""
+
+    cols: list[str]
+    anchor: str
+    med: FloatArr
+    scale: FloatArr
+    coef: dict[float, FloatArr]
+    shifts: dict[float, float]
+
+    @classmethod
+    def fit(cls, tr: pd.DataFrame, cq: pd.DataFrame, y_col: str, anchor: str, cfg: Config) -> LinearQuantileBaseline:
+        cols = [c for c in LINEAR_BASELINE_FEATURES if c not in cfg.exclude_features and tr[c].notna().any()]
+        x = tr[cols].to_numpy(dtype=np.float64)
+        med = np.nanmedian(x, axis=0)
+        scale = np.nanstd(x, axis=0)
+        scale = np.where(scale > 0, scale, 1.0)
+        base = cls(cols, anchor, med, scale, {}, {tau: 0.0 for tau in cfg.quantiles})
+        z, y = base._x(tr), (tr[y_col] - tr[anchor]).to_numpy(dtype=np.float64)
+        base.coef = {tau: linear_quantile_fit(z, y, tau, seed=cfg.seed) for tau in cfg.quantiles}
+        if len(cq) >= 50:
+            base.shifts = {tau: conformal_shift((cq[y_col] - base.raw(cq, tau)).to_numpy(), tau) for tau in cfg.quantiles}
+        return base
+
+    def _x(self, df: pd.DataFrame) -> FloatArr:
+        x = df[self.cols].to_numpy(dtype=np.float64)
+        return (np.where(np.isfinite(x), x, self.med) - self.med) / self.scale
+
+    def raw(self, df: pd.DataFrame, tau: float) -> FloatArr:
+        b = self.coef[tau]
+        return b[0] + self._x(df) @ b[1:] + df[self.anchor].to_numpy()
+
+    def predict(self, df: pd.DataFrame) -> FloatArr:
+        return np.sort(np.column_stack([self.raw(df, t) + self.shifts[t] for t in sorted(self.coef)]), axis=1)
 
 
 def conformal_shift(residuals: FloatArr, tau: float) -> float:
@@ -699,6 +846,10 @@ class QuantileSuite:
     anchor: str
     boosters: dict[float, lgb.Booster]
     shifts: dict[float, float]
+    # drift benchmark: quantiles of (y - anchor) on the training + calibration rows of this suite
+    drift_resid_q: dict[float, float] = field(default_factory=dict)
+    # linear quantile-regression benchmark fitted on the same rows (None when loaded from an older bundle)
+    linear: LinearQuantileBaseline | None = None
 
     def raw(self, x: pd.DataFrame, tau: float) -> FloatArr:
         return self.boosters[tau].predict(x[self.features]) + x[self.anchor].to_numpy()
@@ -720,20 +871,22 @@ def break_mask(t: pd.Series, h: int, cfg: Config) -> pd.Series:
     return m
 
 
-def purged_split(data: pd.DataFrame, h: int, cfg: Config) -> tuple[pd.DataFrame, ...]:
+def purged_split(data: pd.DataFrame, h: int, cfg: Config, v0: int | None = None,
+                 cal_months: int | None = None) -> tuple[pd.DataFrame, ...]:
     """Temporal split with an h-month embargo at every boundary and break-window masking.
 
     cal = last `cal_months` clean origins whose targets realise before val_start;
     train = clean origins whose targets realise before the first cal origin;
     cal is halved: early-stopping half (es) / conformal half (cq).
     """
-    v0 = abs_month(cfg.val_start)
+    v0 = abs_month(cfg.val_start) if v0 is None else v0
+    cal_months = cfg.cal_months if cal_months is None else cal_months
     if cfg.min_origin is not None:
         data = data.loc[data["t"] >= abs_month(cfg.min_origin)]
     clean = data.loc[~break_mask(data["t"], h, cfg)]
     eligible = clean.loc[clean["t"] + h < v0]
     origins = np.sort(eligible["t"].unique())
-    cal_orig = origins[-cfg.cal_months:]
+    cal_orig = origins[-cal_months:]
     if len(cal_orig) == 0:
         empty = data.iloc[:0]
         return empty, empty, empty, data.loc[data["t"] >= v0], clean
@@ -754,18 +907,9 @@ def _params(tau: float, seed: int) -> dict[str, object]:
     }
 
 
-def fit_suite(frame: pd.DataFrame, target: str, h: int, cfg: Config) -> tuple[QuantileSuite | None, list[dict[str, object]]]:
-    y_col, anchor = f"y_{target}_{h}", f"anchor_{target}_{h}"
-    data = frame.loc[frame[y_col].notna() & frame[anchor].notna() & (frame["months_on_ecourts"] >= cfg.min_months_on_ecourts)]
-    tr, es, cq, va, clean = purged_split(data, h, cfg)
-    if len(tr) < 200 or va.empty:
-        LOG.warning("%s h=%d: insufficient rows (train=%d, val=%d); skipped", target, h, len(tr), len(va))
-        return None, []
-    feats = [c for c in (*FEATURES, anchor) if tr[c].notna().any()]
-    LOG.info("%s h=%d: train=%d [%s..%s] es=%d cq=%d val=%d", target, h, len(tr), period_of(int(tr["t"].min())),
-             period_of(int(tr["t"].max())), len(es), len(cq), len(va))
-
-    boosters_val, shifts, best_iter = {}, {}, {}
+def _train_boosters(tr: pd.DataFrame, es: pd.DataFrame, feats: list[str], y_col: str, anchor: str,
+                    cfg: Config) -> tuple[dict[float, lgb.Booster], dict[float, int]]:
+    boosters, best_iter = {}, {}
     for tau in cfg.quantiles:
         params = _params(tau, cfg.seed)
         dtr = lgb.Dataset(tr[feats], tr[y_col] - tr[anchor], free_raw_data=False)
@@ -775,32 +919,94 @@ def fit_suite(frame: pd.DataFrame, target: str, h: int, cfg: Config) -> tuple[Qu
                             callbacks=[lgb.early_stopping(100, verbose=False)])
         else:
             bst = lgb.train(params, dtr, num_boost_round=400)
-        best_iter[tau] = max(bst.best_iteration or bst.current_iteration(), 50)
-        boosters_val[tau] = bst
-    val_suite = QuantileSuite(target, h, feats, anchor, boosters_val, {tau: 0.0 for tau in cfg.quantiles})
-    for tau in cfg.quantiles:
-        shifts[tau] = conformal_shift((cq[y_col] - val_suite.raw(cq, tau)).to_numpy(), tau) if len(cq) >= 50 else 0.0
-    val_suite.shifts = shifts
-    q_hat = val_suite.predict(va)
-    y = va[y_col].to_numpy()
-    resid_drift = (tr[y_col] - tr[anchor]).to_numpy()
-    metrics: list[dict[str, object]] = []
-    for k, tau in enumerate(sorted(cfg.quantiles)):
-        # baseline: drift anchor + unconditional training-residual quantile (a quantile random walk with drift)
-        naive = va[anchor].to_numpy() + np.quantile(resid_drift, tau)
-        pm, pn = pinball(y, q_hat[:, k], tau), pinball(y, naive, tau)
-        metrics.append({"target": target, "h": h, "tau": tau, "n_val": int(len(y)), "pinball": pm, "pinball_naive": pn,
-                        "skill_vs_drift": 1.0 - pm / pn, "coverage": float(np.mean(y <= q_hat[:, k])),
-                        "conformal_shift": shifts[tau], "trees": best_iter[tau]})
-    lo, hi = q_hat[:, 0], q_hat[:, -1]
-    metrics.append({"target": target, "h": h, "tau": "interval", "n_val": int(len(y)),
-                    "coverage": float(np.mean((y >= lo) & (y <= hi))), "mean_width": float(np.mean(hi - lo))})
+        best_iter[tau] = int(bst.best_iteration or bst.current_iteration())
+        boosters[tau] = bst
+    return boosters, best_iter
 
-    # production refit on every realised, break-clean target; tree count scaled for the larger sample
-    scale = len(clean) / len(tr)
-    prod = {tau: lgb.train(_params(tau, cfg.seed), lgb.Dataset(clean[feats], clean[y_col] - clean[anchor]),
-                           num_boost_round=int(best_iter[tau] * min(scale, 1.5))) for tau in cfg.quantiles}
-    return QuantileSuite(target, h, feats, anchor, prod, shifts), metrics
+
+def _fit_one(data: pd.DataFrame, target: str, h: int, cfg: Config, v0: int, cal_months: int
+             ) -> tuple[QuantileSuite, dict[float, int], pd.DataFrame, pd.DataFrame, pd.DataFrame] | None:
+    """Train on purged history before v0, early-stop on the first calibration half, conformalise on the second."""
+    y_col, anchor = f"y_{target}_{h}", f"anchor_{target}_{h}"
+    tr, es, cq, va, _ = purged_split(data, h, cfg, v0, cal_months)
+    if len(tr) < 200:
+        LOG.warning("%s h=%d v0=%s: only %d training rows; skipped", target, h, period_of(v0), len(tr))
+        return None
+    feats = [c for c in (*FEATURES, anchor) if c not in cfg.exclude_features and tr[c].notna().any()]
+    LOG.info("%s h=%d v0=%s: train=%d [%s..%s] es=%d cq=%d", target, h, period_of(v0), len(tr),
+             period_of(int(tr["t"].min())), period_of(int(tr["t"].max())), len(es), len(cq))
+    boosters, best_iter = _train_boosters(tr, es, feats, y_col, anchor, cfg)
+    suite = QuantileSuite(target, h, feats, anchor, boosters, {tau: 0.0 for tau in cfg.quantiles})
+    if len(cq) >= 50:
+        suite.shifts = {tau: conformal_shift((cq[y_col] - suite.raw(cq, tau)).to_numpy(), tau) for tau in cfg.quantiles}
+    seen = pd.concat([tr, es, cq])
+    suite.drift_resid_q = {tau: float(np.quantile(seen[y_col] - seen[anchor], tau)) for tau in cfg.quantiles}
+    suite.linear = LinearQuantileBaseline.fit(tr, cq, y_col, anchor, cfg)
+    return suite, best_iter, tr, cq, va
+
+
+def _score(label: str, target: str, h: int, va: pd.DataFrame, y: FloatArr, q: Mapping[str, FloatArr], cfg: Config,
+           extra: Mapping[float, Mapping[str, object]]) -> list[dict[str, object]]:
+    """Pinball/coverage for the model and both benchmarks, with High-Court block-bootstrap skill intervals."""
+    hc = va["district_id"].to_numpy() // 1000
+    rows: list[dict[str, object]] = []
+    for k, tau in enumerate(sorted(cfg.quantiles)):
+        lm, ld, ll = (pinball_rows(y, q[m][:, k], tau) for m in ("model", "drift", "linear"))
+        d_lo, d_hi = cluster_bootstrap_skill(lm, ld, hc, cfg.bootstrap_draws, cfg.seed)
+        l_lo, l_hi = cluster_bootstrap_skill(lm, ll, hc, cfg.bootstrap_draws, cfg.seed)
+        rows.append({
+            "fold": label, "target": target, "h": h, "tau": tau, "n_val": int(len(y)),
+            "n_districts": int(va["district_id"].nunique()),
+            "pinball": lm.mean(), "pinball_naive": ld.mean(), "pinball_linear": ll.mean(),
+            "skill_vs_drift": 1.0 - lm.sum() / ld.sum(), "skill_vs_drift_lo": d_lo, "skill_vs_drift_hi": d_hi,
+            "skill_vs_linear": 1.0 - lm.sum() / ll.sum(), "skill_vs_linear_lo": l_lo, "skill_vs_linear_hi": l_hi,
+            "coverage": float(np.mean(y <= q["model"][:, k])), "coverage_linear": float(np.mean(y <= q["linear"][:, k])),
+            **extra.get(tau, {}),
+        })
+    lo, hi = q["model"][:, 0], q["model"][:, -1]
+    rows.append({"fold": label, "target": target, "h": h, "tau": "interval", "n_val": int(len(y)),
+                 "coverage": float(np.mean((y >= lo) & (y <= hi))), "mean_width": float(np.mean(hi - lo))})
+    return rows
+
+
+def fit_suite(frame: pd.DataFrame, target: str, h: int, cfg: Config, origin_t: int
+              ) -> tuple[QuantileSuite | None, list[dict[str, object]]]:
+    """Rolling-origin validation (one 12-month origin year per fold), then the production suite for origin_t.
+
+    Production is refit with the same purged procedure as if validating at origin_t + 1, so its conformal
+    shifts come from the most recent realised origins instead of the older calibration years of the folds.
+    """
+    y_col, anchor = f"y_{target}_{h}", f"anchor_{target}_{h}"
+    data = frame.loc[frame[anchor].notna() & (frame["months_on_ecourts"] >= cfg.min_months_on_ecourts)]
+    realised = data.loc[data[y_col].notna()]
+    folds = cfg.val_folds or ((str(cfg.val_start), cfg.cal_months),)
+    metrics: list[dict[str, object]] = []
+    pooled: list[tuple[pd.DataFrame, FloatArr, dict[str, FloatArr]]] = []
+    for vs, cal_m in folds:
+        v0 = abs_month(pd.Period(vs, "M"))
+        fit = _fit_one(realised, target, h, cfg, v0, cal_m)
+        if fit is None:
+            continue
+        suite, best_iter, tr, cq, va = fit
+        va = va.loc[va["t"] < v0 + 12]
+        if va.empty:
+            continue
+        resid = (tr[y_col] - tr[anchor]).to_numpy()  # drift benchmark sees the same training rows as the model
+        q = {"model": suite.predict(va), "linear": suite.linear.predict(va),  # type: ignore[union-attr]
+             "drift": va[anchor].to_numpy()[:, None] + np.quantile(resid, sorted(cfg.quantiles))[None, :]}
+        y = va[y_col].to_numpy()
+        extra = {tau: {"conformal_shift": suite.shifts[tau], "trees": best_iter[tau], "n_train": len(tr),
+                       "train_origins": f"{period_of(int(tr['t'].min()))}..{period_of(int(tr['t'].max()))}"}
+                 for tau in cfg.quantiles}
+        metrics += _score(vs[:4], target, h, va, y, q, cfg, extra)
+        pooled.append((va, y, q))
+    if len(pooled) > 1:
+        va = pd.concat([p[0] for p in pooled])
+        y = np.concatenate([p[1] for p in pooled])
+        q = {m: np.vstack([p[2][m] for p in pooled]) for m in ("model", "drift", "linear")}
+        metrics += _score("pooled", target, h, va, y, q, cfg, {})
+    prod = _fit_one(realised, target, h, cfg, origin_t + 1, cfg.cal_months)
+    return (prod[0] if prod is not None else None), metrics
 
 
 # ----------------------------------------------------------------------------------------- 5. explain
@@ -834,11 +1040,9 @@ def decompose_drivers(phi: pd.DataFrame, top_k: int = 3) -> pd.DataFrame:
 
 
 # ----------------------------------------------------------------------------------------- 6. policy
-def twoway_fe_ols(
-    df: pd.DataFrame, y: str, xs: Sequence[str], unit: str, time_group: str, cluster: str, iters: int = 200
-) -> pd.DataFrame:
-    """Within estimator with unit + (state x month) FE via alternating projections; district-clustered SE."""
-    z = df[[y, *xs]].to_numpy(dtype=np.float64).copy()
+def _twoway_demean(df: pd.DataFrame, cols: Sequence[str], unit: str, time_group: str, iters: int = 200) -> FloatArr:
+    """Partial out unit + time-group fixed effects by alternating projections."""
+    z = df[list(cols)].to_numpy(dtype=np.float64).copy()
     gu, _ = pd.factorize(df[unit])
     gt, _ = pd.factorize(df[time_group])
 
@@ -850,26 +1054,95 @@ def twoway_fe_ols(
     for _ in range(iters):
         z_new = demean(demean(z, gu), gt)
         if np.max(np.abs(z_new - z)) < 1e-10:
-            z = z_new
-            break
+            return z_new
         z = z_new
+    return z
+
+
+def _cluster_vcov(xh: FloatArr, u: FloatArr, clusters: npt.ArrayLike) -> FloatArr:
+    """Sandwich (X'X)^-1 [sum_g X_g'u_g u_g'X_g] (X'X)^-1 with the usual small-sample factor."""
+    gc, _ = pd.factorize(np.asarray(clusters))
+    bread = np.linalg.pinv(xh.T @ xh)
+    scores = np.zeros((gc.max() + 1, xh.shape[1]))
+    np.add.at(scores, gc, xh * u[:, None])
+    n, k, n_g = len(u), xh.shape[1], gc.max() + 1
+    return bread @ (scores.T @ scores) @ bread * (n_g / (n_g - 1)) * ((n - 1) / (n - k))
+
+
+def twoway_fe_ols(
+    df: pd.DataFrame, y: str, xs: Sequence[str], unit: str, time_group: str, cluster: str, iters: int = 200
+) -> pd.DataFrame:
+    """Within estimator with unit + (state x month) FE via alternating projections; clustered SE."""
+    z = _twoway_demean(df, [y, *xs], unit, time_group, iters)
     yv, xm = z[:, 0], z[:, 1:]
-    bread = np.linalg.pinv(xm.T @ xm)
-    beta = bread @ xm.T @ yv
-    u = yv - xm @ beta
-    gc, _ = pd.factorize(df[cluster])
-    scores = np.zeros((gc.max() + 1, xm.shape[1]))
-    np.add.at(scores, gc, xm * u[:, None])
-    n, k, n_g = len(yv), xm.shape[1], gc.max() + 1
-    vcov = bread @ (scores.T @ scores) @ bread * (n_g / (n_g - 1)) * ((n - 1) / (n - k))
+    beta = np.linalg.pinv(xm.T @ xm) @ xm.T @ yv
+    vcov = _cluster_vcov(xm, yv - xm @ beta, df[cluster])
     return pd.DataFrame({"coef": beta, "se": np.sqrt(np.diag(vcov))}, index=list(xs))
 
 
-def estimate_elasticities(frame: pd.DataFrame) -> dict[str, float]:
-    """eps_c = dlogD/dlogc and eps_g = dlogD/dlog(gap); district FE + High Court x month FE.
+def twoway_fe_iv(df: pd.DataFrame, y: str, endog: str, instr: str, exog: Sequence[str], unit: str, time_group: str,
+                 cluster: str) -> dict[str, float]:
+    """Just-identified 2SLS with unit + time-group FE; clustered SE and cluster-robust first-stage F."""
+    z = _twoway_demean(df, [y, endog, instr, *exog], unit, time_group)
+    yv, x, zi, w = z[:, 0], z[:, 1], z[:, 2], z[:, 3:]
+    zm, xm = np.column_stack([zi, w]), np.column_stack([x, w])
+    pi = np.linalg.pinv(zm.T @ zm) @ zm.T @ x
+    v_fs = _cluster_vcov(zm, x - zm @ pi, df[cluster])
+    xh = zm @ (np.linalg.pinv(zm.T @ zm) @ zm.T @ xm)  # first-stage fitted regressors
+    beta = np.linalg.pinv(xh.T @ xm) @ xh.T @ yv
+    vcov = _cluster_vcov(xh, yv - xm @ beta, df[cluster])
+    return {"coef": float(beta[0]), "se": float(np.sqrt(vcov[0, 0])), "first_stage_coef": float(pi[0]),
+            "first_stage_f": float(pi[0] ** 2 / v_fs[0, 0]), "n": float(len(yv)),
+            "clusters": float(pd.Series(np.asarray(df[cluster])).nunique())}
 
-    Estimated on the capacity-bound regime (lagged IDVR >= 1, i.e. rho >= 1): below saturation disposals
-    are demand-limited and dlogD/dlogc -> 0, so the pooled estimate understates the lever where it binds.
+
+def shift_share_instrument(frame: pd.DataFrame, base_year: int) -> pd.Series:
+    """Predicted log judge strength from cadre mix x state cadre intake (Bartik).
+
+    z_dt = sum_k s_dk * [log J_k,s,t - log J_k,s,base],  s_dk = district's base-year share of cadre k seats,
+    J_k,s,t = occupied cadre-k seats in the High Court jurisdiction. Cadres are recruited by separate processes
+    (PSC batches for civil judges / magistrates, promotions and HC direct recruitment for district judges), so within
+    a High Court-month (absorbed by FE) z varies only through the predetermined shares s_dk. Shifts are NOT
+    leave-one-out: with High Court x month FE, J_k,-d,t = J_k,s,t - c_dk,t varies within the cell only through the
+    district's own seats, which would make the instrument a mirror of the endogenous regressor. Own-district
+    feedback through J_k,s,t is O(1 / districts per High Court).
+    Returned as a 12-month rolling mean to match log_c12.
+    """
+    f = frame.sort_values(["district_id", "t"])
+    cad = [f"working_{c}" for c in CADRES]
+    seats = f[cad].to_numpy(dtype=np.float64)
+    missing = ~np.isfinite(seats).all(1)  # NJDG-period rows carry no cadre detail
+    seats = np.column_stack([seats, np.maximum(f["working_judges"].to_numpy(dtype=np.float64) - seats.sum(1), 0.0)])
+    k = seats.shape[1]
+    keys = pd.DataFrame({"s": f["state_code"].to_numpy(), "t": f["t"].to_numpy()})
+    state_tot = pd.DataFrame(seats).groupby([keys["s"], keys["t"]]).transform(lambda v: v.sum(min_count=1)).to_numpy()
+    base = (f["t"] // 12 == base_year).to_numpy()
+    did = f["district_id"].to_numpy()
+    base_seats = pd.DataFrame(seats[base]).groupby(did[base]).mean()
+    share = base_seats.div(base_seats.sum(axis=1), axis=0).reindex(did).to_numpy()
+    tot_base = pd.DataFrame(state_tot[base]).groupby(did[base]).mean().reindex(did).to_numpy()
+    with np.errstate(divide="ignore", invalid="ignore"):
+        g = np.log(state_tot) - np.log(tot_base)
+    g = np.where(np.isfinite(g), g, 0.0)
+    z = np.where(np.isfinite(share), share, 0.0) * g
+    zs = pd.Series(z.sum(1), index=f.index)
+    zs[~np.isfinite(share).all(1) | (np.nan_to_num(share).sum(1) == 0) | missing] = np.nan
+    return zs.groupby(f["district_id"]).transform(lambda v: v.rolling(12, min_periods=12).mean()).reindex(frame.index)
+
+
+def judge_coverage(frame: pd.DataFrame) -> dict[str, float]:
+    """Occupied seats recorded in DDL each December: a rising total flags judge records thinning out back in time."""
+    dec = frame.loc[frame["t"] % 12 == 11]
+    return {f"judges_recorded_dec_{int(t // 12)}": float(v) for t, v in dec.groupby("t")["working_judges"].sum().items()}
+
+
+def estimate_elasticities(frame: pd.DataFrame, cfg: Config) -> dict[str, float]:
+    """eps_c = dlogD/dlogc (OLS and shift-share IV) and eps_g = dlogD/dlog(gap); district FE + High Court x month FE.
+
+    Estimated on the capacity-bound regime (lagged IDVR >= 1, i.e. rho >= 1) when large enough: below saturation
+    disposals are demand-limited and dlogD/dlogc -> 0. OLS is biased by reverse causality (judges are posted
+    where backlogs are high) and by judge records thinning out back in time; the IV addresses the first.
+    eps_judges is reported as identified only if the IV first stage is strong and the estimate plausible.
     """
     grp = frame.groupby("district_id")
     df = frame.assign(
@@ -877,31 +1150,46 @@ def estimate_elasticities(frame: pd.DataFrame) -> dict[str, float]:
         log_c12=np.log(grp["working_judges"].transform(lambda s: s.rolling(12, min_periods=12).mean())),
         log_p_lag12=grp["log_pending"].shift(12),
         idvr_lag12=grp["idvr_12"].shift(12),
+        z_c12=shift_share_instrument(frame, cfg.iv_base_year),
         hc_month=frame["state_code"].astype(str) + "_" + frame["t"].astype(str),
     ).replace([np.inf, -np.inf], np.nan)
+    df = df.loc[df["months_on_ecourts"] >= cfg.min_months_on_ecourts]
     cols = ["log_d12", "log_c12", "log_p_lag12"]
     pooled = df.dropna(subset=cols)
     bound = pooled.loc[pooled["idvr_lag12"] >= 1.0]
-    res_pool = twoway_fe_ols(pooled, "log_d12", cols[1:], "district_id", "hc_month", "district_id")
+    res_pool = twoway_fe_ols(pooled, "log_d12", cols[1:], "district_id", "hc_month", "state_code")
     use = bound if len(bound) >= 300 and bound["district_id"].nunique() >= 10 else pooled
-    res = twoway_fe_ols(use, "log_d12", cols[1:], "district_id", "hc_month", "district_id")
-    LOG.info("disposal elasticity FE pooled (n=%d):\n%s\ncapacity-bound regime (n=%d):\n%s",
+    res = twoway_fe_ols(use, "log_d12", cols[1:], "district_id", "hc_month", "state_code")
+    LOG.info("disposal elasticity FE-OLS pooled (n=%d):\n%s\ncapacity-bound regime (n=%d):\n%s",
              len(pooled), res_pool.round(4), len(use), res.round(4))
-    out = {"eps_judges": float(res.loc["log_c12", "coef"]), "eps_judges_se": float(res.loc["log_c12", "se"]),
-           "eps_judges_pooled": float(res_pool.loc["log_c12", "coef"]), "eps_gap": -1.0, "eps_gap_source": 0.0}
-    gap = use.dropna(subset=["log_hearing_gap"])
+    out: dict[str, float] = {
+        "eps_judges_ols": float(res.loc["log_c12", "coef"]), "eps_judges_ols_se": float(res.loc["log_c12", "se"]),
+        "eps_judges_ols_pooled": float(res_pool.loc["log_c12", "coef"]), "eps_gap": -1.0, "eps_gap_source": 0.0,
+    }
+    iv_t0 = abs_month(pd.Period(f"{cfg.iv_base_year + 1}-12", "M"))  # rolling window clear of the base year
+    iv_df = use.loc[(use["t"] >= iv_t0) & use["z_c12"].notna()]
+    if len(iv_df) >= 300 and iv_df["state_code"].nunique() >= 5:
+        iv = twoway_fe_iv(iv_df, "log_d12", "log_c12", "z_c12", ["log_p_lag12"], "district_id", "hc_month", "state_code")
+        LOG.info("disposal elasticity shift-share IV: %s", {k: round(v, 4) for k, v in iv.items()})
+        out |= {f"eps_judges_iv{'' if k == 'coef' else '_' + k}": v for k, v in iv.items()}
+    else:
+        LOG.warning("IV sample too small (%d rows); judge elasticity not identified", len(iv_df))
+    f_stat, b_iv = out.get("eps_judges_iv_first_stage_f", 0.0), out.get("eps_judges_iv", np.nan)
+    identified = f_stat >= cfg.min_first_stage_f and 0.05 <= b_iv <= 1.5
+    out["eps_judges_identified"] = float(identified)
+    out["eps_judges"] = b_iv if identified else np.nan
+    if not identified:
+        LOG.warning("judge elasticity not identified (first-stage F %.1f, IV %.3f): bench levers withheld", f_stat, b_iv)
+    gap = use.dropna(subset=["log_hearing_gap"]) if "log_hearing_gap" in use else use.iloc[:0]
     if len(gap) >= 300 and gap["district_id"].nunique() >= 20:
-        rg = twoway_fe_ols(gap, "log_d12", [*cols[1:], "log_hearing_gap"], "district_id", "hc_month", "district_id")
+        rg = twoway_fe_ols(gap, "log_d12", [*cols[1:], "log_hearing_gap"], "district_id", "hc_month", "state_code")
         LOG.info("hearing-gap elasticity FE:\n%s", rg.round(4))
         b, se = float(rg.loc["log_hearing_gap", "coef"]), float(rg.loc["log_hearing_gap", "se"])
         if b + 1.96 * se < 0 and b <= -0.1:  # significant and economically meaningful; else structural prior -1
             out["eps_gap"], out["eps_gap_source"] = b, 1.0
         else:
             LOG.warning("eps_gap=%.3f (se %.3f) not significant/meaningful; using structural prior -1", b, se)
-    if not 0.05 <= out["eps_judges"] <= 1.5:
-        LOG.warning("eps_judges=%.3f outside [0.05, 1.5]: check identification; clipping for levers", out["eps_judges"])
-        out["eps_judges"] = float(np.clip(out["eps_judges"], 0.05, 1.5))
-    return out
+    return out | judge_coverage(frame)
 
 
 def required_bench_additions(c0: FloatArr, d0: FloatArr, excess: FloatArr, eps: float, cfg: Config) -> FloatArr:
@@ -921,9 +1209,13 @@ def required_bench_additions(c0: FloatArr, d0: FloatArr, excess: FloatArr, eps: 
     return np.where(feasible, np.ceil(hi - 1e-9), np.inf)
 
 
-def policy_levers(latest: pd.DataFrame, fc: pd.DataFrame, drivers: pd.DataFrame, elast: Mapping[str, float], cfg: Config) -> pd.DataFrame:
+def policy_levers(latest: pd.DataFrame, fc: pd.DataFrame, drivers: pd.DataFrame, elast: Mapping[str, float], cfg: Config,
+                  scrape: pd.DataFrame) -> pd.DataFrame:
+    """Levers at the forecast origin. Hearing gap / stage mix: contemporaneous NJDG values where present, else the
+    DDL scrape-time description (2019-20), which is the closest available measurement for a Dec-2018 origin."""
     h = cfg.policy_horizon
     x = latest.set_index("district_id").join(fc.set_index("district_id")).join(drivers)
+    sc = scrape.reindex(x.index)
     p0, d0 = x["pending"].to_numpy(), x["d_rate_12"].to_numpy()
     c0 = np.maximum(np.nan_to_num(x["working_judges"].to_numpy()), 1.0)
     p_q90 = p0 * np.exp(x[f"growth_{h}_q90"].to_numpy())
@@ -939,13 +1231,13 @@ def policy_levers(latest: pd.DataFrame, fc: pd.DataFrame, drivers: pd.DataFrame,
     out["needs_new_sanctioned_posts"] = out["bench_additions_required"] > out["vacant_posts"]
     # Lever 2: hearing cadence + stage bottleneck
     mu = 1.0 + excess / np.maximum(h * d0, 1e-9)
-    g0 = np.exp(x["log_hearing_gap"].to_numpy())
+    g0 = x["hearing_gap_days"].fillna(sc["hearing_gap_at_scrape_days"]).to_numpy(dtype=np.float64)
     out["disposal_multiplier_required"] = mu
     out["hearing_gap_now_days"] = g0
     g_star = g0 * mu ** (1.0 / elast["eps_gap"])
     out["hearing_gap_target_days"] = np.maximum(g_star, 7.0)
     out["cadence_lever_feasible"] = g_star >= 7.0  # below weekly listing is not administratively reachable
-    shares = latest.set_index("district_id")[list(STAGE_SHARE_COLS)]
+    shares = latest.set_index("district_id")[list(STAGE_SHARE_COLS)].fillna(sc[list(STAGE_SHARE_COLS)])
     state_med = shares.groupby(shares.index // 1000).transform("median")
     ratio = (shares / state_med).replace([np.inf, -np.inf], np.nan)
     has = ratio.notna().any(axis=1).to_numpy()
@@ -983,6 +1275,12 @@ def save_model_bundle(path: Path, suites: Mapping[tuple[str, int], QuantileSuite
             files[str(tau)] = name
         manifest["suites"].append({"target": target, "horizon": h, "features": suite.features,  # type: ignore[union-attr]
                                    "anchor": suite.anchor, "shifts": {str(k): v for k, v in suite.shifts.items()},
+                                   "drift_resid_q": {str(k): v for k, v in suite.drift_resid_q.items()},
+                                   "linear": None if suite.linear is None else {
+                                       "cols": suite.linear.cols, "median": suite.linear.med.tolist(),
+                                       "scale": suite.linear.scale.tolist(),
+                                       "coef": {str(k): v.tolist() for k, v in suite.linear.coef.items()},
+                                       "shifts": {str(k): v for k, v in suite.linear.shifts.items()}},
                                    "files": files})
     (path / "manifest.json").write_text(json.dumps(manifest, indent=2))
     LOG.info("saved model bundle (%d suites) to %s", len(suites), path)
@@ -990,11 +1288,20 @@ def save_model_bundle(path: Path, suites: Mapping[tuple[str, int], QuantileSuite
 
 def load_model_bundle(path: Path) -> dict[tuple[str, int], QuantileSuite]:
     manifest = json.loads((path / "manifest.json").read_text())
+    def linear(s: Mapping[str, object]) -> LinearQuantileBaseline | None:
+        lin = s.get("linear")
+        if not lin:
+            return None
+        return LinearQuantileBaseline(lin["cols"], s["anchor"], np.asarray(lin["median"]), np.asarray(lin["scale"]),
+                                      {float(t): np.asarray(v) for t, v in lin["coef"].items()},
+                                      {float(t): v for t, v in lin["shifts"].items()})
+
     return {
         (s["target"], s["horizon"]): QuantileSuite(
             s["target"], s["horizon"], s["features"], s["anchor"],
             {float(t): lgb.Booster(model_file=str(path / f)) for t, f in s["files"].items()},
-            {float(t): v for t, v in s["shifts"].items()})
+            {float(t): v for t, v in s["shifts"].items()},
+            {float(t): v for t, v in s.get("drift_resid_q", {}).items()}, linear(s))
         for s in manifest["suites"]
     }
 
@@ -1004,7 +1311,8 @@ def run(cfg: Config, ddl_parquet: Path, judges_csv: Path, njdg_csv: Path | None,
         compact: bool = False) -> None:
     out.mkdir(parents=True, exist_ok=True)
     fit_end_t = conservative_train_end(cfg)
-    ddl, weights = build_ddl_panel(ddl_parquet, judges_csv, cfg, fit_end_t, compact=compact)
+    ddl, weights, scrape = build_ddl_panel(ddl_parquet, judges_csv, cfg, fit_end_t, compact=compact)
+    scrape.to_csv(out / "hearing_at_scrape.csv")
     if njdg_csv is not None:
         panel = harmonise(ddl, load_njdg(njdg_csv), cfg, weights)
     else:
@@ -1013,31 +1321,46 @@ def run(cfg: Config, ddl_parquet: Path, judges_csv: Path, njdg_csv: Path | None,
     w = spatial_weights(edges_csv, panel["district_id"].unique()) if edges_csv else None
     frame = engineer_features(panel, weights, cfg, w)
     frame.to_parquet(out / "panel_features.parquet", index=False)
+    t_last = int(frame.loc[frame["pending"].notna(), "t"].max())
 
     suites: dict[tuple[str, int], QuantileSuite] = {}
     metrics: list[dict[str, object]] = []
     for target in ("growth", "cr"):
         for h in cfg.horizons:
-            suite, m = fit_suite(frame, target, h, cfg)
+            suite, m = fit_suite(frame, target, h, cfg, t_last)
             metrics += m
             if suite is not None:
                 suites[(target, h)] = suite
     pd.DataFrame(metrics).to_csv(out / "validation_metrics.csv", index=False)
     LOG.info("validation metrics:\n%s", pd.DataFrame(metrics).round(4).to_string(index=False))
 
-    t_last = int(frame.loc[frame["pending"].notna(), "t"].max())
     latest = frame.loc[frame["t"] == t_last]
     young = latest["months_on_ecourts"] < 36
     if young.any():
         LOG.warning("%d districts on eCourts < 36 months at origin excluded from forecasts: %s",
                     int(young.sum()), latest.loc[young, "district_id"].tolist())
     latest = latest.loc[~young].reset_index(drop=True)
+    # state at the origin (observed-stock definition), so forecasts can be graded against later data
+    latest[["district_id", "pending", "instituted", "disposed", "d_rate_12", "a_trend", "working_judges"]].assign(
+        instituted_12=latest["idvr_12"] * latest["d_rate_12"] * 12, origin=str(period_of(t_last))
+    ).to_csv(out / "origin_state.csv", index=False)
     fc = pd.DataFrame({"district_id": latest["district_id"], "origin": str(period_of(t_last))})
     for (target, h), suite in suites.items():
         q = suite.predict(latest)
         for k, tau in enumerate(sorted(cfg.quantiles)):
             fc[f"{target}_{h}_q{int(round(tau * 100))}"] = q[:, k]
+        for tau in sorted(cfg.quantiles):  # benchmarks recorded alongside so all three can be graded later
+            fc[f"{target}_{h}_drift_q{int(round(tau * 100))}"] = latest[suite.anchor].to_numpy() + suite.drift_resid_q[tau]
+        if suite.linear is not None:
+            ql = suite.linear.predict(latest)
+            for k, tau in enumerate(sorted(cfg.quantiles)):
+                fc[f"{target}_{h}_linear_q{int(round(tau * 100))}"] = ql[:, k]
     fc.to_csv(out / "forecasts.csv", index=False)
+
+    elast = estimate_elasticities(frame, cfg)
+    pd.Series(elast).to_csv(out / "elasticities.csv")
+    save_model_bundle(out / "model", suites, cfg, weights, elast,
+                      "DDL 2010-2018 only" if njdg_csv is None else "DDL 2010-2018 + NJDG")
 
     ph = cfg.policy_horizon
     if ("growth", ph) not in suites or ("cr", ph) not in suites:
@@ -1053,17 +1376,17 @@ def run(cfg: Config, ddl_parquet: Path, judges_csv: Path, njdg_csv: Path | None,
     phi.to_csv(out / "shap_q90_flagged.csv")
     drivers.to_csv(out / "drivers_flagged.csv")
 
+    lever_path = out / "policy_levers.csv"
+    if not elast["eps_judges_identified"]:
+        lever_path.unlink(missing_ok=True)
+        LOG.warning("policy levers not written: judge elasticity not identified (see elasticities.csv)")
+        return
     a_grid = frame.pivot(index="district_id", columns="t", values="instituted")
     trend_grid = frame.pivot(index="district_id", columns="t", values="a_trend")
     cols = [t for t in a_grid.columns if t_last - 12 < t <= t_last]
     drivers["transient_excess_12m"] = (a_grid[cols] - trend_grid[cols]).clip(lower=0).sum(axis=1).reindex(drivers.index)
-
-    elast = estimate_elasticities(frame)
-    pd.Series(elast).to_csv(out / "elasticities.csv")
-    levers = policy_levers(latest.loc[flagged.to_numpy()], fc.loc[flagged], drivers, elast, cfg)
-    levers.to_csv(out / "policy_levers.csv")
-    save_model_bundle(out / "model", suites, cfg, weights, elast,
-                      "DDL 2010-2018 only" if njdg_csv is None else "DDL 2010-2018 + NJDG")
+    levers = policy_levers(latest.loc[flagged.to_numpy()], fc.loc[flagged], drivers, elast, cfg, scrape)
+    levers.to_csv(lever_path)
     LOG.info("policy levers (top 10 by q90 excess):\n%s",
              levers.sort_values("excess_disposals_needed", ascending=False).head(10).round(2).to_string())
 
@@ -1087,8 +1410,11 @@ def main() -> None:
     cfg = Config(val_start=pd.Period(args.val_start, "M"))
     if args.ddl_only:
         # 2010-2018 window: 12-month horizon only (24/36 leave no room for train/cal/val with embargoes)
+        # two rolling-origin folds (validation years 2016 and 2017); the 2016 fold has room for 6 calibration months
         cfg = Config(val_start=pd.Period("2017-01", "M"), horizons=(12,), policy_horizon=12, break_windows=(),
-                     min_origin=pd.Period("2013-01", "M"), flag_growth_q90=float(np.log(1.05)))
+                     min_origin=pd.Period("2013-01", "M"), flag_growth_q90=float(np.log(1.05)),
+                     val_folds=(("2016-01", 6), ("2017-01", 12)),
+                     exclude_features=(*TRUNCATION_SENSITIVE, *JUDGE_RECORD_SENSITIVE))
     if args.synthetic:
         from synthetic_ddl import simulate
 

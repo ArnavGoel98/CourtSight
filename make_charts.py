@@ -22,15 +22,16 @@ TEXT: Final = "#0b0b0b"
 TEXT_2: Final = "#52514e"
 GRID: Final = "#e4e3df"
 SERIES: Final = "#2a78d6"
+SERIES_2: Final = "#eb6834"  # categorical slot 2 (validated adjacent pair with slot 1)
 REFERENCE: Final = "#8a8984"
 FAMILY_LABEL: Final = {
-    "flow_state": "Backlog momentum & inflow/disposal balance",
-    "capacity": "Judicial capacity (judges, workload, hearing gaps)",
+    "flow_state": "Recent backlog trend & inflow/disposal balance",
+    "capacity": "Disposal momentum (judge counts excluded)",
     "spatial": "Peer districts in the same High Court",
     "procedural": "Case stage & case age",
     "transient_shock": "Short-term filing spikes",
     "demand_trend": "Long-run filing trend",
-    "other": "Drift baseline (anchor)",
+    "other": "Trend extrapolation (baseline anchor)",
 }
 
 
@@ -45,28 +46,42 @@ def _style(ax: plt.Axes, title: str, subtitle: str) -> None:
 
 
 def skill_chart(res: Path, out: Path) -> None:
+    """Improvement over the trend baseline, pooled over the validation years, with 95% High-Court bootstrap ranges;
+    the linear quantile regression is drawn beside the LightGBM model on the same baseline."""
     m = pd.read_csv(res / "validation_metrics.csv")
     m = m.loc[m["tau"] != "interval"].copy()
+    folds = [f for f in m["fold"].astype(str).unique() if f != "pooled"]
+    m = m.loc[m["fold"].astype(str) == ("pooled" if "pooled" in set(m["fold"].astype(str)) else folds[-1])]
     m["tau"] = m["tau"].astype(float)
-    name = {"growth": "Backlog growth", "cr": "Clearance rate"}
+    name = {"growth": "Backlog growth", "cr": "Clearance ratio"}
     q = {0.1: "best case (q10)", 0.5: "median (q50)", 0.9: "worst case (q90)"}
     m["label"] = [f"{name[t]}, {q[tau]}" for t, tau in zip(m["target"], m["tau"])]
-    m = m.iloc[::-1]
-    skill = 100 * m["skill_vs_drift"].to_numpy()
-    fig, ax = plt.subplots(figsize=(9, 4.6), facecolor=SURFACE)
-    fig.subplots_adjust(left=0.30, right=0.95, top=0.80, bottom=0.12)
+    m = m.iloc[::-1].reset_index(drop=True)
+    # linear skill vs drift from the pinball columns (no bootstrap range for it in the metrics file)
+    lin = 100 * (1 - m["pinball_linear"] / m["pinball_naive"]).to_numpy()
+    mod = 100 * m["skill_vs_drift"].to_numpy()
+    lo, hi = 100 * m["skill_vs_drift_lo"].to_numpy(), 100 * m["skill_vs_drift_hi"].to_numpy()
+    fig, ax = plt.subplots(figsize=(9, 5.4), facecolor=SURFACE)
+    fig.subplots_adjust(left=0.30, right=0.95, top=0.78, bottom=0.17)
     y = np.arange(len(m))
-    ax.barh(y, skill, height=0.62, color=SERIES, edgecolor=SURFACE, linewidth=2)
-    for yi, v in zip(y, skill):
-        ax.text(v + 0.6, yi, f"{v:.0f}%", va="center", fontsize=10, color=TEXT)
+    ax.barh(y + 0.19, mod, height=0.36, color=SERIES, edgecolor=SURFACE, linewidth=2, label="LightGBM model")
+    ax.errorbar(mod, y + 0.19, xerr=[mod - lo, hi - mod], fmt="none", ecolor=TEXT_2, elinewidth=1, capsize=2)
+    ax.barh(y - 0.19, lin, height=0.36, color=SERIES_2, edgecolor=SURFACE, linewidth=2, label="Linear quantile regression")
+    for yi, v, h in zip(y, mod, hi):
+        ax.text(max(v, h) + 0.8, yi + 0.19, f"{v:.0f}%", va="center", fontsize=9, color=TEXT)
+    for yi, v in zip(y, lin):
+        ax.text(v + 0.8, yi - 0.19, f"{v:.0f}%", va="center", fontsize=9, color=TEXT_2)
     ax.set_yticks(y, m["label"])
-    ax.set_xlim(0, max(skill) * 1.18)
+    ax.set_xlim(min(0, lo.min() - 2), max(hi.max(), lin.max()) * 1.15)
+    ax.axvline(0, color=GRID, linewidth=1)
     ax.xaxis.grid(True, color=GRID, linewidth=0.8)
     ax.set_axisbelow(True)
-    ax.set_xlabel("Lower forecast error than the trend-continuation baseline (pinball loss)", color=TEXT_2, fontsize=9)
-    _style(ax, "Forecast accuracy on unseen data (2017)",
-           f"12-month forecasts for {len(pd.read_csv(res / 'forecasts.csv')):,} districts, "
-           "trained on 81M court records (2010–2018)")
+    ax.legend(loc="lower left", bbox_to_anchor=(-0.02, 1.0), ncol=2, frameon=False, fontsize=9, labelcolor=TEXT_2)
+    ax.set_xlabel("% lower forecast error than the trend-continuation baseline (pinball loss)\n"
+                  "whiskers: 95% range for the LightGBM model, resampling whole High Courts", color=TEXT_2, fontsize=9)
+    years = " and ".join(folds)
+    _style(ax, f"Forecast accuracy on unseen years ({years})",
+           f"12-month forecasts, {int(m['n_districts'].max()):,} districts; a simple linear model does about as well")
     fig.savefig(out / "forecast_accuracy.png", dpi=200, facecolor=SURFACE)
     plt.close(fig)
 
@@ -76,7 +91,6 @@ def driver_chart(res: Path, out: Path) -> None:
     fam = pd.Series({c: FEATURE_FAMILY.get(c, "other") for c in phi.columns})
     share = phi.abs().T.groupby(fam).sum().T.sum()
     share = (share / share.sum()).sort_values()
-    share = share.loc[share.index != "other"]
     fig, ax = plt.subplots(figsize=(9, 4.2), facecolor=SURFACE)
     fig.subplots_adjust(left=0.42, right=0.95, top=0.78, bottom=0.08)
     y = np.arange(len(share))
@@ -86,8 +100,8 @@ def driver_chart(res: Path, out: Path) -> None:
     ax.set_yticks(y, [FAMILY_LABEL.get(k, k) for k in share.index])
     ax.set_xticks([])
     ax.spines["bottom"].set_visible(False)
-    _style(ax, "What drives worst-case backlog growth",
-           f"Share of TreeSHAP attribution, worst-case (q90) model, {len(phi)} flagged districts")
+    _style(ax, "What the worst-case model relies on",
+           f"Share of TreeSHAP attribution, q90 growth model, {len(phi)} flagged districts (associations, not causes)")
     fig.savefig(out / "risk_drivers.png", dpi=200, facecolor=SURFACE)
     plt.close(fig)
 
@@ -104,14 +118,15 @@ def clearance_chart(res: Path, out: Path) -> None:
     ax.set_ylim(0, top)
     ax.set_xlim(0.38, 1.32)
     ax.axvline(1.0, color=REFERENCE, linewidth=1.5, linestyle=(0, (4, 3)))
-    ax.text(0.985, top * 0.98, f"{below:.0%} of districts fall behind", ha="right", va="top", fontsize=10, color=TEXT)
-    ax.text(1.015, top * 0.98, "clearing more than filed", ha="left", va="top", fontsize=10, color=TEXT_2)
+    ax.text(0.985, top * 0.98, f"{below:.0%} below 1", ha="right", va="top", fontsize=10, color=TEXT)
+    ax.text(1.015, top * 0.98, "disposing more than filed", ha="left", va="top", fontsize=10, color=TEXT_2)
     ax.yaxis.grid(True, color=GRID, linewidth=0.8)
     ax.set_axisbelow(True)
-    ax.set_xlabel("Forecast clearance rate, next 12 months (cases disposed ÷ cases filed, median)", color=TEXT_2, fontsize=9)
+    ax.set_xlabel("Forecast clearance ratio for 2019, median (disposals of cases filed since 2010 ÷ filings)",
+                  color=TEXT_2, fontsize=9)
     ax.set_ylabel("Districts", color=TEXT_2, fontsize=9)
-    _style(ax, "Most district courts are falling behind",
-           f"Median 12-month forecast for {len(cr)} districts (origin Dec 2018); 1.0 = backlog holds steady")
+    _style(ax, "Most districts forecast to file more than they dispose",
+           f"{len(cr)} districts, origin Dec 2018. Understated: disposals of pre-2010 cases are not in the data")
     fig.savefig(out / "district_clearance.png", dpi=200, facecolor=SURFACE)
     plt.close(fig)
 
