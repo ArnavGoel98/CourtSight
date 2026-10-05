@@ -1,5 +1,19 @@
 # District court pendency forecasting (DDL eCourts × NJDG)
 
+## Results on real data (81M court cases, 2010–2018)
+
+Trained on Development Data Lab's eCourts dataset: 80.9 million district-court cases across 632 districts.
+Full write-up and limitations: [`results/ddl_2010_2018/RESULTS.md`](results/ddl_2010_2018/RESULTS.md).
+Trained model: [`models/ddl_2010_2018/`](models/ddl_2010_2018/).
+
+![Forecast accuracy](results/ddl_2010_2018/charts/forecast_accuracy.png)
+![District clearance forecast](results/ddl_2010_2018/charts/district_clearance.png)
+![Drivers of worst-case growth](results/ddl_2010_2018/charts/risk_drivers.png)
+
+The forecasts cover Dec 2018 → Dec 2019 because the public data ends in 2018; adding NJDG district
+figures extends them to the present. Pre-2010 cases are not in the data, and the judge-requirement
+estimates (`policy_levers.csv`) are not reliable without NJDG.
+
 Direct multi-horizon (12/24/36-month) quantile forecasts (q10/q50/q90) of district-level backlog growth and
 clearance ratio, with TreeSHAP driver decomposition and fixed-effects disposal elasticities that are
 converted into bench, hearing-cadence and surge-capacity levers.
@@ -7,6 +21,8 @@ converted into bench, hearing-cadence and surge-capacity levers.
 ```
 pip install -r requirements.txt
 python pendency_forecast.py --synthetic --out outputs/            # end-to-end on DDL/NJDG-schema synthetic data
+python pendency_forecast.py --ddl-compact ddl_compact --ddl-only --out outputs/   # real DDL data, no NJDG
+python make_charts.py --results outputs/                          # PNG charts
 python pendency_forecast.py \
   --ddl-csv-glob 'ddl/cases/cases_*.csv' --ddl-parquet data/ddl_parquet \
   --ddl-judges ddl/judges_clean.csv --njdg data/njdg_monthly.csv \
