@@ -1,0 +1,22 @@
+name: checks
+on: [push, pull_request]
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - name: Official figures match the printed totals
+        run: python tests/test_official_series.py
+      - name: Locked 2026 forecast is unchanged
+        run: python tests/test_locked_forecast.py
+      - name: Grading arithmetic
+        run: python tests/test_grade_2019.py
+      - name: COVID estimate and 2019 grading reproduce
+        run: |
+          python covid_excess.py > /dev/null
+          python grade_state_2019.py > /dev/null
+          git diff --exit-code -- results/covid_excess results/ddl_2010_2018/grading_2019_state

@@ -7,6 +7,13 @@ Sources (public answers in Parliament, Ministry of Law & Justice; figures from N
              https://sansad.in/getFile/loksabhaquestions/annex/187/AU2362_8Lccb3.pdf?source=pqals
 Units that split or merged during the period are combined so every row is one consistent unit:
 Andhra Pradesh + Telangana, Jammu & Kashmir + Ladakh, Dadra & Nagar Haveli + Daman & Diu.
+
+Known issues in the sources (kept visible, never silently patched):
+  - The "2022" pending column of USQ 1838 is "till date" in an answer dated 16.12.2022, so it is a mid-December
+    figure, not 31.12.2022. Growth into 2022 is slightly understated and growth into 2023 slightly overstated.
+  - Disposals (USQ 1838, Annexure-VIII) for 2022 cover only part of the year and are excluded.
+  - Kerala's 2016 disposals are printed as 11,993,996, about ten times every neighbouring year; the printed national
+    total (29,917,126) includes it. It is set to missing here rather than guessed.
 """
 from __future__ import annotations
 
@@ -72,6 +79,48 @@ _2023_2025: Final = {
     "Uttar Pradesh": (11444974, 11648631, 11345328), "Uttarakhand": (350474, 350069, 300614),
     "West Bengal": (2996527, 3380587, 3835113),
 }
+# cases disposed during each year, USQ 1838 Annexure-VIII (2022 is a partial year and is left out)
+_DISPOSED_2014_2021: Final = {
+    "Uttar Pradesh": (3182318, 3313424, 3618460, 3288866, 3282885, 3426942, 2274687, 3972255),
+    "Andhra Pradesh + Telangana": (647130, 658713, 603017, 760582, 741390, 364947 + 331963, 166918 + 133518,
+                                   244105 + 368092),
+    "Maharashtra": (1536322, 1649187, 2281027, 2378096, 2196271, 1877895, 752986, 1388604),
+    "Goa": (30625, 34765, 34130, 34814, 36235, 32634, 14130, 32953),
+    "Dadra & Nagar Haveli + Daman & Diu": (2771, 3323, 3810, 3302, 4001, 4081, 2225, 3875),
+    "West Bengal": (1078273, 1091807, 1050880, 1694427, 1016319, 683238, 307850, 476809),
+    "Andaman & Nicobar": (11036, 7936, 8761, 7776, 7284, 8563, 4054, 10124),
+    "Chhattisgarh": (176144, 195174, 195514, 208498, 229548, 214399, 78278, 195240),
+    "Delhi": (930732, 636078, 644624, 740779, 808156, 814555, 245879, 353683),
+    "Gujarat": (1132433, 1093664, 1586926, 1386529, 1418688, 1142383, 394455, 1447320),
+    "Assam": (276138, 272538, 251119, 313617, 311150, 254823, 94574, 182346),
+    "Nagaland": (3047, 4826, 4415, 2957, 3514, 5728, 2488, 3921),
+    "Meghalaya": (11691, 18429, 11100, 12316, 8517, 7890, 3163, 5232),
+    "Manipur": (14257, 7395, 6588, 5256, 4379, 3717, 1747, 1411),
+    "Tripura": (193003, 209282, 185283, 169763, 139931, 90786, 26095, 55417),
+    "Mizoram": (10747, 10355, 10905, 12497, 12563, 15107, 11524, 11236),
+    "Arunachal Pradesh": (7615, 5238, 4384, 12165, 7499, 7735, 4144, 8156),
+    "Himachal Pradesh": (409732, 316717, 322008, 317251, 343667, 483869, 187035, 384726),
+    "Jammu & Kashmir + Ladakh": (297507, 392819, 98638, 110825, 146194, 81520, 62465, 109071),
+    "Jharkhand": (110068, 118845, 104284, 157765, 194200, 187370, 108247, 142674),
+    "Karnataka": (1367041, 1209127, 1079586, 1144693, 1120397, 1272673, 961619, 1848768),
+    "Kerala": (1355926, 1338443, None, 983409, 961840, 1005350, 365958, 816047),  # 2016 printed as 11,993,996
+    "Lakshadweep": (114, 280, 269, 191, 237, 201, 238, 284),
+    "Madhya Pradesh": (1113382, 1073584, 1074131, 1218909, 1386280, 1207541, 681333, 1122497),
+    "Tamil Nadu": (1949061, 1151349, 1017111, 1015322, 906184, 849240, 429767, 646592),
+    "Puducherry": (33519, 20409, 16624, 16770, 14052, 12137, 6533, 14628),
+    "Odisha": (470085, 408261, 468395, 365602, 255005, 296535, 126077, 223485),
+    "Bihar": (305570, 292678, 344683, 344981, 361063, 405347, 174478, 354099),
+    "Punjab": (549300, 578681, 605324, 718292, 712529, 670175, 333826, 582027),
+    "Haryana": (587384, 542440, 593132, 579631, 628939, 614384, 281734, 558068),
+    "Chandigarh": (180616, 145990, 143520, 101617, 139172, 146256, 35294, 55242),
+    "Rajasthan": (1132028, 1371762, 1378527, 1514181, 1468290, 1508232, 786604, 1192950),
+    "Sikkim": (2008, 3806, 550, 2583, 2440, 1906, 987, 1807),
+    "Uttarakhand": (220660, 200931, 175405, 237197, 288999, 341452, 143974, 214860),
+}
+PRINTED_DISPOSED_TOTALS: Final = {2014: 19328283, 2015: 18378256, 2016: 29917126, 2017: 19861459, 2018: 19157818,
+                                  2019: 18371574, 2020: 9204884, 2021: 17028604}
+KERALA_2016_AS_PRINTED: Final = 11993996
+
 # national totals as printed, for checking the transcription
 PRINTED_TOTALS: Final = {2014: 26488408, 2015: 27176029, 2016: 28248600, 2017: 28696040, 2018: 30074590,
                          2019: 32296224, 2020: 37285742, 2021: 41053498, 2022: 42826777,
@@ -82,6 +131,20 @@ def pending() -> pd.DataFrame:
     """States x years (2014-2025) of pending cases at 31 December."""
     rows = {s: list(a) + list(_2023_2025[s]) for s, a in _2014_2022.items()}
     return pd.DataFrame.from_dict(rows, orient="index", columns=list(YEARS)).sort_index()
+
+
+def disposed() -> pd.DataFrame:
+    """States x years (2014-2021) of cases disposed during the year; Kerala 2016 is missing (see module notes)."""
+    return pd.DataFrame.from_dict(_DISPOSED_2014_2021, orient="index", columns=list(range(2014, 2022)),
+                                  dtype="float64").sort_index()
+
+
+def instituted() -> pd.DataFrame:
+    """Implied filings by the stock-flow identity: filed(t) = pending(t) - pending(t-1) + disposed(t), 2015-2021.
+    Transfers, restorations and data clean-ups also land here, so treat single state-years with care."""
+    p, d = pending(), disposed()
+    years = list(range(2015, 2022))
+    return pd.DataFrame({y: p[y] - p[y - 1] + d[y] for y in years})
 
 
 def check_totals(tol: float = 0.002) -> dict[int, float]:

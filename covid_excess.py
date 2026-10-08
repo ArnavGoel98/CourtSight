@@ -22,7 +22,7 @@ from typing import Final
 import numpy as np
 import pandas as pd
 
-from official_series import SOURCES, pending
+from official_series import SOURCES, disposed, instituted, pending
 
 HERE: Final = Path(__file__).resolve().parent
 BASE_YEARS: Final = (2015, 2016, 2017, 2018, 2019)
@@ -103,10 +103,29 @@ def main() -> None:
                      "bootstrap_excess_lo90": float(actual[t] - b_hi), "bootstrap_excess_hi90": float(actual[t] - b_lo)})
     national = pd.DataFrame(rows)
     national.to_csv(args.out / "national.csv", index=False)
-    by_state = pd.DataFrame({"pending_2019": p[2019], "pending_2022": p[2022], "counterfactual_2022": cf[2022],
-                             "excess_2022": p[2022] - cf[2022],
-                             "excess_2022_pct": p[2022] / cf[2022] - 1}).sort_values("excess_2022", ascending=False)
-    by_state.to_csv(args.out / "by_state_2022.csv", index_label="state")
+    # state split of the 2021 excess, using the same backtest correction as the national figure
+    cf21 = cf[2021] * np.exp(-r_med * 2)
+    by_state = pd.DataFrame({"pending_2019": p[2019], "pending_2021": p[2021], "counterfactual_2021": cf21,
+                             "excess_2021": p[2021] - cf21,
+                             "excess_2021_pct": p[2021] / cf21 - 1}).sort_values("excess_2021", ascending=False)
+    by_state.to_csv(args.out / "by_state_2021.csv", index_label="state")
+
+    # 4. where the excess came from: lost disposals vs avoided filings, against the 2017-2019 average
+    d, a = disposed(), instituted()
+    flows = []
+    for t in (2020, 2021):
+        row = {"year": t}
+        for name, f in (("disposed", d), ("filed", a)):
+            base = f[[2017, 2018, 2019]]
+            row[f"{name}_actual"] = float(f[t].sum())
+            row[f"{name}_normal"] = float(base.mean(axis=1).sum())
+            row[f"{name}_normal_low"] = float(base.sum().min())
+            row[f"{name}_normal_high"] = float(base.sum().max())
+            row[f"{name}_shortfall"] = row[f"{name}_normal"] - row[f"{name}_actual"]
+        row["net_backlog_effect"] = row["disposed_shortfall"] - row["filed_shortfall"]
+        flows.append(row)
+    flows_df = pd.DataFrame(flows)
+    flows_df.to_csv(args.out / "flows_2020_2021.csv", index=False)
 
     # 3. sensitivity: other reasonable baselines for the same counterfactual
     sens = {}
@@ -116,7 +135,10 @@ def main() -> None:
         sens[name] = float(p[2022].sum() - c[2022])
     meta = {"sources": SOURCES, "method": __doc__.split("Method")[1].split("Caveat")[0].strip(),
             "backtest_pre_covid": backtest, "backtest_error_rates_per_year": rates,
-            "correction_rate_median": r_med, "sensitivity_excess_2022_uncorrected": sens}
+            "correction_rate_median": r_med, "sensitivity_excess_2022_uncorrected": sens,
+            "range_note": "low/high span the 6 pre-COVID backtest error rates (min to max); not a probability interval",
+            "flows_note": "2017-2019 average as normal; filings implied by the stock-flow identity; 2022 disposals are "
+                          "a partial year and are not used"}
     (args.out / "meta.json").write_text(json.dumps(meta, indent=2))
     pd.set_option("display.width", 200)
     print(json.dumps(backtest, indent=2))
@@ -126,7 +148,8 @@ def main() -> None:
     print(show.round(1).to_string())
     print("excess share of backlog:", national.set_index("year")["excess_share_of_backlog"].round(3).to_dict())
     print("sensitivity (lakh):", {k: round(v / 1e5, 1) for k, v in sens.items()})
-    print((by_state.head(8)[["excess_2022", "excess_2022_pct"]] / [1e5, 0.01]).round(1).to_string())
+    print((by_state.head(8)[["excess_2021", "excess_2021_pct"]] / [1e5, 0.01]).round(1).to_string())
+    print((flows_df.set_index("year") / 1e5).round(1).T.to_string())
 
 
 if __name__ == "__main__":
