@@ -21,7 +21,7 @@ Annexures III and VIII, from the Supreme Court of India / NJDG (`../../grade_sta
 | Backlog growth, mean abs. error | 0.077 | 0.077 | 0.109 | **30%** (11% to 53%) |
 | Clearance ratio, mean abs. error | 0.088 | 0.099 | 0.116 | **24%** (13% to 36%) |
 
-- National backlog growth in 2019: actual +7.1%; model +4.5%; linear +3.5%; trend continuation +1.6%.
+- National backlog growth in 2019: actual +7.4%; model +4.6%; linear +3.6%; trend continuation +1.7%.
 - Without Tripura and Uttarakhand, whose official backlogs fall 75% and 17% in one year (likely data clean-ups),
   the reduction is 45% for growth and 32% for clearance.
 - The model ranks states only moderately well (Spearman 0.44 for growth, 0.50 for clearance; trend continuation is
