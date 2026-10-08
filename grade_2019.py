@@ -16,8 +16,8 @@ pending at Dec 2018) and the filing-jump flag mark districts where the two sourc
 Dataful data is paid and must not be published: run this locally, keep --private-out out of git, and publish only
 the aggregate grading_summary.csv (and crosswalk_review.csv, which holds district names only).
 
-    python3 court_pendency/grade_2019.py --dataful court_pendency/dataful \\
-        --district-key court_pendency/ddl_compact/district_key.csv
+    python3 grade_2019.py --dataful dataful \\
+        --district-key ddl_compact/district_key.csv
 """
 from __future__ import annotations
 

@@ -1,0 +1,21 @@
+{
+  "target": "pending cases in District & Subordinate Courts on 31.12.2026, by state and national",
+  "made_on_data_through": "31.12.2025",
+  "sources": [
+    "Lok Sabha USQ 1838 (16.12.2022), Annexure-III: 2014-2022",
+    "Lok Sabha USQ 2362 (13.02.2026), Annexure-II: 2023-2025"
+  ],
+  "chosen_method": "blend",
+  "selection_rule": "lowest case-weighted MAE of state log growth, one-year backtests, targets 2017, 2018, 2019, 2023, 2024, 2025",
+  "national": {
+    "pending_2025": 47657328,
+    "q50": 49329936,
+    "q10": 47792666,
+    "q90": 50688301
+  },
+  "state_error_quantiles_q10_q90": [
+    -0.09321677962280304,
+    0.134325524561496
+  ],
+  "locked_by": "the git commit that first added this file"
+}

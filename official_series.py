@@ -1,0 +1,90 @@
+"""Official state-wise pending cases in District & Subordinate Courts at year end, 2014-2025.
+
+Sources (public answers in Parliament, Ministry of Law & Justice; figures from NJDG / Supreme Court of India):
+  2014-2022  Lok Sabha Unstarred Q. 1838, 16.12.2022, Annexure-III
+             https://sansad.in/getFile/loksabhaquestions/annex/1710/AU1838.pdf?source=pqals
+  2023-2025  Lok Sabha Unstarred Q. 2362, 13.02.2026, Annexure-II
+             https://sansad.in/getFile/loksabhaquestions/annex/187/AU2362_8Lccb3.pdf?source=pqals
+Units that split or merged during the period are combined so every row is one consistent unit:
+Andhra Pradesh + Telangana, Jammu & Kashmir + Ladakh, Dadra & Nagar Haveli + Daman & Diu.
+"""
+from __future__ import annotations
+
+from typing import Final
+
+import pandas as pd
+
+YEARS: Final = tuple(range(2014, 2026))
+SOURCES: Final = (
+    "Lok Sabha USQ 1838 (16.12.2022), Annexure-III: 2014-2022",
+    "Lok Sabha USQ 2362 (13.02.2026), Annexure-II: 2023-2025",
+)
+_2014_2022: Final = {
+    "Uttar Pradesh": (5517004, 5574490, 5980071, 6390684, 6987417, 7807863, 8781104, 9966606, 10641073),
+    "Andhra Pradesh + Telangana": (1014372, 1031515, 1077944, 1040864, 1068400, 567096 + 580193, 649157 + 691646,
+                                   785379 + 790360, 827790 + 822658),
+    "Maharashtra": (2868764, 2994074, 3239540, 3340050, 3531425, 3821487, 4504573, 4800895, 4919254),
+    "Goa": (35001, 39615, 42074, 39249, 42783, 49049, 58967, 59414, 56082),
+    "Dadra & Nagar Haveli + Daman & Diu": (4717, 5626, 5486, 5295, 5468, 5344, 6281, 6523, 2857 + 3784),
+    "West Bengal": (2556461, 2618813, 2728753, 2141254, 1950492, 2048697, 2170788, 2384020, 2481419),
+    "Andaman & Nicobar": (9230, 9495, 8767, 9227, 10229, 9795, 9839, 9321, 9163),
+    "Chhattisgarh": (278887, 285962, 290434, 277338, 267429, 285025, 331849, 381984, 403266),
+    "Delhi": (459267, 568909, 636121, 747704, 834813, 882366, 1018642, 1231373, 1440149),
+    "Gujarat": (2179979, 2142011, 1822311, 1555203, 1447459, 1595813, 1917992, 1952262, 1808627),
+    "Assam": (240597, 242503, 258639, 276520, 291960, 301427, 360753, 415024, 478356),
+    "Nagaland": (3553, 3862, 4430, 4749, 4994, 3361, 4206, 4569, 4605),
+    "Meghalaya": (14249, 14988, 15239, 14775, 13584, 13673, 15830, 16010, 15576),
+    "Manipur": (15147, 6885, 6978, 6799, 6216, 6516, 6957, 8183, 7654),
+    "Tripura": (115209, 129789, 148275, 107089, 58261, 27491, 44654, 43096, 38986),
+    "Mizoram": (3730, 4671, 4665, 5148, 6154, 6589, 6338, 6304, 5843),
+    "Arunachal Pradesh": (5895, 8776, 14583, 9878, 9652, 10658, 12651, 14318, 16029),
+    "Himachal Pradesh": (226224, 206727, 235193, 234639, 256640, 293706, 420891, 464892, 504912),
+    "Jammu & Kashmir + Ladakh": (185078, 199699, 145999, 161674, 163520, 172769, 198771, 216245, 258228),
+    "Jharkhand": (315484, 324357, 342768, 338680, 330607, 365642, 427130, 490905, 499687),
+    "Karnataka": (1226112, 1268966, 1362167, 1432952, 1494608, 1531008, 1709220, 1780802, 1878045),
+    "Kerala": (1331558, 1345127, 1482667, 1623212, 1652509, 1614277, 2089289, 2089147, 1992343),
+    "Lakshadweep": (418, 380, 357, 354, 364, 397, 453, 470, 539),
+    "Madhya Pradesh": (1181459, 1191799, 1260637, 1332566, 1354602, 1455435, 1727293, 1920613, 1957175),
+    "Tamil Nadu": (1038820, 1082793, 1071366, 1065878, 1084286, 1137684, 1263758, 1331944, 1383865),
+    "Puducherry": (24431, 24973, 28155, 26930, 27161, 30094, 33470, 32998, 32216),
+    "Odisha": (1070377, 1064039, 1049325, 1178882, 1319031, 1433522, 1592250, 1789677, 1846520),
+    "Bihar": (1923649, 2073303, 2128325, 2223744, 2502204, 2714344, 3016743, 3276696, 3434130),
+    "Punjab": (507663, 504028, 504320, 572802, 602014, 642327, 843791, 945609, 952777),
+    "Haryana": (493768, 524281, 547736, 643394, 728097, 853375, 1101330, 1313881, 1445775),
+    "Chandigarh": (40414, 36322, 38907, 41695, 56357, 62955, 70633, 72384, 88805),
+    "Rajasthan": (1454566, 1479173, 1573986, 1635389, 1732308, 1769823, 1947688, 2162774, 2248201),
+    "Sikkim": (999, 1460, 1434, 1405, 1208, 1142, 1455, 1616, 1645),
+    "Uttarakhand": (145326, 166618, 190948, 210018, 232338, 195281, 249350, 287204, 318743),
+}
+_2023_2025: Final = {
+    "Andaman & Nicobar": (9070, 8514, 8329), "Andhra Pradesh + Telangana": (895282 + 920101, 921948 + 947417, 915398 + 976399),
+    "Arunachal Pradesh": (10671, 9784, 10665), "Assam": (451138, 496819, 564945), "Bihar": (3608014, 3660802, 3700012),
+    "Chandigarh": (91078, 104194, 100498), "Chhattisgarh": (418688, 420661, 452049), "Delhi": (1229806, 1452717, 1587493),
+    "Goa": (63159, 60895, 61285), "Gujarat": (1556371, 1503763, 1590844), "Haryana": (1524118, 1446433, 1521463),
+    "Himachal Pradesh": (593875, 646753, 590988), "Jammu & Kashmir + Ladakh": (310486 + 1244, 311925 + 1407, 345785 + 1583),
+    "Jharkhand": (560102, 547977, 564410), "Karnataka": (1987983, 2113569, 2237391), "Kerala": (1897469, 1783932, 1788680),
+    "Lakshadweep": (492, 518, 539), "Madhya Pradesh": (2055620, 2054704, 2098396),
+    "Maharashtra": (5326823, 5612876, 5926999), "Manipur": (13286, 12857, 13931), "Meghalaya": (16068, 15178, 16343),
+    "Mizoram": (3983, 6298, 6875), "Nagaland": (3201, 3357, 3856), "Odisha": (1687827, 1741306, 1793888),
+    "Puducherry": (37477, 35381, 36495), "Punjab": (876134, 864524, 914711), "Rajasthan": (2525123, 2496501, 2542253),
+    "Sikkim": (1819, 1727, 1962), "Tamil Nadu": (1508744, 1520258, 1735167),
+    "Dadra & Nagar Haveli + Daman & Diu": (7314, 7750, 8346), "Tripura": (44490, 44085, 58295),
+    "Uttar Pradesh": (11444974, 11648631, 11345328), "Uttarakhand": (350474, 350069, 300614),
+    "West Bengal": (2996527, 3380587, 3835113),
+}
+# national totals as printed, for checking the transcription
+PRINTED_TOTALS: Final = {2014: 26488408, 2015: 27176029, 2016: 28248600, 2017: 28696040, 2018: 30074590,
+                         2019: 32296224, 2020: 37285742, 2021: 41053498, 2022: 42826777,
+                         2023: 45029031, 2024: 46236117, 2025: 47657328}
+
+
+def pending() -> pd.DataFrame:
+    """States x years (2014-2025) of pending cases at 31 December."""
+    rows = {s: list(a) + list(_2023_2025[s]) for s, a in _2014_2022.items()}
+    return pd.DataFrame.from_dict(rows, orient="index", columns=list(YEARS)).sort_index()
+
+
+def check_totals(tol: float = 0.002) -> dict[int, float]:
+    """Relative gap between the summed states and the printed national total, per year."""
+    tot = pending().sum()
+    return {y: float(tot[y] / PRINTED_TOTALS[y] - 1.0) for y in YEARS if abs(tot[y] / PRINTED_TOTALS[y] - 1.0) > tol}

@@ -1,0 +1,43 @@
+{
+  "sources": [
+    "Lok Sabha USQ 1838 (16.12.2022), Annexure-III: 2014-2022",
+    "Lok Sabha USQ 2362 (13.02.2026), Annexure-II: 2023-2025"
+  ],
+  "method": "(fixed before looking at post-2019 results):\n  counterfactual_s(t) = P_s(2019) * exp(g_s * (t - 2019)),  g_s = mean log growth of state s over 2015-2019\n  excess(t) = sum_s [P_s(t) - counterfactual_s(t)]\nCalibration: the same projection is backtested before COVID (origins 2016-2018, every horizon up to 2019). Its\nnational error per year of horizon, r, ranged from about -3% to +2% and was mostly negative (it under-predicted a\nbacklog that was already accelerating). The headline counterfactual is corrected by the median r, and its range\nspans the backtest r values, so the reported uncertainty is the method's own observed error, not a model of it.\nA year-resampling bootstrap is also reported; it ignores that bias and is too narrow (backtest values fall outside).",
+  "backtest_pre_covid": {
+    "2018": {
+      "actual": 30074590.0,
+      "projected": 29636802.534333453,
+      "error_pct": -0.014556722657450893,
+      "interval_90": [
+        29450076.833857313,
+        30033620.016749665
+      ],
+      "actual_inside_interval": false
+    },
+    "2019": {
+      "actual": 32296224.0,
+      "projected": 30686204.89681323,
+      "error_pct": -0.04985162052340153,
+      "interval_90": [
+        30349127.06620964,
+        31547970.973481342
+      ],
+      "actual_inside_interval": false
+    }
+  },
+  "backtest_error_rates_per_year": [
+    0.019522268545047083,
+    0.004906902226858225,
+    -0.007422704625589752,
+    -0.014663711283236602,
+    -0.025568558830517583,
+    -0.0325779015157434
+  ],
+  "correction_rate_median": -0.011043207954413176,
+  "sensitivity_excess_2022_uncorrected": {
+    "mean_growth_2015_2019": 5613664.069851853,
+    "mean_growth_2017_2019": 4775489.295310527,
+    "mean_growth_2016_2019": 5056424.606030136
+  }
+}

@@ -8,7 +8,7 @@ Download these datasets from dataful.in in your browser (CSV, XLSX or PARQUET), 
     21280  disposed civil cases by district x disposal year x filing year
     21277  pending cases by district x case stage            (optional)
 Then:
-    python3 court_pendency/prepare_dataful.py --src ~/Downloads/dataful --out court_pendency/dataful
+    python3 prepare_dataful.py --src ~/Downloads/dataful --out dataful
 The output is a few parquet files plus report.json. Dataful data is paid and this repo is public, so the output
 folder is git-ignored: keep it on your computer and run grade_2019.py there; publish only its aggregate summary.
 """
@@ -65,7 +65,7 @@ def scope_of(p: Path, df: pd.DataFrame) -> str:
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--src", type=Path, required=True)
-    ap.add_argument("--out", type=Path, default=Path("court_pendency/dataful"))
+    ap.add_argument("--out", type=Path, default=Path("dataful"))
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
     args.out.mkdir(parents=True, exist_ok=True)

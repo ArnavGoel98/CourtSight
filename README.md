@@ -1,83 +1,75 @@
-# District court pendency forecasting (DDL eCourts × NJDG)
+# CourtSight
 
-## Results on real data (81M court cases, 2010–2018)
+**Forecasting the backlog of India's district courts, and checking the forecasts against what actually happened.**
 
-Trained on Development Data Lab's eCourts dataset: 80.9 million district-court cases across 632 districts.
-Full write-up and limitations: [`results/ddl_2010_2018/RESULTS.md`](results/ddl_2010_2018/RESULTS.md).
-Trained model: [`models/ddl_2010_2018/`](models/ddl_2010_2018/).
+India's district and subordinate courts held **4.77 crore (47.7 million) pending cases** on 31 December 2025. CourtSight
+models where that backlog comes from and where it is heading, using 80.9 million individual court records and the
+official figures the Ministry of Law & Justice reports to Parliament. Every claim below is reproducible from this repo,
+and the weaker results are reported alongside the strong ones.
 
-**Graded against reality:** forecasts for 2019, committed before any 2019 data was looked at, were scored against
-official state-wise figures (Lok Sabha USQ 1838, Supreme Court / NJDG). At state level they match simple forecasts
-built from the official series but do not beat them. At district level (2016–2017 validation) the median forecasts
-beat the strongest simple forecast by 12–25%. Details and every variant: RESULTS.md.
+## Three results
 
-![Graded against 2019](results/ddl_2010_2018/charts/graded_2019.png)
-![Forecast accuracy](results/ddl_2010_2018/charts/forecast_accuracy.png)
-![District clearance forecast](results/ddl_2010_2018/charts/district_clearance.png)
-![What the worst-case model relies on](results/ddl_2010_2018/charts/risk_drivers.png)
+### 1. COVID left India's district courts about 48 lakh cases behind
+![COVID excess backlog](results/ddl_2010_2018/charts/covid_excess.png)
 
-The forecasts cover Dec 2018 → Dec 2019 because the public data ends in 2018. They were committed before any
-2019 data was looked at, so they can be graded against what actually happened (`grade_2019.py`, using NJDG
-district data). Pre-2010 cases are not in the data; the judge-requirement levers are withheld because the
-judge effect is not identified from DDL alone (see RESULTS.md). Data licences: [`DATA_LICENSE.md`](DATA_LICENSE.md).
+At the end of 2021, the courts held **48 lakh (4.8 million) more pending cases** than each state's pre-pandemic trend
+implies (range 32–70 lakh). That is about **one in every eight pending cases**. The trend is corrected by its own
+error in pre-COVID backtests, and the range spans that observed error rather than a model of it. By 2024 the gap can
+no longer be told apart from the trend. Code: [`covid_excess.py`](covid_excess.py); results:
+[`results/covid_excess/`](results/covid_excess/).
 
-### Grading the 2019 forecast (run locally; Dataful data is paid and stays off GitHub)
-```
-pip install pandas pyarrow openpyxl
-python court_pendency/prepare_dataful.py --src ~/Downloads/dataful --out court_pendency/dataful   # 21265 + 21282
-python court_pendency/grade_2019.py --dataful court_pendency/dataful \
-    --district-key court_pendency/ddl_compact/district_key.csv
-# review results/ddl_2010_2018/grading_2019/crosswalk_review.csv; add unmatched districts to
-# court_pendency/crosswalk_overrides.csv (state, district_as_per_source, district_id) and re-run.
-# Commit only results/ddl_2010_2018/grading_2019/ (aggregate scores + names), never court_pendency/dataful/.
-```
+### 2. A forecast for 31 December 2026, locked before the outcome exists
+**4.93 crore pending cases** nationally (range 4.78–5.07 crore), with a forecast for every state. Five methods were
+backtested on every non-COVID year. The selection rule was written into the code before the backtest ran, and the
+scoring rule is committed in [`PROTOCOL_2026.md`](results/forecast_2026/PROTOCOL_2026.md). When the Ministry publishes
+the 31.12.2026 figures, [`grade_2026.py`](grade_2026.py) scores the forecast in one command. Until then the result is
+open.
 
-Direct multi-horizon (12/24/36-month) quantile forecasts (q10/q50/q90) of district-level backlog growth and
-clearance ratio, benchmarked against trend continuation and a linear quantile regression, with TreeSHAP
-attribution and disposal elasticities (fixed-effects OLS and a shift-share IV). The elasticities are turned into
-bench, hearing-cadence and surge-capacity levers only when the judge effect is identified.
+### 3. A district-level model on 80.9 million cases, graded honestly
+- **Model:** quantile models (best case, median, worst case) of each district's 12-month backlog growth and clearance
+  ratio (disposals ÷ filings). They are built from every case's filing and decision dates in Development Data Lab's
+  eCourts data: 632 districts, 2010–2018.
+- **Tested on years it never saw (2016 and 2017):** the median forecasts beat the strongest simple forecast by
+  **12–25%**. The range comes from resampling whole High Courts.
+- **Graded against official 2019 figures** (forecasts saved before the outcome was looked at): at state level the model
+  **matches simple forecasts built from the official series but does not beat them**.
+- **The model first looked 30% better.** That was against a trend benchmark that flattered it; it was caught and
+  corrected, and both comparisons are published ([`RESULTS.md`](results/ddl_2010_2018/RESULTS.md)).
 
+![2019 graded](results/ddl_2010_2018/charts/graded_2019.png)
+
+## What the project does not claim
+- **No "judges needed" numbers.** The data cannot separate the effect of adding judges from where judges are posted.
+  A recruitment-based instrument was tried and is too weak (first-stage F = 6.2), so those numbers are withheld.
+- **A simple model nearly matches the gradient-boosted one.** A 7-variable linear model ties it on backlog growth.
+  The gain comes from how the problem is set up, not from the algorithm.
+- **The DDL data starts in 2010.** Older cases are invisible to the district model, which biases its clearance ratios
+  downward. This is stated wherever it matters.
+
+## Repository map
+| Path | What it is |
+|---|---|
+| `official_series.py` | Official state-wise pending cases 2014–2025, transcribed from Parliament answers (checked against the printed totals) |
+| `covid_excess.py` | COVID excess-backlog estimate with backtest-calibrated ranges |
+| `forecast_2026.py`, `grade_2026.py`, `results/forecast_2026/` | The locked 2026 forecast, its protocol and its grader |
+| `pendency_forecast.py` | District pipeline: stock-flow reconstruction, features, quantile models, validation, attribution, elasticities |
+| `compress_ddl.py`, `ddl_compact/` | Shrinks the 5 GB DDL download to aggregated counts on your own computer |
+| `grade_state_2019.py`, `naive_benchmarks.py` | 2019 grading and the strict benchmarks |
+| `results/ddl_2010_2018/` | Model outputs, metrics, charts and `RESULTS.md` |
+| `tests/` | Identity tests for the grading arithmetic |
+
+## Run it
 ```
 pip install -r requirements.txt
-python pendency_forecast.py --synthetic --out outputs/            # end-to-end on DDL/NJDG-schema synthetic data
-python pendency_forecast.py --ddl-compact ddl_compact --ddl-only --out outputs/   # real DDL data, no NJDG
-python make_charts.py --results outputs/                          # PNG charts
-python pendency_forecast.py \
-  --ddl-csv-glob 'ddl/cases/cases_*.csv' --ddl-parquet data/ddl_parquet \
-  --ddl-judges ddl/judges_clean.csv --njdg data/njdg_monthly.csv \
-  --edges data/district_edges.csv --out outputs/
+python3 covid_excess.py                     # COVID estimate (official data is built in)
+python3 forecast_2026.py                    # rebuilds the 2026 forecast and its backtest
+python3 pendency_forecast.py --ddl-compact ddl_compact --ddl-only --out outputs/   # district model (~5 min)
+python3 make_charts.py                      # charts
+python3 tests/test_grade_2019.py            # tests
 ```
 
-## Using the real DDL data when it's too big to upload
-
-The ~5 GB DDL download is shrunk on your own computer into a small package of aggregated counts (tens of MB):
-
-```
-# 1. Get the code (or download the three files compress_ddl.py, taxonomy.py from GitHub)
-git clone https://github.com/Arnavthemighty/areudumb && cd areudumb
-git checkout claude/hopeful-wright-qibytw
-pip install pandas pyarrow
-
-# 2. Check what it finds, then shrink (Windows: use "C:\path\to\folder")
-python court_pendency/compress_ddl.py --src "/path/to/unzipped/ddl" --list-only
-python court_pendency/compress_ddl.py --src "/path/to/unzipped/ddl" --out court_pendency/ddl_compact
-
-# 3. Send it: commit court_pendency/ddl_compact/ and push, or upload the folder's files on GitHub
-#    (Add file -> Upload files); every file is kept under 24 MB.
-```
-
-Then train with `python pendency_forecast.py --ddl-compact ddl_compact --njdg <njdg_monthly.csv> --out outputs/`.
-Only aggregated counts leave your computer, no case-level rows or names.
-
-Inputs
-- DDL judicial data: per-year case CSVs + judges file; column map in `DDL_CASE_COLS` / `DDL_JUDGE_COLS`
-  (check it against the release README before running on real data).
-- NJDG: one row per district-month; required columns in `NJDG_REQUIRED`, optional columns in `NJDG_OPTIONAL`.
-  NJDG publishes snapshots, not history, so this file has to be built by archiving snapshots month by month.
-- Edges: undirected district adjacency (`src_state,src_dist,dst_state,dst_dist`), e.g. Queen contiguity on SHRUG pc11 polygons.
-
-Outputs: `panel_features.parquet`, `validation_metrics.csv` (per validation year and pooled; LightGBM vs the
-trend baseline and a linear quantile regression, with 95% High-Court bootstrap ranges), `forecasts.csv` (model,
-linear and trend forecasts), `origin_state.csv`, `hearing_at_scrape.csv` (descriptive only), `shap_q90_flagged.csv`,
-`drivers_flagged.csv`, `elasticities.csv` (FE-OLS, shift-share IV, first-stage F), and `policy_levers.csv` only
-when the judge elasticity is identified (first-stage F >= 10, plausible value).
+## Data and licences
+- **Case records:** Development Data Lab, Indian judicial data (eCourts, 2010–2018), CC BY-NC-SA 4.0. Derived files
+  here carry the same licence; see [`DATA_LICENSE.md`](DATA_LICENSE.md).
+- **Official pendency:** Lok Sabha Unstarred Questions 1838 (16.12.2022) and 2362 (13.02.2026), Ministry of Law &
+  Justice; figures from NJDG and the Supreme Court of India.

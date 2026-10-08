@@ -6,7 +6,7 @@ a weak benchmark. Here each validation fold is also scored against:
   climatology    quantiles of the target over all training rows (ignores district history)
   last_year_xs   quantiles of the target across districts in the last fully realised year before the fold
 Run after pendency_forecast.py --ddl-only --out <dir>, which writes <dir>/panel_features.parquet.
-    python3 court_pendency/naive_benchmarks.py --panel outputs/panel_features.parquet
+    python3 naive_benchmarks.py --panel outputs/panel_features.parquet
 """
 from __future__ import annotations
 

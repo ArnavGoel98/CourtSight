@@ -169,6 +169,44 @@ def real_2019_chart(res: Path, out: Path) -> None:
     plt.close(fig)
 
 
+def covid_chart(root: Path, out: Path) -> None:
+    """Official pending cases 2014-2025 vs the backtest-calibrated no-COVID trajectory."""
+    path = root / "results" / "covid_excess" / "national.csv"
+    if not path.exists():
+        return
+    from official_series import pending
+    tot = pending().sum() / 1e7
+    nat = pd.read_csv(path).set_index("year")
+    fig, ax = plt.subplots(figsize=(9, 4.8), facecolor=SURFACE)
+    fig.subplots_adjust(left=0.08, right=0.82, top=0.78, bottom=0.10)
+    yrs = nat.index.to_numpy()
+    band_x = np.r_[2019, yrs]
+    lo = np.r_[tot[2019], nat["counterfactual_low"].to_numpy() / 1e7]
+    hi = np.r_[tot[2019], nat["counterfactual_high"].to_numpy() / 1e7]
+    mid = np.r_[tot[2019], nat["counterfactual"].to_numpy() / 1e7]
+    ax.fill_between(band_x, lo, hi, color=REFERENCE, alpha=0.18, linewidth=0)
+    ax.plot(band_x, mid, color=REFERENCE, linewidth=2, linestyle=(0, (4, 3)))
+    ax.plot(tot.index, tot.to_numpy(), color=SERIES, linewidth=2.2)
+    ax.scatter([2021], [tot[2021]], color=SERIES, s=36, zorder=3, edgecolor=SURFACE, linewidth=2)
+    ex = nat.loc[2021]
+    ax.annotate(f"+{ex['excess'] / 1e5:.0f} lakh cases above trend\n(range {ex['excess_low'] / 1e5:.0f}–{ex['excess_high'] / 1e5:.0f} lakh)",
+                xy=(2021, tot[2021]), xytext=(2015.2, 4.25), fontsize=9.5, color=TEXT,
+                arrowprops={"arrowstyle": "-", "color": TEXT_2, "linewidth": 0.8})
+    ax.text(2025.15, tot[2025], "Actual", color=SERIES, fontsize=10, va="center")
+    ax.text(2025.15, mid[-1], "Pre-COVID trend", color=TEXT_2, fontsize=10, va="center")
+    ax.set_xlim(2014, 2025)
+    ax.set_ylim(2.4, 5.4)
+    ax.set_xticks(range(2014, 2026, 2))
+    ax.yaxis.grid(True, color=GRID, linewidth=0.8)
+    ax.set_axisbelow(True)
+    ax.set_ylabel("Pending cases (crore)", color=TEXT_2, fontsize=9)
+    _style(ax, "COVID left India's district courts ~48 lakh cases behind",
+           "Official pending cases on 31 Dec vs each state's 2015–19 trend, corrected by the trend's own pre-COVID backtest error.\n"
+           "Source: Lok Sabha USQ 1838 (2022) and USQ 2362 (2026), NJDG")
+    fig.savefig(out / "covid_excess.png", dpi=200, facecolor=SURFACE)
+    plt.close(fig)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--results", type=Path, default=Path(__file__).parent / "results" / "ddl_2010_2018")
@@ -179,6 +217,7 @@ def main() -> None:
     driver_chart(args.results, out)
     clearance_chart(args.results, out)
     real_2019_chart(args.results, out)
+    covid_chart(Path(__file__).resolve().parent, out)
     print(f"charts written to {out}")
 
 
