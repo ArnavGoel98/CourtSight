@@ -1,0 +1,17 @@
+{
+  "source": "Lok Sabha USQ 1838 (16.12.2022), Annexures III and VIII; Supreme Court of India / NJDG",
+  "states_graded": 27,
+  "states_dropped": [
+    "Manipur"
+  ],
+  "official_cases_in_graded_states_2018": 30010506,
+  "share_of_national_2018": 0.9978691646336658,
+  "states_excluded_in_robustness": [
+    "Tripura",
+    "Uttarakhand"
+  ],
+  "national_growth_model": 0.044632931578483734,
+  "national_growth_linear": 0.0350086073834734,
+  "national_growth_drift": 0.016418124582746454,
+  "national_growth_actual": 0.07135200606183882
+}

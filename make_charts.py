@@ -131,6 +131,42 @@ def clearance_chart(res: Path, out: Path) -> None:
     plt.close(fig)
 
 
+def real_2019_chart(res: Path, out: Path) -> None:
+    """Average state-level error against official 2019 outcomes (Lok Sabha USQ 1838), per forecaster."""
+    path = res / "grading_2019_state" / "summary.csv"
+    if not path.exists():
+        return
+    s = pd.read_csv(path)
+    s = s.loc[s["subset"] == "all_graded"]
+    label = {"model": "LightGBM model", "linear": "Linear quantile regression", "drift": "Trend continuation"}
+    color = {"model": SERIES, "linear": SERIES_2, "drift": REFERENCE}
+    fig, axes = plt.subplots(1, 2, figsize=(10, 4.4), facecolor=SURFACE)
+    fig.subplots_adjust(left=0.20, right=0.97, top=0.74, bottom=0.12, wspace=0.55)
+    for ax, (target, title) in zip(axes, (("growth", "Backlog growth"), ("cr", "Clearance ratio"))):
+        d = s.loc[s["target"] == target].set_index("forecaster").reindex(["drift", "linear", "model"])
+        y = np.arange(len(d))
+        ax.barh(y, d["mae"], height=0.6, color=[color[k] for k in d.index], edgecolor=SURFACE, linewidth=2)
+        for yi, v in zip(y, d["mae"]):
+            ax.text(v * 1.02, yi, f"{v:.3f}", va="center", fontsize=9, color=TEXT)
+        ax.set_yticks(y, [label[k] for k in d.index])
+        ax.set_xlim(0, d["mae"].max() * 1.3)
+        ax.set_xticks([])
+        ax.set_facecolor(SURFACE)
+        for side in ("top", "right", "left", "bottom"):
+            ax.spines[side].set_visible(False)
+        ax.tick_params(colors=TEXT_2, labelsize=9, length=0)
+        red = d.loc["model", "error_reduction_vs_drift"]
+        ax.set_title(f"{title}: {red:.0%} less error than trend", fontsize=10, color=TEXT, loc="left")
+    n = int(s["states"].iloc[0])
+    fig.text(0.02, 0.95, "Graded against what actually happened in 2019", fontsize=14, fontweight="bold",
+             color=TEXT, ha="left", va="top")
+    fig.text(0.02, 0.885, f"Mean absolute error across {n} states (99.8% of cases); forecasts committed before the "
+             "data was seen.\nOfficial figures: Lok Sabha USQ 1838 (2022), Supreme Court of India / NJDG",
+             fontsize=9, color=TEXT_2, ha="left", va="top")
+    fig.savefig(out / "graded_2019.png", dpi=200, facecolor=SURFACE)
+    plt.close(fig)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--results", type=Path, default=Path(__file__).parent / "results" / "ddl_2010_2018")
@@ -140,6 +176,7 @@ def main() -> None:
     skill_chart(args.results, out)
     driver_chart(args.results, out)
     clearance_chart(args.results, out)
+    real_2019_chart(args.results, out)
     print(f"charts written to {out}")
 
 

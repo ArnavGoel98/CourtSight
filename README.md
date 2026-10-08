@@ -6,6 +6,11 @@ Trained on Development Data Lab's eCourts dataset: 80.9 million district-court c
 Full write-up and limitations: [`results/ddl_2010_2018/RESULTS.md`](results/ddl_2010_2018/RESULTS.md).
 Trained model: [`models/ddl_2010_2018/`](models/ddl_2010_2018/).
 
+**Graded against reality:** forecasts for 2019, committed before any 2019 data was looked at, were scored against
+official state-wise figures (Lok Sabha USQ 1838, Supreme Court / NJDG). They had 30% less error than trend
+continuation on backlog growth and 24% less on clearance ratio, across 27 states holding 99.8% of cases.
+
+![Graded against 2019](results/ddl_2010_2018/charts/graded_2019.png)
 ![Forecast accuracy](results/ddl_2010_2018/charts/forecast_accuracy.png)
 ![District clearance forecast](results/ddl_2010_2018/charts/district_clearance.png)
 ![What the worst-case model relies on](results/ddl_2010_2018/charts/risk_drivers.png)

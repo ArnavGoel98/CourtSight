@@ -10,8 +10,24 @@ origins) against two benchmarks: trend continuation, and a 7-variable linear qua
 model is trained on 2013–2015 origins and calibrated on 2017, the most recent year whose outcomes are known.
 Saved in `../../models/ddl_2010_2018/`.
 
-**The 2019 forecast is a test.** `forecasts.csv` (LightGBM, linear and trend forecasts) was committed before any
-2019 data was looked at. `../../grade_2019.py` scores it against NJDG data once that is available.
+## Graded against what actually happened in 2019
+`forecasts.csv` (LightGBM, linear and trend forecasts) was committed on 5 Oct 2026, before any 2019 outcome was
+looked at. It was then scored against official state-wise figures: Lok Sabha Unstarred Question 1838 (16 Dec 2022),
+Annexures III and VIII, from the Supreme Court of India / NJDG (`../../grade_state_2019.py`,
+`grading_2019_state/`). The 27 graded states hold 99.8% of India's district-court cases.
+
+| 2019, state level | LightGBM model | Linear model | Trend continuation | Model's error reduction vs trend (95% range) |
+|---|---|---|---|---|
+| Backlog growth, mean abs. error | 0.077 | 0.077 | 0.109 | **30%** (11% to 53%) |
+| Clearance ratio, mean abs. error | 0.088 | 0.099 | 0.116 | **24%** (13% to 36%) |
+
+- National backlog growth in 2019: actual +7.1%; model +4.5%; linear +3.5%; trend continuation +1.6%.
+- Without Tripura and Uttarakhand, whose official backlogs fall 75% and 17% in one year (likely data clean-ups),
+  the reduction is 45% for growth and 32% for clearance.
+- The model ranks states only moderately well (Spearman 0.44 for growth, 0.50 for clearance; trend continuation is
+  similar). It wins mainly by getting the level right, which trend continuation underestimates.
+- Caveat: official counts include cases filed before 2010, which the model never sees. All three forecasters share
+  this gap. District-level grading needs NJDG district history (`../../grade_2019.py`).
 
 ## Validation (2016 + 2017 pooled, 15k district-months)
 Improvement = lower pinball loss than the benchmark. The 95% ranges come from resampling whole High Courts
@@ -70,4 +86,5 @@ Improvement = lower pinball loss than the benchmark. The 95% ranges come from re
 - **Pre-2010 cases are missing**, so "pending" counts only cases filed since 2010 (23.8M at Dec 2018). Backlog
   growth is overstated and the clearance ratio understated. Training starts in 2013 to limit this.
 - Case-type mapping leaves 9% of cases (ambiguous local codes such as `chi`, `mjc`) unclassified and treated as civil.
-- Forecasts are for 2019 (the data ends in 2018) and are not yet graded against what actually happened.
+- Forecasts are for 2019 (the data ends in 2018). They are graded at state level only; district-level grading
+  needs NJDG district history.
