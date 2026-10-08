@@ -17,6 +17,10 @@ jobs:
         run: python tests/test_grade_2019.py
       - name: COVID estimate and 2019 grading reproduce
         run: |
+          mkdir -p /tmp/committed/grading
+          cp -r results/covid_excess /tmp/committed/covid
+          cp -r results/ddl_2010_2018/grading_2019_state/. /tmp/committed/grading/
           python covid_excess.py > /dev/null
           python grade_state_2019.py > /dev/null
-          git diff --exit-code -- results/covid_excess results/ddl_2010_2018/grading_2019_state
+          python tests/compare_outputs.py /tmp/committed/covid results/covid_excess
+          python tests/compare_outputs.py /tmp/committed/grading results/ddl_2010_2018/grading_2019_state
