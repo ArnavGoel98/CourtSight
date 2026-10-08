@@ -7,8 +7,9 @@ Full write-up and limitations: [`results/ddl_2010_2018/RESULTS.md`](results/ddl_
 Trained model: [`models/ddl_2010_2018/`](models/ddl_2010_2018/).
 
 **Graded against reality:** forecasts for 2019, committed before any 2019 data was looked at, were scored against
-official state-wise figures (Lok Sabha USQ 1838, Supreme Court / NJDG). They had 30% less error than trend
-continuation on backlog growth and 24% less on clearance ratio, across 27 states holding 99.8% of cases.
+official state-wise figures (Lok Sabha USQ 1838, Supreme Court / NJDG). At state level they match simple forecasts
+built from the official series but do not beat them. At district level (2016–2017 validation) the median forecasts
+beat the strongest simple forecast by 12–25%. Details and every variant: RESULTS.md.
 
 ![Graded against 2019](results/ddl_2010_2018/charts/graded_2019.png)
 ![Forecast accuracy](results/ddl_2010_2018/charts/forecast_accuracy.png)

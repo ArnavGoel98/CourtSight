@@ -16,18 +16,21 @@ looked at. It was then scored against official state-wise figures: Lok Sabha Uns
 Annexures III and VIII, from the Supreme Court of India / NJDG (`../../grade_state_2019.py`,
 `grading_2019_state/`). The 27 graded states hold 99.8% of India's district-court cases.
 
-| 2019, state level | LightGBM model | Linear model | Trend continuation | Model's error reduction vs trend (95% range) |
-|---|---|---|---|---|
-| Backlog growth, mean abs. error | 0.077 | 0.077 | 0.109 | **30%** (11% to 53%) |
-| Clearance ratio, mean abs. error | 0.088 | 0.099 | 0.116 | **24%** (13% to 36%) |
+| 2019, mean error per state | Model | Linear | One rate for all states | Each state repeats 2018 | DDL trend |
+|---|---|---|---|---|---|
+| Backlog growth | 0.077 | 0.077 | 0.075 | 0.076 | 0.109 |
+| Clearance ratio | 0.088 | 0.099 | 0.092 | 0.084 | 0.116 |
 
-- National backlog growth in 2019: actual +7.4%; model +4.6%; linear +3.6%; trend continuation +1.7%.
-- Without Tripura and Uttarakhand, whose official backlogs fall 75% and 17% in one year (likely data clean-ups),
-  the reduction is 45% for growth and 32% for clearance.
-- The model ranks states only moderately well (Spearman 0.44 for growth, 0.50 for clearance; trend continuation is
-  similar). It wins mainly by getting the level right, which trend continuation underestimates.
-- Caveat: official counts include cases filed before 2010, which the model never sees. All three forecasters share
-  this gap. District-level grading needs NJDG district history (`../../grade_2019.py`).
+- **At state level the model is as good as simple forecasts built from the official series, not better.** It beats
+  the DDL trend by 30% (growth) and 24% (clearance), but that trend is a weak benchmark: it extrapolates the
+  post-2010 stock, whose growth slows mechanically as that stock matures.
+- Weighted by caseload, the model's clearance-ratio error is 23% below the best simple forecast (0.062 vs 0.081).
+  That weighting was chosen after seeing the results, so treat it as exploratory.
+- National backlog growth in 2019: actual +7.4%; model +4.6%; linear +3.6%; DDL trend +1.7%.
+- The scoring rules (state level, mean absolute error, which subsets) were chosen after the outcome was known; only
+  the forecasts were locked in advance. Every variant computed is reported in `grading_2019_state/summary.csv`.
+- Official counts include cases filed before 2010, which the model never sees, and some official series jump
+  (Tripura −75%, Uttarakhand −17% in one year), so the "actual" side is noisy too.
 
 ## Validation (2016 + 2017 pooled, 15k district-months)
 Improvement = lower pinball loss than the benchmark. The 95% ranges come from resampling whole High Courts
@@ -43,6 +46,10 @@ Improvement = lower pinball loss than the benchmark. The 95% ranges come from re
 | Clearance ratio | q90 | 25% (17% to 32%) | +2% (-3% to +6%) | 0.88 (0.90) |
 
 - The improvement over trend continuation holds in both validation years separately (`validation_metrics.csv`).
+- **Against the strongest simple forecast** (the spread of outcomes across districts in the last realised year, which
+  ignores each district's history), the median forecasts are still better: backlog growth 24% (2016) and 12% (2017),
+  clearance ratio 25% and 15% (`naive_benchmarks.csv`, `../../naive_benchmarks.py`). The skill is real at district
+  level, but smaller than the comparison with the DDL trend suggests.
 - **LightGBM is not what earns it.** The linear quantile regression does about as well: LightGBM is better for
   best-case growth and median clearance, worse for worst-case growth, and level elsewhere. The gain comes from the
   features and the anchor-plus-change setup.

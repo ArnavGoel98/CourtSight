@@ -67,7 +67,23 @@ OFFICIAL: Final = {
     "Sikkim": (1208, 1142, 1906),
     "Uttarakhand": (232338, 195281, 341452),
 }
+# official pending at end of 2017 and disposed during 2018 (same annexures): for naive baselines built on the
+# official series itself, which is the benchmark a skeptic would use
+OFFICIAL_2017_D2018: Final = {
+    "Uttar Pradesh": (6390684, 3282885), "Andhra Pradesh + Telangana": (1040864, 741390),
+    "Maharashtra": (3340050, 2196271), "Goa": (39249, 36235), "West Bengal": (2141254, 1016319),
+    "Chhattisgarh": (277338, 229548), "Delhi": (747704, 808156), "Gujarat": (1555203, 1418688),
+    "Assam": (276520, 311150), "Meghalaya": (14775, 8517), "Manipur": (6799, 4379), "Tripura": (107089, 139931),
+    "Mizoram": (5148, 12563), "Himachal Pradesh": (234639, 343667), "Jammu & Kashmir": (161674, 146194),
+    "Jharkhand": (338680, 194200), "Karnataka": (1432952, 1120397), "Kerala": (1623212, 961840),
+    "Madhya Pradesh": (1332566, 1386280), "Tamil Nadu": (1065878, 906184), "Odisha": (1178882, 255005),
+    "Bihar": (2223744, 361063), "Punjab": (572802, 712529), "Haryana": (643394, 628939),
+    "Chandigarh": (41695, 139172), "Rajasthan": (1635389, 1468290), "Sikkim": (1405, 2440),
+    "Uttarakhand": (210018, 288999),
+}
 FORECASTERS: Final = {"model": "", "linear": "linear_", "drift": "drift_"}
+# naive forecasts from the official series: each state repeats its own 2018; every state gets the 2018 median
+BASELINES: Final = ("official_last_year", "official_common")
 
 
 def official_frame() -> pd.DataFrame:
@@ -75,6 +91,11 @@ def official_frame() -> pd.DataFrame:
     o["A2019"] = o["P2019"] - o["P2018"] + o["D2019"]
     o["growth_actual"] = np.log(o["P2019"] / o["P2018"])
     o["cr_actual"] = np.where(o["A2019"] > 0, o["D2019"] / o["A2019"], np.nan)
+    h = pd.DataFrame.from_dict(OFFICIAL_2017_D2018, orient="index", columns=["P2017", "D2018"])
+    o = o.join(h)
+    a18 = o["P2018"] - o["P2017"] + o["D2018"]
+    o["growth_official_last_year"] = np.log(o["P2018"] / o["P2017"])
+    o["cr_official_last_year"] = np.where(a18 > 0, o["D2018"] / a18, np.nan)
     return o
 
 
@@ -112,11 +133,15 @@ def score(t: pd.DataFrame, target: str, names: list[str], subset: str, draws: in
             "mae_bias_removed": float(np.abs(e - e.mean()).mean()),
             "spearman_vs_actual": float(t[f"{target}_{n}"].rank().corr(t[f"{target}_actual"].rank())),
         }
-        if n != "drift":
-            boot = 1.0 - err[n][idx].sum(1) / err["drift"][idx].sum(1)
-            row |= {"error_reduction_vs_drift": float(1.0 - err[n].sum() / err["drift"].sum()),
-                    "error_reduction_lo": float(np.quantile(boot, 0.025)),
-                    "error_reduction_hi": float(np.quantile(boot, 0.975))}
+        for ref in ("drift", "official_common", "official_last_year"):
+            if n == ref or ref not in err or n in BASELINES:
+                continue
+            boot = 1.0 - err[n][idx].sum(1) / err[ref][idx].sum(1)
+            row |= {f"error_reduction_vs_{ref}": float(1.0 - err[n].sum() / err[ref].sum()),
+                    f"error_reduction_vs_{ref}_lo": float(np.quantile(boot, 0.025)),
+                    f"error_reduction_vs_{ref}_hi": float(np.quantile(boot, 0.975))}
+        w = t["P2018"].to_numpy()
+        row["mae_case_weighted"] = float((np.abs(e) * w).sum() / w.sum())
         rows.append(row)
     return rows
 
@@ -136,8 +161,10 @@ def main() -> None:
     keep = t["ddl_coverage_2018"].between(args.min_coverage, 1.5) & t["cr_actual"].between(0.0, 3.0)
     t["graded"] = keep
     t.to_csv(out / "state_table.csv", index_label="state")
-    g = t.loc[keep]
-    names = [n for n in FORECASTERS if f"growth_{n}" in g]
+    g = t.loc[keep].copy()
+    for target in ("growth", "cr"):  # one number for every state: the 2018 cross-state median
+        g[f"{target}_official_common"] = g[f"{target}_official_last_year"].median()
+    names = [n for n in FORECASTERS if f"growth_{n}" in g] + list(BASELINES)
     # robustness: drop states whose official series jumps implausibly (data clean-ups, not court activity)
     robust = g.loc[g["growth_actual"] >= -0.10]  # official stock falling >10% in a year
     rows = []
@@ -145,7 +172,7 @@ def main() -> None:
         rows += score(sub, "growth", names, lab) + score(sub, "cr", names, lab)
     summary = pd.DataFrame(rows)
     nat = {f"national_growth_{n}": float(np.log((g["ddl_pending_2018"] * np.exp(g[f"growth_{n}"])).sum()
-                                                 / g["ddl_pending_2018"].sum())) for n in names}
+                                                 / g["ddl_pending_2018"].sum())) for n in FORECASTERS}
     nat["national_growth_actual"] = float(np.log(g["P2019"].sum() / g["P2018"].sum()))
     summary.to_csv(out / "summary.csv", index=False)
     meta = {"source": SOURCE, "states_graded": int(keep.sum()),
