@@ -52,7 +52,9 @@ changing a locked forecast would defeat its purpose. They will be reported along
   (0.053 and 0.054). Picking any of them would have been reasonable.
 
 ## Integrity
-SHA-256 of the files as locked in commit 391dca6:
+SHA-256 of the files as locked in commit 84732fc (8 October 2026; the same files were first committed as 391dca6,
+whose hash changed when the repository history was rewritten to move it to this repository; the file contents and
+these digests did not change):
 - `forecast_states_2026.csv`: `adf62cd20085e545730b10e62a7ffa66dae5e3f90207d197c5207f2aa5c96d2d`
 - `forecast_meta.json`: `1715bda1eed20622d7c43f89ea813ccf8b4d294f69a4380c40d39578174f4c13`
 

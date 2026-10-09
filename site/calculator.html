@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Time Calculator</title>
+<meta name="description" content="How long cases took in every Indian district court, by case type: survival curves from 80.9 million cases filed 2010-2018.">
+<style>/*CSS*/
+.big{font-size:clamp(2.2rem,6vw,3.2rem);font-weight:800;letter-spacing:-.025em;line-height:1.05;font-variant-numeric:tabular-nums}
+.facts{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px}
+@media (max-width:700px){.facts{grid-template-columns:repeat(2,1fr)}}
+.facts div{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.facts b{display:block;font-size:1.35rem;font-variant-numeric:tabular-nums}
+.facts span{font-size:.8rem;color:var(--ink-2)}
+</style>
+</head>
+<body>
+<nav><div class="wrap"><b>CourtSight</b><a href="index.html">Findings</a><a href="calculator.html" aria-current="page">Calculator</a></div></nav>
+<main class="wrap">
+<header class="hero" style="padding-bottom:12px">
+  <div class="kicker">80.9 million cases · 620 districts · 10 case types</div>
+  <h1>How long will my case take?</h1>
+  <p class="lede">How long cases like yours took in your district court, based on every case filed there in 2010–2018.</p>
+</header>
+<div class="pick">
+  <div><label for="st">State</label><select id="st"></select></div>
+  <div><label for="di">District</label><select id="di"></select></div>
+  <div><label for="ty">Type of case</label><select id="ty"></select></div>
+</div>
+<div class="card">
+  <div class="big" id="head"></div>
+  <div class="prose" id="sub" style="margin-top:6px"></div>
+  <div class="facts" id="facts"></div>
+</div>
+<div class="card">
+  <h3>Share of cases still waiting, month by month</h3>
+  <div class="legend"><span><i style="background:var(--s1)"></i><span id="lg-here">This district</span></span><span><i style="background:var(--s2)"></i>All of India, same type</span><span><i style="background:var(--neutral)"></i>Other districts in the state</span></div>
+  <div id="c-curve"></div>
+  <div class="caption">Kaplan–Meier estimate. Cases still pending when the data was collected count as undecided up to that date. Hover to read any month.</div>
+</div>
+<div class="card" id="rank"></div>
+<details class="card">
+<summary>How to read this, and its limits</summary>
+<ul class="prose">
+<li><b>Typical time</b> is the median: half of such cases were decided sooner. "Decided" means any final disposal (judgment, dismissal, withdrawal, settlement or transfer), not necessarily a judgment in someone's favour.</li>
+<li>Cases still pending when the data was collected (late 2018 to 2020, depending on the state) are counted as undecided up to that date, so slow cases are not left out. Where the curve stops, there is no more follow-up.</li>
+<li>This describes the past. It is not a prediction for one particular case: courts have changed since 2018, and each case depends on its own facts and adjournments.</li>
+<li>Case types are grouped from the names each court uses; "Other / unclassified" collects what could not be grouped. Districts with fewer than 200 cases of a type are not shown. High Courts and the Supreme Court are not covered.</li>
+</ul>
+</details>
+</main>
+<footer><div class="wrap">CourtSight by Arnav Goel · <a href="https://github.com/ArnavGoel98/CourtSight">Code and method</a> (<code>time_to_decision.py</code>) · Data: Development Data Lab eCourts records 2010–2018 (CC BY-NC-SA 4.0).</div></footer>
+<script>
+const D=/*DATA*/null;
+/*CHARTS*/
+const C=Object.fromEntries(D.cols.map((c,i)=>[c,i]));
+const $=id=>document.getElementById(id), st=$("st"), di=$("di"), ty=$("ty");
+const opt=(s,v,t)=>{const o=document.createElement("option");o.value=v;o.textContent=t;s.appendChild(o)};
+const fmtM=m=>m==null?null:m<1?"under a month":m<24?`${m} month${m==1?"":"s"}`:`${(m/12).toFixed(1).replace(/\.0$/,"")} years`;
+const pc=x=>x==null?"–":`${Math.round(x*100)}%`;
+const row=(list,t)=>list.find(r=>r[0]===t);
+Object.keys(D.states).forEach(s=>opt(st,s,s));
+const q=new URLSearchParams(location.hash.slice(1));
+function fillDistricts(){di.innerHTML="";Object.keys(D.states[st.value]).forEach(d=>opt(di,d,d));fillTypes()}
+function fillTypes(){const prev=ty.value;ty.innerHTML="";D.states[st.value][di.value].forEach(r=>opt(ty,r[0],D.labels[r[0]]||r[0]));
+  if([...ty.options].some(o=>o.value===prev))ty.value=prev;else if([...ty.options].some(o=>o.value==="civ_suit"))ty.value="civ_suit";render()}
+function render(){
+  const r=row(D.states[st.value][di.value],ty.value), n=row(D.national,ty.value); if(!r)return;
+  history.replaceState(null,"",`#s=${encodeURIComponent(st.value)}&d=${encodeURIComponent(di.value)}&t=${ty.value}`);
+  const med=r[C.median_months], p90=r[C.p90_months], lab=D.labels[ty.value]||ty.value;
+  $("head").textContent=med==null?"Over half still pending":fmtM(med);
+  $("sub").innerHTML=med==null?`More than half of these cases were still pending when the data ends, so the typical time is longer than the data can show. ${lab}, ${di.value}.`
+    :`is the typical time to a decision for a <b>${lab.toLowerCase()}</b> in <b>${di.value}</b>: half were decided sooner, half later. Based on ${r[C.cases].toLocaleString("en-IN")} cases.`;
+  $("facts").innerHTML=[["pending_after_1y","1 year"],["pending_after_3y","3 years"],["pending_after_5y","5 years"]].map(([k,l])=>
+    `<div><b>${r[C[k]]==null?"–":pc(1-r[C[k]])}</b><span>decided within ${l}</span></div>`).join("")+
+    `<div><b>${p90==null?"10+ yrs":fmtM(p90)}</b><span>for the slowest 1 in 10</span></div>`;
+  $("lg-here").textContent=di.value;
+  const xs=[...Array(41).keys()].map(i=>i*3);
+  const others=Object.entries(D.states[st.value]).filter(([d])=>d!==di.value).map(([d,l])=>row(l,ty.value)).filter(Boolean)
+    .map(o=>({name:"",values:o[C.curve],color:"var(--neutral)",width:1,step:true,noTip:true,opacity:.55}));
+  lineChart($("c-curve"),{x:xs,ymin:0,ymax:1,yfmt:v=>Math.round(v*100)+"%",xfmt:v=>v%12?"":(v/12)+"y",xticks:xs.filter(v=>v%12===0),right:20,
+    tipx:v=>`${v} months after filing, still pending:`,
+    series:[...others,{name:"All of India",values:n?n[C.curve]:[],color:"var(--s2)",width:2,step:true},
+            {name:di.value,values:r[C.curve],color:"var(--s1)",width:2.75,step:true}]});
+  const peers=Object.entries(D.states[st.value]).map(([d,l])=>[d,row(l,ty.value)]).filter(([,x])=>x&&x[C.pending_after_3y]!=null)
+    .sort((a,b)=>a[1][C.pending_after_3y]-b[1][C.pending_after_3y]);
+  const pos=peers.findIndex(([d])=>d===di.value);
+  const nat3=n?n[C.pending_after_3y]:null, me3=r[C.pending_after_3y];
+  $("rank").innerHTML=pos<0?"":`<h3>How ${di.value} compares</h3><p class="prose">After 3 years, <b>${pc(me3)}</b> of these cases were still pending here, against <b>${pc(nat3)}</b> across India${me3!=null&&nat3!=null?` (${me3<nat3?"faster":"slower"} than the national figure)`:""}. Among ${peers.length} districts in ${st.value}, ${di.value} ranks <b>${pos+1}</b> from fastest to slowest. Fastest: ${peers[0][0]} (${pc(peers[0][1][C.pending_after_3y])}); slowest: ${peers[peers.length-1][0]} (${pc(peers[peers.length-1][1][C.pending_after_3y])}).</p>`;
+}
+st.onchange=fillDistricts;di.onchange=fillTypes;ty.onchange=render;
+st.value=D.states[q.get("s")]?q.get("s"):("Delhi" in D.states?"Delhi":st.options[0].value);
+di.innerHTML="";Object.keys(D.states[st.value]).forEach(d=>opt(di,d,d));
+if(q.get("d")&&D.states[st.value][q.get("d")])di.value=q.get("d");
+ty.innerHTML="";D.states[st.value][di.value].forEach(r=>opt(ty,r[0],D.labels[r[0]]||r[0]));
+ty.value=[...ty.options].some(o=>o.value===q.get("t"))?q.get("t"):([...ty.options].some(o=>o.value==="civ_suit")?"civ_suit":ty.options[0].value);
+onResize(render);
+</script>
+</body>
+</html>

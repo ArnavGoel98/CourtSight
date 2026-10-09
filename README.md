@@ -7,6 +7,9 @@ models where that backlog comes from and where it is heading, using 80.9 million
 official figures the Ministry of Law & Justice reports to Parliament. Every claim below is reproducible from this repo,
 and the weaker results are reported alongside the strong ones.
 
+**Project site:** https://arnavgoel98.github.io/CourtSight/ (interactive charts of every result below) ·
+**[Case time calculator](https://arnavgoel98.github.io/CourtSight/calculator.html)**
+
 ## Results
 
 ### 1. COVID left India's district courts about 48 lakh cases behind
@@ -49,9 +52,8 @@ a year), divorce and family cases take a median **13 months**, motor-accident cl
 29% still pending after 5 years**. Results for 626 districts × 10 case types, with district names:
 [`results/time_to_decision/by_district_case_type.csv`](results/time_to_decision/by_district_case_type.csv).
 
-**Try it:** [`docs/index.html`](docs/index.html) is a "how long will my case take?" page: pick a state, district
-and case type to see the typical time and the share decided within 1, 3 and 5 years. It is a single static file,
-built by [`build_calculator.py`](build_calculator.py), and can be served with GitHub Pages from the `docs/` folder.
+**Try it:** [`docs/calculator.html`](docs/calculator.html), a "how long will my case take?" page with the full
+survival curve for every district and case type, next to the national curve and the state's other districts.
 
 ### 5. What a change of judge costs a courtroom: no reliable estimate (a negative result)
 [`judge_transfer.py`](judge_transfer.py) compares courtroom disposals around 11,142 judge handovers (447 districts)
@@ -93,6 +95,7 @@ same court number, so courtroom matching is weak. We report this as no reliable 
 | `pendency_forecast.py` | District pipeline: stock-flow reconstruction, features, quantile models, validation, attribution, elasticities |
 | `compress_ddl.py`, `ddl_compact/` | Shrinks the 5 GB DDL download to aggregated counts on your own computer |
 | `grade_state_2019.py`, `naive_benchmarks.py` | 2019 grading and the strict benchmarks |
+| `build_site.py`, `site/`, `docs/` | Project site and calculator (built from `results/`, served from `docs/`) |
 | `backlog_clock.py`, `time_to_decision.py`, `judge_transfer.py` | Clearance clock, time to decision, judge handover study |
 | `results/ddl_2010_2018/` | Model outputs, metrics, charts and `RESULTS.md` |
 | `sources/` | The official documents used, with URLs and SHA-256 fingerprints |
