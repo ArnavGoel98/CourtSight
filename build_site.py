@@ -101,7 +101,7 @@ def site_data() -> dict[str, object]:
                     "age": {"civil": age["civil"].tolist(), "criminal": age["criminal"].tolist()}},
         "districts": [[r.state_name, r.district_name, _num(r.pending_after_3y_civil), _num(r.pending_after_3y_criminal),
                        _num(r.median_months_civil), _num(r.judge_tenure_months, 1), int(r.case_years)]
-                      for r in dd.sort_values("pending_after_3y_civil").itertuples()],
+                      for r in dd.sort_values(["pending_after_3y_civil", "state_name", "district_name"], kind="mergesort").itertuples()],
         "drivers": {"coef": [{k: (_num(v, 4) if isinstance(v, float) else v) for k, v in r.items()}
                              for r in co.to_dict("records")], "summary": dsum},
         "model": {"skill_vs_best_naive": [_num(med["skill_vs_best_naive"].min(), 2), _num(med["skill_vs_best_naive"].max(), 2)]},
