@@ -49,6 +49,10 @@ a year), divorce and family cases take a median **13 months**, motor-accident cl
 29% still pending after 5 years**. Results for 626 districts × 10 case types, with district names:
 [`results/time_to_decision/by_district_case_type.csv`](results/time_to_decision/by_district_case_type.csv).
 
+**Try it:** [`docs/index.html`](docs/index.html) is a "how long will my case take?" page: pick a state, district
+and case type to see the typical time and the share decided within 1, 3 and 5 years. It is a single static file,
+built by [`build_calculator.py`](build_calculator.py), and can be served with GitHub Pages from the `docs/` folder.
+
 ### 5. What a change of judge costs a courtroom: no reliable estimate (a negative result)
 [`judge_transfer.py`](judge_transfer.py) compares courtroom disposals around 11,142 judge handovers (447 districts)
 with courtrooms in the same district that had no change. On synthetic data it recovers a planted 30% drop. On the
