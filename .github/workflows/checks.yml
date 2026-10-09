@@ -15,6 +15,10 @@ jobs:
         run: python tests/test_locked_forecast.py
       - name: Grading arithmetic
         run: python tests/test_grade_2019.py
+      - name: Time-to-decision and backlog clock arithmetic
+        run: |
+          python tests/test_time_to_decision.py
+          python tests/test_backlog_clock.py
       - name: COVID estimate and 2019 grading reproduce
         run: |
           mkdir -p /tmp/committed/grading
