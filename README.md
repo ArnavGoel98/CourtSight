@@ -43,14 +43,21 @@ the backlog is falling, would clear it in about 33 years. Code: [`backlog_clock.
 Survival analysis on all 80.9 million cases (cases still pending when the data was collected count as undecided,
 using each state's own collection date). A civil case filed in 2010–2018 took a median **21 months** to decide and a
 criminal case **10 months**, but about **1 in 5 of either was still pending after 5 years**. Across districts the
-median ranges from under a month to almost 9 years. District-by-district results:
-[`results/time_to_decision/`](results/time_to_decision/). Running `bash run_on_mac.sh` on the DDL download adds
-case types (bail, cheque bounce, motor accident claims and so on) and district names.
+median ranges from under a month to almost 9 years. By case type: bail applications are decided almost at once (median **0 months**, under 1% pending after
+a year), divorce and family cases take a median **13 months**, motor-accident claims and sessions trials about
+**21–22 months**, cheque-bounce (NI Act s.138) cases **23 months**, and **ordinary civil suits 32 months, with
+29% still pending after 5 years**. Results for 626 districts × 10 case types, with district names:
+[`results/time_to_decision/by_district_case_type.csv`](results/time_to_decision/by_district_case_type.csv).
 
-### 5. What a change of judge costs a courtroom (method ready, awaiting data)
-[`judge_transfer.py`](judge_transfer.py) compares courtroom disposals around each judge handover with courtrooms
-in the same district that had no change. On synthetic data it finds no effect where none exists and recovers a
-planted 30% three-month drop. The real estimate needs the courtroom-level data from `run_on_mac.sh`.
+### 5. What a change of judge costs a courtroom: no reliable estimate (a negative result)
+[`judge_transfer.py`](judge_transfer.py) compares courtroom disposals around 11,142 judge handovers (447 districts)
+with courtrooms in the same district that had no change. On synthetic data it recovers a planted 30% drop. On the
+real data it finds disposals about **10% lower for a year** after a handover, **but a placebo test fails**: moving
+every handover 18 or 30 months *earlier*, to dates when no judge changed, gives almost the same drop (−8.5% and
+−7.0%), and the decline is already visible before the true date. So the design is picking up courtrooms that were
+slowing down anyway, not the cost of the change itself. Only 42% of judge-months also show disposals under the
+same court number, so courtroom matching is weak. We report this as no reliable estimate rather than publish the
+−10%. Details: [`results/judge_transfer/summary.json`](results/judge_transfer/summary.json).
 
 ### 6. A district-level model on 80.9 million cases, graded honestly
 - **Model:** quantile models (best case, median, worst case) of each district's 12-month backlog growth and clearance
