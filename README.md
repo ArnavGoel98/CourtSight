@@ -7,7 +7,7 @@ models where that backlog comes from and where it is heading, using 80.9 million
 official figures the Ministry of Law & Justice reports to Parliament. Every claim below is reproducible from this repo,
 and the weaker results are reported alongside the strong ones.
 
-## Three results
+## Results
 
 ### 1. COVID left India's district courts about 48 lakh cases behind
 ![COVID excess backlog](results/ddl_2010_2018/charts/covid_excess.png)
@@ -32,7 +32,27 @@ open. A review after locking found weaknesses, notably that the state ranges are
 too wide for large ones. They are recorded in an addendum rather than fixed, and a test fails if the locked files
 change.
 
-### 3. A district-level model on 80.9 million cases, graded honestly
+### 3. At today's pace, India's backlog is never cleared
+Over 2023–2025 the national backlog grew by about **13 lakh cases a year**. Clearing it within ten years would take
+about **61 lakh extra disposals every year**, roughly a third more than the courts disposed of in 2021. 25 of 34
+states and union territories are still growing; Delhi (+14.5% a year) and West Bengal (+14%) fastest. Kerala, where
+the backlog is falling, would clear it in about 33 years. Code: [`backlog_clock.py`](backlog_clock.py); every state:
+[`results/backlog_clock/states.csv`](results/backlog_clock/states.csv).
+
+### 4. How long a case takes, in every district
+Survival analysis on all 80.9 million cases (cases still pending when the data was collected count as undecided,
+using each state's own collection date). A civil case filed in 2010–2018 took a median **21 months** to decide and a
+criminal case **10 months**, but about **1 in 5 of either was still pending after 5 years**. Across districts the
+median ranges from under a month to almost 9 years. District-by-district results:
+[`results/time_to_decision/`](results/time_to_decision/). Running `bash run_on_mac.sh` on the DDL download adds
+case types (bail, cheque bounce, motor accident claims and so on) and district names.
+
+### 5. What a change of judge costs a courtroom (method ready, awaiting data)
+[`judge_transfer.py`](judge_transfer.py) compares courtroom disposals around each judge handover with courtrooms
+in the same district that had no change. On synthetic data it finds no effect where none exists and recovers a
+planted 30% three-month drop. The real estimate needs the courtroom-level data from `run_on_mac.sh`.
+
+### 6. A district-level model on 80.9 million cases, graded honestly
 - **Model:** quantile models (best case, median, worst case) of each district's 12-month backlog growth and clearance
   ratio (disposals ÷ filings). They are built from every case's filing and decision dates in Development Data Lab's
   eCourts data: 632 districts, 2010–2018.
@@ -62,6 +82,7 @@ change.
 | `pendency_forecast.py` | District pipeline: stock-flow reconstruction, features, quantile models, validation, attribution, elasticities |
 | `compress_ddl.py`, `ddl_compact/` | Shrinks the 5 GB DDL download to aggregated counts on your own computer |
 | `grade_state_2019.py`, `naive_benchmarks.py` | 2019 grading and the strict benchmarks |
+| `backlog_clock.py`, `time_to_decision.py`, `judge_transfer.py` | Clearance clock, time to decision, judge handover study |
 | `results/ddl_2010_2018/` | Model outputs, metrics, charts and `RESULTS.md` |
 | `sources/` | The official documents used, with URLs and SHA-256 fingerprints |
 | `tests/` | Transcription checks against printed totals, locked-forecast integrity, grading arithmetic |

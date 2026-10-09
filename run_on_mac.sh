@@ -1,36 +1,18 @@
 #!/bin/bash
-# One-shot local runner: district key -> push, then 2019 grading if Dataful files exist.
-# Usage:  bash run_on_mac.sh [DDL_FOLDER] [DATAFUL_FOLDER]
+# Rebuild ddl_compact/ with the extra detail (case types, courtroom-months, district names) from the DDL download,
+# then commit and push it. Only aggregated counts leave the computer: no case-level rows, no names of people.
+# Usage:  bash run_on_mac.sh [DDL_FOLDER]
 set -euo pipefail
 DDL="${1:-/Users/arnav/Documents/Uploads/justice_data}"
-DATAFUL="${2:-$HOME/Downloads/dataful}"
 cd "$(dirname "$0")"
 git pull --ff-only origin main
-
-KEY_OUT=ddl_compact/district_key.csv
-if [ ! -s "$KEY_OUT" ]; then
-  KEYS=$(find "$DDL" -name 'keys.tar.gz' 2>/dev/null | head -1)
-  if [ -z "$KEYS" ]; then
-    echo "No keys.tar.gz under $DDL. Find it with: find ~ -name keys.tar.gz 2>/dev/null"
-    echo "then re-run: bash run_on_mac.sh /path/to/ddl_folder"; exit 1
-  fi
-  MEMBER=$(tar -tzf "$KEYS" | grep -i 'district' | grep -i '\.csv$' | head -1 || true)
-  if [ -z "$MEMBER" ]; then echo "No district CSV inside $KEYS. Contents:"; tar -tzf "$KEYS"; exit 1; fi
-  echo "Extracting $MEMBER from $KEYS"
-  tar -xzf "$KEYS" -O "$MEMBER" > "$KEY_OUT"
-  head -3 "$KEY_OUT"
-  git add "$KEY_OUT"
-  git commit -m "Add DDL district name key"
-  git push origin main
-else
-  echo "district_key.csv already present"
+python3 -m pip install --user -q pandas pyarrow numpy
+if [ ! -d "$DDL" ]; then
+  echo "DDL folder not found: $DDL. Find it with: find ~ -name 'cases*.tar.gz' 2>/dev/null"; exit 1
 fi
-
-if ls "$DATAFUL"/* >/dev/null 2>&1; then
-  python3 prepare_dataful.py --src "$DATAFUL" --out dataful
-  python3 grade_2019.py --dataful dataful --district-key "$KEY_OUT"
-  echo "Review unmatched rows in results/ddl_2010_2018/grading_2019/crosswalk_review.csv"
-  open results/ddl_2010_2018/grading_2019/crosswalk_review.csv || true
-else
-  echo "No Dataful files in $DATAFUL yet; grading skipped. Download 21265 + 21282 there and re-run."
-fi
+python3 compress_ddl.py --src "$DDL" --out ddl_compact --detail
+du -sh ddl_compact ddl_compact/detail
+git add ddl_compact
+git commit -m "Add case-type, courtroom and district-name detail to the compact DDL data"
+git push origin main
+echo "Done. Pushed ddl_compact/detail and ddl_compact/district_key.csv."

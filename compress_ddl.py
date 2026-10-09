@@ -197,7 +197,7 @@ def _ym(s: pd.Series) -> tuple[pd.Series, pd.Series]:
 
 
 # ----------------------------------------------------------------------------------------- main pass
-def compress(src: Path, out: Path) -> None:
+def compress(src: Path, out: Path, detail: bool = False) -> None:
     t0 = time.time()
     found = discover(src)
     report: dict[str, object] = {"src": str(src), "files": {k: [f"{p.relative_to(src)} ({p.stat().st_size / 1e6:.1f} MB)"
@@ -221,6 +221,9 @@ def compress(src: Path, out: Path) -> None:
     out.mkdir(parents=True, exist_ok=True)
 
     cube_parts: list[pd.DataFrame] = []
+    # --detail: case-type cube (time-to-decision by district x case type) and courtroom-month flows (judge transfers)
+    cat_parts: list[pd.DataFrame] = []
+    court_parts: list[pd.DataFrame] = []
     snap_parts: list[pd.DataFrame] = []
     type_counts: Counter[str] = Counter()
     purpose_counts: Counter[str] = Counter()
@@ -244,12 +247,28 @@ def compress(src: Path, out: Path) -> None:
             max_decided = max(max_decided, d_dt.max())
         tlab = dec.decode(ch, "type_name")
         type_counts.update(tlab.fillna("<NA>").value_counts().to_dict())
-        crim = np.char.startswith(classify(tlab, CASE_CATEGORIES, "other").astype(str), "crim_").astype(np.int8)
+        cat = classify(tlab, CASE_CATEGORIES, "other").astype(str)
+        crim = np.char.startswith(cat, "crim_").astype(np.int8)
         dist = (pd.to_numeric(ch["state_code"], errors="coerce").fillna(-1).astype(np.int64) * 1000
                 + pd.to_numeric(ch["dist_code"], errors="coerce").fillna(-1).astype(np.int64))
         frame = pd.DataFrame({"district_id": dist.to_numpy(), "f": f.to_numpy(), "d": d.to_numpy(), "crim": crim})[ok.to_numpy()]
         filing_years.update((frame["f"] // 100).value_counts().to_dict())
         cube_parts.append(frame.groupby(["district_id", "f", "d", "crim"], sort=False).size().rename("n").reset_index())
+        if detail:
+            okv = ok.to_numpy()
+            fc = frame.assign(category=cat[okv])
+            cat_parts.append(fc.groupby(["district_id", "f", "d", "category"], sort=False).size().rename("n").reset_index())
+            court = pd.to_numeric(ch["court_no"], errors="coerce").fillna(-1).astype(np.int32).to_numpy()[okv] \
+                if "court_no" in ch else np.full(int(okv.sum()), -1, np.int32)
+            cf = frame.assign(court_no=court)
+            filed = cf.groupby(["district_id", "court_no", "f"], sort=False).size().rename("filed")
+            disp = cf.loc[cf["d"] > 0].groupby(["district_id", "court_no", "d"], sort=False).size().rename("disposed")
+            filed.index = filed.index.set_names("ym", level=2)
+            disp.index = disp.index.set_names("ym", level=2)
+            court_parts.append(pd.concat([filed, disp], axis=1).fillna(0).reset_index())
+            if len(cat_parts) >= 20:
+                cat_parts = [pd.concat(cat_parts).groupby(["district_id", "f", "d", "category"], sort=False)["n"].sum().reset_index()]
+                court_parts = [pd.concat(court_parts).groupby(["district_id", "court_no", "ym"], sort=False)[["filed", "disposed"]].sum().reset_index()]
 
         if {"date_last_list", "purpose_name"} <= set(ch.columns):
             live = ok & (d == 0)
@@ -275,6 +294,16 @@ def compress(src: Path, out: Path) -> None:
     (out / "cube").mkdir(exist_ok=True)
     for state, g in cube.groupby(cube["district_id"] // 1000):
         _write_parts(g.sort_values(["district_id", "f", "d"]), out / "cube", f"state={state}")
+    if detail and cat_parts:
+        (out / "detail" / "cube_cat").mkdir(parents=True, exist_ok=True)
+        cc = pd.concat(cat_parts).groupby(["district_id", "f", "d", "category"])["n"].sum().reset_index()
+        cc = cc.astype({"district_id": np.int32, "f": np.int32, "d": np.int32, "n": np.int32})
+        for state, g in cc.groupby(cc["district_id"] // 1000):
+            _write_parts(g.sort_values(["district_id", "category", "f", "d"]), out / "detail" / "cube_cat", f"state={state}")
+        cm = pd.concat(court_parts).groupby(["district_id", "court_no", "ym"])[["filed", "disposed"]].sum().reset_index()
+        cm = cm.astype({"district_id": np.int32, "court_no": np.int32, "ym": np.int32, "filed": np.int32, "disposed": np.int32})
+        cm.to_parquet(out / "detail" / "court_month.parquet", index=False, compression="zstd")
+        LOG.info("detail: %d case-type cube rows, %d courtroom-months", len(cc), len(cm))
     if snap_parts:
         snap = pd.concat(snap_parts).groupby(["district_id", "t_ym", "stage"])[["n", "n_gap", "sum_log_gap"]].sum().reset_index()
         snap.to_parquet(out / "snapshot.parquet", index=False, compression="zstd")
@@ -335,6 +364,8 @@ def main() -> None:
     ap.add_argument("--src", type=Path, required=True, help="unzipped DDL folder")
     ap.add_argument("--out", type=Path, default=Path("ddl_compact"))
     ap.add_argument("--list-only", action="store_true", help="only list what was found, then stop")
+    ap.add_argument("--detail", action="store_true",
+                    help="also write detail/: counts by case type and courtroom-month filings/disposals")
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
     if args.list_only:
@@ -357,7 +388,7 @@ def main() -> None:
                         if i >= 12:
                             break
         return
-    compress(args.src, args.out)
+    compress(args.src, args.out, detail=args.detail)
 
 
 if __name__ == "__main__":
