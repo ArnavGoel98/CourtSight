@@ -1,0 +1,25 @@
+{
+  "cases_filed": 80827830,
+  "pending_at_collection": 22245983,
+  "case_years_pending": 63867766,
+  "case_years_all": 132635362,
+  "mean_age_years": 2.87,
+  "median_age_years": 2.25,
+  "share_over_1y": 0.7885,
+  "share_over_3y": 0.3876,
+  "share_over_5y": 0.1815,
+  "civil_share_of_case_years": 0.3601,
+  "states": 32,
+  "collection_months": [
+    "2018-12",
+    "2019-01",
+    "2019-02",
+    "2019-07",
+    "2019-08",
+    "2019-09",
+    "2019-11",
+    "2019-12",
+    "2020-02",
+    "2020-07"
+  ]
+}

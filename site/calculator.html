@@ -19,21 +19,22 @@
 @media (max-width:700px){.facts{grid-template-columns:repeat(2,1fr)}}
 .facts div{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
 .facts b{display:block;font-size:1.35rem;font-variant-numeric:tabular-nums}
+html[lang=hi] .kicker{font-family:inherit;letter-spacing:0;font-size:.85rem}
 .facts span{font-size:.8rem;color:var(--ink-2)}
 </style>
 </head>
 <body>
-<nav><div class="wrap"><b>CourtSight</b><a href="index.html">Findings</a><a href="calculator.html" aria-current="page">Calculator</a></div></nav>
+<nav><div class="wrap"><b>CourtSight</b><a href="index.html" data-i="nav1">Findings</a><a href="calculator.html" aria-current="page" data-i="nav2">Calculator</a><a id="lang" href="calculator-hi.html" lang="hi">हिन्दी</a></div></nav>
 <main class="wrap">
 <header class="hero" style="padding-bottom:12px">
-  <div class="kicker">80.9 million cases · 620 districts · 10 case types</div>
-  <h1>How long will my case take?</h1>
-  <p class="lede">How long cases like yours took in your district court, based on every case filed there in 2010–2018.</p>
+  <div class="kicker" data-i="kicker">80.9 million cases · 620 districts · 10 case types</div>
+  <h1 data-i="h1">How long will my case take?</h1>
+  <p class="lede" data-i="lede">How long cases like yours took in your district court, based on every case filed there in 2010–2018.</p>
 </header>
 <div class="pick">
-  <div><label for="st">State</label><select id="st"></select></div>
-  <div><label for="di">District</label><select id="di"></select></div>
-  <div><label for="ty">Type of case</label><select id="ty"></select></div>
+  <div><label for="st" data-i="st">State</label><select id="st"></select></div>
+  <div><label for="di" data-i="di">District</label><select id="di"></select></div>
+  <div><label for="ty" data-i="ty">Type of case</label><select id="ty"></select></div>
 </div>
 <div class="card">
   <div class="big" id="head"></div>
@@ -41,15 +42,15 @@
   <div class="facts" id="facts"></div>
 </div>
 <div class="card">
-  <h3>Share of cases still waiting, month by month</h3>
-  <div class="legend"><span><i style="background:var(--s1)"></i><span id="lg-here">This district</span></span><span><i style="background:var(--s2)"></i>All of India, same type</span><span><i style="background:var(--neutral)"></i>Other districts in the state</span></div>
+  <h3 data-i="ch">Share of cases still waiting, month by month</h3>
+  <div class="legend"><span><i style="background:var(--s1)"></i><span id="lg-here">This district</span></span><span><i style="background:var(--s2)"></i><span data-i="lg2">All of India, same type</span></span><span><i style="background:var(--neutral)"></i><span data-i="lg3">Other districts in the state</span></span></div>
   <div id="c-curve"></div>
-  <div class="caption">Kaplan–Meier estimate. Cases still pending when the data was collected count as undecided up to that date. Hover to read any month.</div>
+  <div class="caption" data-i="cap">Kaplan–Meier estimate. Cases still pending when the data was collected count as undecided up to that date. Hover to read any month.</div>
 </div>
 <div class="card" id="rank"></div>
 <details class="card">
-<summary>How to read this, and its limits</summary>
-<ul class="prose">
+<summary data-i="sum">How to read this, and its limits</summary>
+<ul class="prose" data-i="lim">
 <li><b>Typical time</b> is the median: half of such cases were decided sooner. "Decided" means any final disposal (judgment, dismissal, withdrawal, settlement or transfer), not necessarily a judgment in someone's favour.</li>
 <li>Cases still pending when the data was collected (late 2018 to 2020, depending on the state) are counted as undecided up to that date, so slow cases are not left out. Where the curve stops, there is no more follow-up.</li>
 <li>This describes the past. It is not a prediction for one particular case: courts have changed since 2018, and each case depends on its own facts and adjournments.</li>
@@ -57,50 +58,75 @@
 </ul>
 </details>
 </main>
-<footer><div class="wrap">CourtSight by Arnav Goel · <a href="https://github.com/ArnavGoel98/CourtSight">Code and method</a> (<code>time_to_decision.py</code>) · Data: Development Data Lab eCourts records 2010–2018 (CC BY-NC-SA 4.0).</div></footer>
+<footer><div class="wrap" data-i="foot">CourtSight by Arnav Goel · <a href="https://github.com/ArnavGoel98/CourtSight">Code and method</a> (<code>time_to_decision.py</code>) · Data: Development Data Lab eCourts records 2010–2018 (CC BY-NC-SA 4.0).</div></footer>
 <script>
 const D=/*DATA*/null;
 /*CHARTS*/
+const LANG="/*LANG*/en", HI=LANG==="hi";
+const HIS={nav1:"निष्कर्ष",nav2:"कैलकुलेटर",kicker:"8.09 करोड़ मुक़दमे · 620 ज़िले · 10 तरह के मामले",
+ h1:"मेरे मुक़दमे में कितना समय लगेगा?",lede:"आपके ज़िला न्यायालय में आप जैसे मामलों में कितना समय लगा: 2010 से 2018 के बीच वहाँ दर्ज हर मुक़दमे के आधार पर।",
+ st:"राज्य",di:"ज़िला",ty:"मामले का प्रकार",ch:"हर महीने, कितने मामले अब भी लंबित थे",lg2:"पूरा भारत, इसी प्रकार के मामले",lg3:"राज्य के अन्य ज़िले",
+ cap:"कैपलान–मायर अनुमान। डेटा इकट्ठा होने के समय जो मामले लंबित थे, उन्हें उस तारीख़ तक अनिर्णीत गिना गया है। किसी भी महीने का आँकड़ा देखने के लिए चार्ट पर कर्सर ले जाएँ।",
+ sum:"इसे कैसे पढ़ें, और इसकी सीमाएँ",
+ lim:`<li><b>सामान्य समय</b> माध्यिका (मीडियन) है: ऐसे आधे मामलों का फ़ैसला इससे पहले हो गया। "फ़ैसला" का अर्थ है मामले का कोई भी अंतिम निपटारा (निर्णय, ख़ारिज होना, वापसी, समझौता या स्थानांतरण), ज़रूरी नहीं कि किसी के पक्ष में निर्णय हो।</li>
+<li>डेटा इकट्ठा होने के समय (राज्य के अनुसार 2018 के अंत से 2020 तक) जो मामले लंबित थे, उन्हें उस तारीख़ तक अनिर्णीत गिना गया है, ताकि धीमे मामले छूटें नहीं। जहाँ रेखा रुकती है, वहाँ के आगे का डेटा नहीं है।</li>
+<li>यह अतीत का विवरण है, किसी एक मुक़दमे की भविष्यवाणी नहीं: 2018 के बाद अदालतें बदली हैं, और हर मुक़दमा अपने तथ्यों और तारीख़ों पर निर्भर करता है।</li>
+<li>मामलों के प्रकार अदालतों द्वारा इस्तेमाल किए गए नामों से समूहित किए गए हैं; जो समूहित नहीं हो सके वे "अन्य" में हैं। जिन ज़िलों में किसी प्रकार के 200 से कम मामले हैं, वे नहीं दिखाए गए। उच्च न्यायालय और सर्वोच्च न्यायालय शामिल नहीं हैं। राज्यों और ज़िलों के नाम मूल डेटा की तरह अंग्रेज़ी में हैं।</li>`,
+ foot:`CourtSight: अर्णव गोयल · <a href="https://github.com/ArnavGoel98/CourtSight">कोड और विधि</a> · डेटा: डेवलपमेंट डेटा लैब, ई-कोर्ट्स रिकॉर्ड 2010–2018 (CC BY-NC-SA 4.0)।`};
+const HIL={civ_suit:"दीवानी वाद (संपत्ति, अनुबंध, पैसा)",civ_execution:"निष्पादन (डिक्री लागू कराना)",civ_family:"तलाक़ / पारिवारिक",
+ civ_mact:"मोटर दुर्घटना दावा",civ_misc:"अन्य दीवानी आवेदन",crim_bail:"ज़मानत आवेदन",crim_magisterial:"मजिस्ट्रेट के समक्ष आपराधिक मामला",
+ crim_sessions:"सत्र विचारण (गंभीर अपराध)",crim_ni138:"चेक बाउंस (एनआई एक्ट धारा 138)",other:"अन्य / अवर्गीकृत"};
+if(HI){document.querySelectorAll("[data-i]").forEach(e=>{e.innerHTML=HIS[e.dataset.i]});document.title="मुक़दमे का समय कैलकुलेटर";
+  const l=document.getElementById("lang");l.textContent="English";l.lang="en";l.href="calculator.html";document.querySelector('nav a[aria-current]').href="calculator-hi.html"}
+const label=t=>HI?(HIL[t]||t):(D.labels[t]||t);
 const C=Object.fromEntries(D.cols.map((c,i)=>[c,i]));
 const $=id=>document.getElementById(id), st=$("st"), di=$("di"), ty=$("ty");
 const opt=(s,v,t)=>{const o=document.createElement("option");o.value=v;o.textContent=t;s.appendChild(o)};
-const fmtM=m=>m==null?null:m<1?"under a month":m<24?`${m} month${m==1?"":"s"}`:`${(m/12).toFixed(1).replace(/\.0$/,"")} years`;
+const yrs=m=>(m/12).toFixed(1).replace(/\.0$/,"");
+const fmtM=m=>m==null?null:HI?(m<1?"एक महीने से कम":m<24?`${m} महीने`:`${yrs(m)} साल`):(m<1?"under a month":m<24?`${m} month${m==1?"":"s"}`:`${yrs(m)} years`);
 const pc=x=>x==null?"–":`${Math.round(x*100)}%`;
 const row=(list,t)=>list.find(r=>r[0]===t);
 Object.keys(D.states).forEach(s=>opt(st,s,s));
 const q=new URLSearchParams(location.hash.slice(1));
 function fillDistricts(){di.innerHTML="";Object.keys(D.states[st.value]).forEach(d=>opt(di,d,d));fillTypes()}
-function fillTypes(){const prev=ty.value;ty.innerHTML="";D.states[st.value][di.value].forEach(r=>opt(ty,r[0],D.labels[r[0]]||r[0]));
+function fillTypes(){const prev=ty.value;ty.innerHTML="";D.states[st.value][di.value].forEach(r=>opt(ty,r[0],label(r[0])));
   if([...ty.options].some(o=>o.value===prev))ty.value=prev;else if([...ty.options].some(o=>o.value==="civ_suit"))ty.value="civ_suit";render()}
 function render(){
   const r=row(D.states[st.value][di.value],ty.value), n=row(D.national,ty.value); if(!r)return;
-  history.replaceState(null,"",`#s=${encodeURIComponent(st.value)}&d=${encodeURIComponent(di.value)}&t=${ty.value}`);
-  const med=r[C.median_months], p90=r[C.p90_months], lab=D.labels[ty.value]||ty.value;
-  $("head").textContent=med==null?"Over half still pending":fmtM(med);
-  $("sub").innerHTML=med==null?`More than half of these cases were still pending when the data ends, so the typical time is longer than the data can show. ${lab}, ${di.value}.`
-    :`is the typical time to a decision for a <b>${lab.toLowerCase()}</b> in <b>${di.value}</b>: half were decided sooner, half later. Based on ${r[C.cases].toLocaleString("en-IN")} cases.`;
-  $("facts").innerHTML=[["pending_after_1y","1 year"],["pending_after_3y","3 years"],["pending_after_5y","5 years"]].map(([k,l])=>
-    `<div><b>${r[C[k]]==null?"–":pc(1-r[C[k]])}</b><span>decided within ${l}</span></div>`).join("")+
-    `<div><b>${p90==null?"10+ yrs":fmtM(p90)}</b><span>for the slowest 1 in 10</span></div>`;
+  const h=`#s=${encodeURIComponent(st.value)}&d=${encodeURIComponent(di.value)}&t=${ty.value}`;
+  history.replaceState(null,"",h); $("lang").href=(HI?"calculator.html":"calculator-hi.html")+h;
+  const med=r[C.median_months], p90=r[C.p90_months], lab=label(ty.value), N=r[C.cases].toLocaleString("en-IN");
+  $("head").textContent=med==null?(HI?"आधे से ज़्यादा मामले अब भी लंबित":"Over half still pending"):fmtM(med);
+  $("sub").innerHTML=HI
+    ?(med==null?`डेटा ख़त्म होने तक ऐसे आधे से ज़्यादा मामले लंबित थे, इसलिए सामान्य समय डेटा की पहुँच से ज़्यादा है। ${lab}, ${di.value}।`
+      :`<b>${di.value}</b> में <b>${lab}</b> के मामले में फ़ैसला आने का सामान्य समय: आधे मामलों में इससे पहले फ़ैसला हुआ, आधों में बाद में। ${N} मामलों पर आधारित।`)
+    :(med==null?`More than half of these cases were still pending when the data ends, so the typical time is longer than the data can show. ${lab}, ${di.value}.`
+      :`is the typical time to a decision for a <b>${lab.toLowerCase()}</b> in <b>${di.value}</b>: half were decided sooner, half later. Based on ${N} cases.`);
+  $("facts").innerHTML=[["pending_after_1y",1],["pending_after_3y",3],["pending_after_5y",5]].map(([k,y])=>
+    `<div><b>${r[C[k]]==null?"–":pc(1-r[C[k]])}</b><span>${HI?`${y} साल के भीतर फ़ैसला`:`decided within ${y} year${y>1?"s":""}`}</span></div>`).join("")+
+    `<div><b>${p90==null?(HI?"10+ साल":"10+ yrs"):fmtM(p90)}</b><span>${HI?"सबसे धीमे 10 में से 1 मामले में":"for the slowest 1 in 10"}</span></div>`;
   $("lg-here").textContent=di.value;
   const xs=[...Array(41).keys()].map(i=>i*3);
   const others=Object.entries(D.states[st.value]).filter(([d])=>d!==di.value).map(([d,l])=>row(l,ty.value)).filter(Boolean)
     .map(o=>({name:"",values:o[C.curve],color:"var(--neutral)",width:1,step:true,noTip:true,opacity:.55}));
-  lineChart($("c-curve"),{x:xs,ymin:0,ymax:1,yfmt:v=>Math.round(v*100)+"%",xfmt:v=>v%12?"":(v/12)+"y",xticks:xs.filter(v=>v%12===0),right:20,
-    tipx:v=>`${v} months after filing, still pending:`,
-    series:[...others,{name:"All of India",values:n?n[C.curve]:[],color:"var(--s2)",width:2,step:true},
+  lineChart($("c-curve"),{x:xs,ymin:0,ymax:1,yfmt:v=>Math.round(v*100)+"%",xfmt:v=>v%12?"":(v/12)+(HI?" साल":"y"),xticks:xs.filter(v=>v%12===0),right:20,
+    tipx:v=>HI?`दर्ज होने के ${v} महीने बाद, अब भी लंबित:`:`${v} months after filing, still pending:`,
+    series:[...others,{name:HI?"पूरा भारत":"All of India",values:n?n[C.curve]:[],color:"var(--s2)",width:2,step:true},
             {name:di.value,values:r[C.curve],color:"var(--s1)",width:2.75,step:true}]});
   const peers=Object.entries(D.states[st.value]).map(([d,l])=>[d,row(l,ty.value)]).filter(([,x])=>x&&x[C.pending_after_3y]!=null)
     .sort((a,b)=>a[1][C.pending_after_3y]-b[1][C.pending_after_3y]);
   const pos=peers.findIndex(([d])=>d===di.value);
-  const nat3=n?n[C.pending_after_3y]:null, me3=r[C.pending_after_3y];
-  $("rank").innerHTML=pos<0?"":`<h3>How ${di.value} compares</h3><p class="prose">After 3 years, <b>${pc(me3)}</b> of these cases were still pending here, against <b>${pc(nat3)}</b> across India${me3!=null&&nat3!=null?` (${me3<nat3?"faster":"slower"} than the national figure)`:""}. Among ${peers.length} districts in ${st.value}, ${di.value} ranks <b>${pos+1}</b> from fastest to slowest. Fastest: ${peers[0][0]} (${pc(peers[0][1][C.pending_after_3y])}); slowest: ${peers[peers.length-1][0]} (${pc(peers[peers.length-1][1][C.pending_after_3y])}).</p>`;
+  const nat3=n?n[C.pending_after_3y]:null, me3=r[C.pending_after_3y], cmp=me3!=null&&nat3!=null;
+  const fast=peers.length?`${peers[0][0]} (${pc(peers[0][1][C.pending_after_3y])})`:"", slow=peers.length?`${peers[peers.length-1][0]} (${pc(peers[peers.length-1][1][C.pending_after_3y])})`:"";
+  $("rank").innerHTML=pos<0?"":HI
+    ?`<h3>${di.value} की तुलना</h3><p class="prose">दर्ज होने के 3 साल बाद, यहाँ ऐसे <b>${pc(me3)}</b> मामले अब भी लंबित थे, जबकि पूरे भारत में <b>${pc(nat3)}</b>${cmp?` (राष्ट्रीय आँकड़े से ${me3<nat3?"तेज़":"धीमा"})`:""}। ${st.value} के ${peers.length} ज़िलों में, सबसे तेज़ से सबसे धीमे के क्रम में ${di.value} का स्थान <b>${pos+1}</b> है। सबसे तेज़: ${fast}; सबसे धीमा: ${slow}।</p>`
+    :`<h3>How ${di.value} compares</h3><p class="prose">After 3 years, <b>${pc(me3)}</b> of these cases were still pending here, against <b>${pc(nat3)}</b> across India${cmp?` (${me3<nat3?"faster":"slower"} than the national figure)`:""}. Among ${peers.length} districts in ${st.value}, ${di.value} ranks <b>${pos+1}</b> from fastest to slowest. Fastest: ${fast}; slowest: ${slow}.</p>`;
 }
 st.onchange=fillDistricts;di.onchange=fillTypes;ty.onchange=render;
 st.value=D.states[q.get("s")]?q.get("s"):("Delhi" in D.states?"Delhi":st.options[0].value);
 di.innerHTML="";Object.keys(D.states[st.value]).forEach(d=>opt(di,d,d));
 if(q.get("d")&&D.states[st.value][q.get("d")])di.value=q.get("d");
-ty.innerHTML="";D.states[st.value][di.value].forEach(r=>opt(ty,r[0],D.labels[r[0]]||r[0]));
+ty.innerHTML="";D.states[st.value][di.value].forEach(r=>opt(ty,r[0],label(r[0])));
 ty.value=[...ty.options].some(o=>o.value===q.get("t"))?q.get("t"):([...ty.options].some(o=>o.value==="civ_suit")?"civ_suit":ty.options[0].value);
 onResize(render);
 </script>

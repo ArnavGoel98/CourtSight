@@ -1,0 +1,20 @@
+name: grade-2026-forecast-reminder
+# Each 1 March from 2027, open an issue reminding to grade the locked 2026 forecast once the official figure is out.
+on:
+  schedule:
+    - cron: "0 6 1 3 *"
+  workflow_dispatch:
+permissions:
+  issues: write
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Open a reminder issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "${{ github.event_name }}" != workflow_dispatch ] && [ "$(date +%Y)" -lt 2027 ]; then exit 0; fi
+          gh issue create --repo "$GITHUB_REPOSITORY" \
+            --title "Grade the locked 2026 forecast" \
+            --body "Check whether the Ministry of Law & Justice has published state-wise pending cases on 31.12.2026 (Lok Sabha / Rajya Sabha answers, or NJDG). If so, add them to official_series.py and run \`python grade_2026.py\`. See results/forecast_2026/PROTOCOL_2026.md."

@@ -17,7 +17,7 @@
 </head>
 <body>
 <nav><div class="wrap"><b>CourtSight</b>
-<a href="#backlog">Backlog</a><a href="#clock">Clock</a><a href="#time">Time to decision</a><a href="#judges">Judge changes</a><a href="#method">Method</a><a href="#data">Data</a><a href="calculator.html">Calculator →</a>
+<a href="#backlog">Backlog</a><a href="#clock">Clock</a><a href="#time">Time to decision</a><a href="#waiting">Years of waiting</a><a href="#districts">Slow districts</a><a href="#judges">Judge changes</a><a href="#method">Method</a><a href="#data">Data</a><a href="paper.html">Paper</a><a href="calculator.html">Calculator →</a><a href="calculator-hi.html" lang="hi">हिन्दी</a>
 </div></nav>
 <main class="wrap">
 <header class="hero">
@@ -62,8 +62,44 @@
   <a class="cta" href="calculator.html">Look up any district →</a>
 </section>
 
-<section id="judges">
+<section id="waiting">
   <div class="num">04</div>
+  <h2>Years of waiting</h2>
+  <p class="prose" id="wait-text"></p>
+  <div class="tiles" id="wait-tiles" style="margin-top:20px"></div>
+  <div class="card">
+    <h3>Pending cases by how long they had already waited</h3>
+    <div class="legend"><span><i class="box" style="background:var(--s1)"></i>Civil</span><span><i class="box" style="background:var(--s2)"></i>Criminal</span></div>
+    <div id="c-age"></div>
+    <div class="caption">Cases filed 2010–2018 still undecided at each state's collection date (late 2018 to mid-2020). Cases filed before 2010 are not in the data, so the true stock is older. A case-year is one case undecided for one year; most cases involve two or more people.</div>
+  </div>
+</section>
+
+<section id="districts">
+  <div class="num">05</div>
+  <h2>What do slow districts have in common? <span class="badge">correlation, not cause</span></h2>
+  <p class="prose" id="drv-text"></p>
+  <div class="grid2">
+  <div class="card">
+    <h3>Civil cases pending after 3 years, by district</h3>
+    <div id="c-scatter"></div>
+    <div class="caption">Each dot is a district; size is case-years still waiting. Dashed line: least-squares fit. Hover for names.</div>
+  </div>
+  <div class="card">
+    <h3>Change in share pending after 3 years, per 1 SD</h3>
+    <div class="seg" id="drv-seg" style="margin-bottom:10px"><button aria-pressed="true" data-k="civil">Civil</button><button aria-pressed="false" data-k="criminal">Criminal</button></div>
+    <div id="c-coef"></div>
+    <div class="caption">OLS on standardised district features, 95% interval from 2,000 bootstrap resamples of districts. Blue: linked to faster courts; red: slower; grey: no clear link. Throughput (decisions ÷ filings) is left out because it nearly restates the outcome.</div>
+  </div>
+  </div>
+  <div class="grid2">
+    <div class="card" style="overflow-x:auto"><h3>Fastest districts (civil)</h3><table id="t-fast"></table></div>
+    <div class="card" style="overflow-x:auto"><h3>Slowest districts (civil)</h3><table id="t-slow"></table></div>
+  </div>
+</section>
+
+<section id="judges">
+  <div class="num">06</div>
   <h2>Does a change of judge slow a courtroom down? <span class="badge neg">no reliable estimate</span></h2>
   <p class="prose" id="judge-text"></p>
   <div class="card">
@@ -74,7 +110,7 @@
 </section>
 
 <section id="method">
-  <div class="num">05</div>
+  <div class="num">07</div>
   <h2>Method, and how it can be checked</h2>
   <div class="grid2">
   <div class="card method"><dl>
@@ -89,7 +125,7 @@
       Monthly Kaplan–Meier estimate by district × case type, censored at each state's collection month (the last month where decisions reach 20% of its 2018 average). Intervals: Greenwood variance.</dd>
     <dt>Judge handovers</dt>
     <dd><div class="eq">β<sub>k</sub> = E[ y<sub>c,t₀+k</sub>/ȳ<sub>c,pre</sub> − mean<sub>c′</sub> y<sub>c′,t₀+k</sub>/ȳ<sub>c′,pre</sub> ]</div>
-      Planted-effect test: recovers a synthetic −30% drop. Placebo test on real data: fails (see 04).</dd>
+      Planted-effect test: recovers a synthetic −30% drop. Placebo test on real data: fails (see 06).</dd>
   </dl></div>
   <div class="card method"><dl>
     <dt>A forecast that can be proven wrong</dt>
@@ -105,18 +141,21 @@
   </div>
 </section>
 <section id="data">
-  <div class="num">06</div>
+  <div class="num">08</div>
   <h2>Data and code</h2>
   <p class="prose">Everything behind this page is in the repository and can be downloaded as plain CSV. Only aggregate counts are published.</p>
   <div class="card" style="overflow-x:auto"><table>
   <tr><th>File</th><th>What it holds</th></tr>
   <tr><td><a href="https://github.com/ArnavGoel98/CourtSight/blob/main/results/time_to_decision/by_district_case_type.csv">by_district_case_type.csv</a></td><td>Time to decision, 626 districts × 10 case types</td></tr>
+  <tr><td><a href="https://github.com/ArnavGoel98/CourtSight/blob/main/results/waiting_years/districts.csv">waiting_years/districts.csv</a></td><td>Pending cases, case-years of waiting and their age, every district</td></tr>
+  <tr><td><a href="https://github.com/ArnavGoel98/CourtSight/blob/main/results/district_drivers/districts.csv">district_drivers/districts.csv</a></td><td>District features (caseload per courtroom, judge tenure, case mix) with time to decision</td></tr>
   <tr><td><a href="https://github.com/ArnavGoel98/CourtSight/blob/main/results/backlog_clock/states.csv">backlog_clock/states.csv</a></td><td>Backlog clock for every state</td></tr>
   <tr><td><a href="https://github.com/ArnavGoel98/CourtSight/blob/main/results/covid_excess/by_state_2021.csv">covid_excess/by_state_2021.csv</a></td><td>COVID excess backlog by state</td></tr>
   <tr><td><a href="https://github.com/ArnavGoel98/CourtSight/blob/main/results/forecast_2026/forecast_states_2026.csv">forecast_states_2026.csv</a></td><td>Locked forecast for 31.12.2026, every state</td></tr>
   <tr><td><a href="https://github.com/ArnavGoel98/CourtSight/blob/main/official_series.py">official_series.py</a></td><td>The official state series 2014–2025, transcribed with sources and checks</td></tr>
   <tr><td><a href="https://github.com/ArnavGoel98/CourtSight/tree/main/ddl_compact">ddl_compact/</a></td><td>80.9 million case records compressed to filing × decision month counts (21 MB)</td></tr>
   </table></div>
+  <p class="prose">A full write-up of the methods and results is in the <a href="paper.html">working paper</a> (<a href="courtsight-paper.pdf">PDF</a>).</p>
   <p class="prose">To cite: Goel, A. (2026). <i>CourtSight: measuring and forecasting India's district-court backlog.</i> https://github.com/ArnavGoel98/CourtSight</p>
 </section>
 </main>
@@ -202,13 +241,49 @@ function drawJudge(){
     ]});
 }
 
-// 05
+// years of waiting
+const Wt=D.waiting, crore=v=>(v/1e7).toFixed(1);
+document.getElementById("wait-text").innerHTML=`The 80.8 million cases filed in 2010–2018 spent a combined <b>${crore(Wt.case_years_all)} crore case-years</b> waiting for a decision, counting up to each state's collection date. Of those, <b>${crore(Wt.case_years_pending)} crore case-years</b> belong to the ${crore(Wt.pending_at_collection)} crore cases that were still undecided, and that clock was still running. The typical pending case had already waited <b>${Wt.median_age_years.toFixed(1)} years</b>; ${Math.round(Wt.share_over_5y*100)}% had waited more than five.`;
+document.getElementById("wait-tiles").innerHTML=[
+  [crore(Wt.case_years_all)+" cr","case-years spent waiting by cases filed 2010–2018"],
+  [crore(Wt.case_years_pending)+" cr","case-years accrued by the cases still pending, and rising"],
+  [Wt.mean_age_years.toFixed(1)+" yrs","average age of a pending case (median "+Wt.median_age_years.toFixed(1)+")"],
+  [Math.round(Wt.share_over_3y*100)+"%","of pending cases older than 3 years ("+Math.round(Wt.share_over_5y*100)+"% older than 5)"],
+].map(([v,l])=>`<div class="tile"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("");
+function drawAge(){
+  columnChart(document.getElementById("c-age"),Wt.age.civil.map((_,i)=>i===9?"9+":String(i)),
+    [{name:"Civil",values:Wt.age.civil,color:"var(--s1)"},{name:"Criminal",values:Wt.age.criminal,color:"var(--s2)"}],
+    {yfmt:v=>lakh(v)+" L",tipfmt:v=>v.toLocaleString("en-IN"),tipx:c=>`Waited ${c} year${c==="1"?"":"s"} (full years)`});
+}
+// districts
+const DS=D.districts, DV=D.drivers, Sm=DV.summary;
+const co=(o,m,f)=>DV.coef.find(r=>r.outcome===o&&r.model===m&&r.feature===f);
+const ten=co("civil","structural","judge_tenure_months"), load=co("civil","structural","log_filings_per_court");
+document.getElementById("drv-text").innerHTML=`Across ${Sm.civil.districts} districts, the share of civil cases still pending three years after filing ranges from <b>${Math.round(Sm.civil.p10_p90_pending_3y[0]*100)}%</b> in the fastest tenth to <b>${Math.round(Sm.civil.p10_p90_pending_3y[1]*100)}%</b> in the slowest tenth. The obvious suspect, <b>caseload per courtroom, barely predicts it</b> (${fmtPP(load.coef_per_sd)} per standard deviation, interval ${fmtPP(load.lo)} to ${fmtPP(load.hi)}). Longer judge tenure goes with faster courts (${fmtPP(ten.coef_per_sd)} per ${DV.summary.feature_sds.judge_tenure_months.toFixed(0)} more months in a courtroom), and a heavier criminal docket with slower civil cases. Together, these structural features explain only <b>${Math.round(Sm.civil.r2_structural*100)}%</b> of the variation between districts. Adding throughput (decisions ÷ filings) raises it to ${Math.round(Sm.civil.r2_with_throughput*100)}%, but that nearly restates the outcome. Most of what makes a district slow is not in this data: local practice, adjournments, vacancies, the bar. These are correlations; a district with longer-serving judges may differ in many other ways.`;
+let drvK="civil";
+const FN={log_filings_per_court:"Caseload per courtroom (log)",log_filings:"District size (log filings)",criminal_share:"Criminal share of docket",judge_tenure_months:"Judge tenure in a courtroom",disposal_ratio:"Throughput"};
+function drawDrivers(){
+  dotWhisker(document.getElementById("c-coef"),DV.coef.filter(r=>r.outcome===drvK&&r.model==="structural")
+    .map(r=>({name:FN[r.feature],v:r.coef_per_sd,lo:r.lo,hi:r.hi})),{fmt:fmtPP});
+  const mx=Math.max(...DS.map(d=>d[6]));
+  scatter(document.getElementById("c-scatter"),DS.filter(d=>d[5]!=null&&d[5]<=48).map(d=>({x:d[5],y:d[2],r:2+5*Math.sqrt(d[6]/mx),
+    name:`${d[1]}, ${d[0]}`,note:`${Math.round(d[2]*100)}% civil pending after 3 yrs · median judge tenure ${d[5]} months`})),
+    {xlab:"Median months a judge stays in one courtroom",ylab:"Civil pending after 3 years",yfmt:v=>Math.round(v*100)+"%",ymin:0,fit:true});
+}
+document.querySelectorAll("#drv-seg button").forEach(b=>b.onclick=()=>{drvK=b.dataset.k;
+  document.querySelectorAll("#drv-seg button").forEach(x=>x.setAttribute("aria-pressed",x===b));drawDrivers()});
+const trow=d=>`<tr><td>${d[1]}<br><span style="color:var(--ink-3);font-size:.8rem">${d[0]}</span></td><td>${Math.round(d[2]*100)}%</td><td>${d[4]==null?"over half pending":Math.round(d[4])+" mo"}</td></tr>`;
+const thead=`<tr><th>District</th><th>Pending at 3 yrs</th><th>Median</th></tr>`;
+document.getElementById("t-fast").innerHTML=thead+DS.slice(0,10).map(trow).join("");
+document.getElementById("t-slow").innerHTML=thead+DS.slice(-10).reverse().map(trow).join("");
+
+// 07
 document.getElementById("lock-date").textContent=F.locked_on;
 document.getElementById("lock-commit").textContent=F.commit;
 document.getElementById("hashes").innerHTML=Object.entries(F.sha).map(([k,v])=>`${k}<br>${v}`).join("<br>");
 document.getElementById("skill").textContent=`${Math.round(D.model.skill_vs_best_naive[0]*100)}–${Math.round(D.model.skill_vs_best_naive[1]*100)}%`;
 
-const drawAll=()=>{drawBacklog();drawClock();drawKM();drawJudge()};
+const drawAll=()=>{drawBacklog();drawClock();drawKM();drawAge();drawDrivers();drawJudge()};
 onResize(drawAll);
 </script>
 </body>

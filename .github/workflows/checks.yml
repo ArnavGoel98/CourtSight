@@ -19,6 +19,7 @@ jobs:
         run: |
           python tests/test_time_to_decision.py
           python tests/test_backlog_clock.py
+          python tests/test_waiting_years.py
       - name: Project site is up to date with the results
         run: |
           python build_site.py
@@ -30,5 +31,11 @@ jobs:
           cp -r results/ddl_2010_2018/grading_2019_state/. /tmp/committed/grading/
           python covid_excess.py > /dev/null
           python grade_state_2019.py > /dev/null
+          cp -r results/waiting_years /tmp/committed/waiting
+          cp -r results/district_drivers /tmp/committed/drivers
+          python waiting_years.py > /dev/null
+          python district_drivers.py > /dev/null
           python tests/compare_outputs.py /tmp/committed/covid results/covid_excess
           python tests/compare_outputs.py /tmp/committed/grading results/ddl_2010_2018/grading_2019_state
+          python tests/compare_outputs.py /tmp/committed/waiting results/waiting_years
+          python tests/compare_outputs.py /tmp/committed/drivers results/district_drivers
