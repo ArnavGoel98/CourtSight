@@ -1,0 +1,633 @@
+year,state_code,state_name,dist_code,district_name,pc11_state_id,pc11_district_id,pc11_district_name
+2010,2,Andhra Pradesh,7,Kadapa,28,,
+2010,2,Andhra Pradesh,15,Nellore,28,,
+2010,8,Bihar,10,Motihari,10,,
+2010,8,Bihar,4,Saran at Chapra,10,,
+2010,8,Bihar,28,Bettiah,10,,
+2010,8,Bihar,13,Rohtas Sasaram,10,,
+2010,18,Chhattisgarh,18,Janjgir,22,,
+2010,18,Chhattisgarh,20,Bemetara,22,,
+2010,18,Chhattisgarh,24,Mungeli,22,,
+2010,18,Chhattisgarh,25,Balrampur Ramanujganj,22,,
+2010,18,Chhattisgarh,22,Kondagaon,22,,
+2010,18,Chhattisgarh,23,Balodabazar,22,,
+2010,18,Chhattisgarh,9,Kawardha,22,,
+2010,18,Chhattisgarh,19,Balod,22,,
+2010,18,Chhattisgarh,17,Dantewada,22,,
+2010,18,Chhattisgarh,21,Surajpur,22,,
+2010,18,Chhattisgarh,13,Kanker,22,,
+2010,32,DNH at Silvasa,1,Silvassa,26,,
+2010,17,Gujarat,38,Aravalli at Modasa,24,,
+2010,17,Gujarat,29,Sabarkantha at Himmatnagar,24,,
+2010,17,Gujarat,19,Banaskanth at Palanpur,24,,
+2010,17,Gujarat,37,Gir Somnath at Veraval,24,,
+2010,17,Gujarat,41,Chhota Udepur,24,,
+2010,17,Gujarat,40,Devbhumi Dwarka at Khambhaliya,24,,
+2010,17,Gujarat,42,Mahisagar at Lunawada,24,,
+2010,17,Gujarat,27,Panchmahal at Godhra,24,,
+2010,17,Gujarat,43,BOTAD,24,,
+2010,17,Gujarat,25,Kheda at Nadiad,24,,
+2010,17,Gujarat,39,MORBI,24,,
+2010,17,Gujarat,26,kachchh at Bhuj,24,,
+2010,14,Haryana,11,Narnaul,6,,
+2010,14,Haryana,6,Gurugram,6,,
+2010,14,Haryana,19,Nuh,6,,
+2011,12,Jammu and Kashmir,16,Leh,1,,
+2010,7,Jharkhand,15,Seraikella,20,,
+2010,7,Jharkhand,4,West Singhbhum at Chaibasa,20,,
+2010,7,Jharkhand,11,East Singhbhum at Jamshedpur,20,,
+2010,7,Jharkhand,17,Daltonganj,20,,
+2010,3,Karnataka,3,VIJAYAPURA,29,,
+2010,3,Karnataka,4,KALABURAGI,29,,
+2010,3,Karnataka,1,BELAGAVI,29,,
+2010,4,Kerala,13,Lakshadweep,32,,
+2010,23,Madhya Pradesh,2,Narsinghpur,23,,
+2010,23,Madhya Pradesh,10,Khandwa,23,,
+2010,23,Madhya Pradesh,16,Mandleshwar,23,,
+2010,1,Maharashtra,37,Mumbai City Civil Court,27,,
+2010,1,Maharashtra,41,Mah State Cooperative Appellat,27,,
+2010,1,Maharashtra,39,Mumbai Motor Accident Claims T,27,,
+2010,1,Maharashtra,43,Maharashtra-School Tribunals,27,,
+2010,1,Maharashtra,38,Mumbai Small Causes Court,27,,
+2010,1,Maharashtra,23,Mumbai CMM Courts,27,,
+2010,1,Maharashtra,40,Maharashtra Industrial and Lab,27,,
+2010,1,Maharashtra,42,Maharashtra-Family Courts,27,,
+2010,21,Meghalaya,3,West Jaintia Hills,17,,
+2010,26,Delhi,2,Shahdara,7,,
+2010,11,Orissa,13,Keonjhar,21,,
+2010,11,Orissa,5,Balasore,21,,
+2010,11,Orissa,20,Sonepur,21,,
+2010,22,Punjab,26,Fazilka,3,,
+2010,22,Punjab,6,Ferozepur,3,,
+2010,22,Punjab,14,Sri Muktsar Sahib,3,,
+2010,22,Punjab,15,SBS Nagar,3,,
+2010,22,Punjab,21,Pathankot,3,,
+2010,22,Punjab,24,Mohali,3,,
+2010,9,Rajasthan,40,Jaipur Metro II,8,,
+2010,9,Rajasthan,27,Balotra Barmer,8,,
+2010,9,Rajasthan,4,Jaipur Metro,8,,
+2011,9,Rajasthan,4,Jaipur Metro I,8,,
+2010,9,Rajasthan,8,Merta (Nagaur),8,,
+2010,9,Rajasthan,28,Jodhpur Metro,8,,
+2010,9,Rajasthan,39,Jodhpur District,8,,
+2010,9,Rajasthan,38,Jaipur District,8,,
+2010,24,Sikkim,4,Gangtok,11,,
+2010,24,Sikkim,1,Namchi,11,,
+2010,24,Sikkim,2,Mangan,11,,
+2011,24,Sikkim,3,Gyalshing,11,,
+2010,10,Tamil Nadu,28,Puducherry,33,,
+2010,20,Tripura,9,Sepahijala Tripura,16,,
+2010,20,Tripura,5,Unakoti  Tripura,16,,
+2010,20,Tripura,11,Dhalai Tripura,16,,
+2010,20,Tripura,6,Gomati District,16,,
+2010,20,Tripura,10,Khowai Tripura,16,,
+2010,13,Uttar Pradesh,22,Bhadohi SR Nagar,9,,
+2010,13,Uttar Pradesh,76,Shamli,9,,
+2010,13,Uttar Pradesh,74,Sambhal at Chandausi,9,,
+2010,13,Uttar Pradesh,65,Hathras,9,,
+2010,13,Uttar Pradesh,10,Lakhimpur,9,,
+2010,13,Uttar Pradesh,73,Hapur,9,,
+2010,15,Uttarakhand,2,Pauri Garhwal,5,,
+2010,16,West Bengal,24,Paschim Bardhaman,19,,
+2010,16,West Bengal,21,North Dinajpur,19,,
+2010,16,West Bengal,13,South Dinajpur,19,,
+2010,16,West Bengal,25,Jhargram,19,,
+2010,16,West Bengal,3,Calcutta,19,,
+2010,16,West Bengal,18,Purba Bardhaman,19,,
+2010,16,West Bengal,6,Coochbehar,19,,
+2010,16,West Bengal,23,kalimpong,19,,
+2010,29,Telangana,1,Adilabad,28,532.0,adilabad
+2010,2,Andhra Pradesh,2,Ananthapur,28,553.0,anantapur
+2010,2,Andhra Pradesh,3,Chittoor,28,554.0,chittoor
+2010,2,Andhra Pradesh,4,East Godavari,28,545.0,east godavari
+2010,2,Andhra Pradesh,5,Guntur,28,548.0,guntur
+2010,29,Telangana,2,Hyderabad,28,536.0,hyderabad
+2010,29,Telangana,3,Karimnagar,28,534.0,karimnagar
+2010,29,Telangana,4,Khammam,28,541.0,khammam
+2010,2,Andhra Pradesh,11,Krishna,28,547.0,krishna
+2010,2,Andhra Pradesh,10,Kurnool,28,552.0,kurnool
+2010,29,Telangana,5,Mahabubnagar,28,538.0,mahbubnagar
+2010,29,Telangana,6,Medak,28,535.0,medak
+2010,29,Telangana,7,Nalgonda,28,539.0,nalgonda
+2010,29,Telangana,8,Nizamabad,28,533.0,nizamabad
+2010,2,Andhra Pradesh,17,Prakasham,28,549.0,prakasam
+2010,29,Telangana,9,Rangareddy,28,537.0,rangareddy
+2010,2,Andhra Pradesh,19,Srikakulam,28,542.0,srikakulam
+2010,2,Andhra Pradesh,20,Visakapatnam,28,544.0,visakhapatnam
+2010,2,Andhra Pradesh,21,Vizianagaram,28,543.0,vizianagaram
+2010,29,Telangana,10,Warangal,28,540.0,warangal
+2010,2,Andhra Pradesh,23,West Godavari,28,546.0,west godavari
+2010,6,Assam,27,Baksa,18,324.0,baksa
+2010,6,Assam,20,Barpeta,18,303.0,barpeta
+2010,6,Assam,9,Bongaigaon,18,319.0,bongaigaon
+2010,6,Assam,13,Cachar,18,316.0,cachar
+2010,6,Assam,25,Chirang,18,320.0,chirang
+2010,6,Assam,8,Darrang,18,325.0,darrang
+2010,6,Assam,17,Dhemaji,18,308.0,dhemaji
+2010,6,Assam,16,Dhubri,18,301.0,dhubri
+2010,6,Assam,7,Dibrugarh,18,310.0,dibrugarh
+2010,6,Assam,28,Dima Hasao,18,315.0,dima hasao
+2010,6,Assam,18,Goalpara,18,302.0,goalpara
+2010,6,Assam,19,Golaghat,18,313.0,golaghat
+2010,6,Assam,21,Hailakandi,18,318.0,hailakandi
+2010,6,Assam,11,Jorhat,18,312.0,jorhat
+2010,6,Assam,23,Kamrup,18,321.0,kamrup
+2010,6,Assam,1,Kamrup Metro,18,322.0,kamrup metropolitan
+2010,6,Assam,26,Karbi Anglong,18,314.0,karbi anglong
+2010,6,Assam,12,Karimganj,18,317.0,karimganj
+2010,6,Assam,22,Kokrajhar,18,300.0,kokrajhar
+2010,6,Assam,5,Lakhimpur,18,307.0,lakhimpur
+2010,6,Assam,4,Morigaon,18,304.0,morigaon
+2010,6,Assam,10,Nagaon,18,305.0,nagaon
+2010,6,Assam,15,Nalbari,18,323.0,nalbari
+2010,6,Assam,3,Sivasagar,18,311.0,sivasagar
+2010,6,Assam,6,Sonitpur,18,306.0,sonitpur
+2010,6,Assam,2,Tinsukia,18,309.0,tinsukia
+2010,6,Assam,24,Udalguri,18,326.0,udalguri
+2010,8,Bihar,24,Araria,10,209.0,araria
+2010,8,Bihar,16,Aurangabad,10,235.0,aurangabad
+2010,8,Bihar,7,Banka,10,225.0,banka
+2010,8,Bihar,6,Begusarai,10,222.0,begusarai
+2010,8,Bihar,34,Bhagalpur,10,224.0,bhagalpur
+2010,8,Bihar,33,Bhojpur,10,231.0,bhojpur
+2010,8,Bihar,26,Buxar,10,232.0,buxar
+2010,8,Bihar,17,Darbhanga,10,215.0,darbhanga
+2010,8,Bihar,35,Gaya,10,236.0,gaya
+2010,8,Bihar,23,Gopalganj,10,217.0,gopalganj
+2010,8,Bihar,15,Jamui,10,238.0,jamui
+2010,8,Bihar,36,Jehanabad,10,239.0,jehanabad
+2010,8,Bihar,2,Kaimur at Bhabhua,10,233.0,kaimur bhabua
+2010,8,Bihar,5,Katihar,10,212.0,katihar
+2010,8,Bihar,14,Khagaria,10,223.0,khagaria
+2010,8,Bihar,25,Kishanganj,10,210.0,kishanganj
+2010,8,Bihar,19,Lakhisarai,10,227.0,lakhisarai
+2010,8,Bihar,12,Madhepura,10,213.0,madhepura
+2010,8,Bihar,18,Madhubani,10,207.0,madhubani
+2010,8,Bihar,11,Munger,10,226.0,munger
+2010,8,Bihar,38,Muzaffarpur,10,216.0,muzaffarpur
+2010,8,Bihar,30,Nalanda,10,229.0,nalanda
+2010,8,Bihar,27,Nawada,10,237.0,nawada
+2010,8,Bihar,1,Patna,10,230.0,patna
+2010,8,Bihar,9,Purnea,10,211.0,purnia
+2010,8,Bihar,21,Saharsa,10,214.0,saharsa
+2010,8,Bihar,3,Samastipur,10,221.0,samastipur
+2010,8,Bihar,20,Sheikhpura,10,228.0,sheikhpura
+2010,8,Bihar,37,Sheohar,10,205.0,sheohar
+2010,8,Bihar,31,Sitamarhi,10,206.0,sitamarhi
+2010,8,Bihar,29,Siwan,10,218.0,siwan
+2010,8,Bihar,22,Supaul,10,208.0,supaul
+2010,8,Bihar,39,Vaishali,10,220.0,vaishali
+2010,27,Chandigarh,1,Chandigarh,4,55.0,chandigarh
+2010,18,Chhattisgarh,15,Bastar,22,414.0,bastar
+2010,18,Chhattisgarh,2,Bilaspur,22,406.0,bilaspur
+2010,18,Chhattisgarh,5,Dhamtari,22,412.0,dhamtari
+2010,18,Chhattisgarh,7,Durg,22,409.0,durg
+2010,18,Chhattisgarh,16,Jashpur,22,402.0,jashpur
+2010,18,Chhattisgarh,1,Korba,22,404.0,korba
+2010,18,Chhattisgarh,11,Koriya,22,400.0,koriya
+2010,18,Chhattisgarh,12,Mahasamund,22,411.0,mahasamund
+2010,18,Chhattisgarh,6,Raigarh,22,403.0,raigarh
+2010,18,Chhattisgarh,3,Raipur,22,410.0,raipur
+2010,18,Chhattisgarh,10,Rajnandgaon,22,408.0,rajnandgaon
+2010,18,Chhattisgarh,4,Surguja,22,401.0,surguja
+2010,31,Diu and Daman,2,Daman,25,495.0,daman
+2010,31,Diu and Daman,1,Diu,25,494.0,diu
+2010,30,Goa,1,North Goa,30,585.0,north goa
+2010,30,Goa,2,South Goa,30,586.0,south goa
+2010,17,Gujarat,13,Ahmedabad,24,474.0,ahmadabad
+2010,17,Gujarat,17,Amreli,24,480.0,amreli
+2010,17,Gujarat,18,Anand,24,482.0,anand
+2010,17,Gujarat,20,Bharuch,24,488.0,bharuch
+2010,17,Gujarat,21,Bhavnagar,24,481.0,bhavnagar
+2010,17,Gujarat,22,Dahod,24,485.0,dohad
+2010,17,Gujarat,11,GANDHINAGAR,24,473.0,gandhinagar
+2010,17,Gujarat,23,Jamnagar,24,477.0,jamnagar
+2010,17,Gujarat,24,Junagadh,24,479.0,junagadh
+2010,17,Gujarat,15,Mahesana,24,471.0,mahesana
+2010,17,Gujarat,33,Narmada,24,487.0,narmada
+2010,17,Gujarat,32,Navsari,24,490.0,navsari
+2010,17,Gujarat,28,Patan,24,470.0,patan
+2010,17,Gujarat,36,Porbandar,24,478.0,porbandar
+2010,17,Gujarat,16,RAJKOT,24,476.0,rajkot
+2010,17,Gujarat,14,SURAT,24,492.0,surat
+2010,17,Gujarat,30,Surendranagar,24,475.0,surendranagar
+2010,17,Gujarat,34,Tapi,24,493.0,tapi
+2010,17,Gujarat,31,Vadodara,24,486.0,vadodara
+2010,17,Gujarat,35,Valsad,24,491.0,valsad
+2010,14,Haryana,3,Ambala,6,70.0,ambala
+2010,14,Haryana,4,Bhiwani,6,81.0,bhiwani
+2010,14,Haryana,5,Faridabad,6,88.0,faridabad
+2010,14,Haryana,15,Fatehabad,6,78.0,fatehabad
+2010,14,Haryana,7,Hisar,6,80.0,hisar
+2010,14,Haryana,8,Jhajjar,6,83.0,jhajjar
+2010,14,Haryana,9,Jind,6,77.0,jind
+2010,14,Haryana,16,Kaithal,6,73.0,kaithal
+2010,14,Haryana,1,Karnal,6,74.0,karnal
+2010,14,Haryana,10,Kurukshetra,6,72.0,kurukshetra
+2010,14,Haryana,23,Palwal,6,89.0,palwal
+2010,14,Haryana,14,Panchkula,6,69.0,panchkula
+2010,14,Haryana,18,Panipat,6,75.0,panipat
+2010,14,Haryana,17,Rewari,6,85.0,rewari
+2010,14,Haryana,12,Rohtak,6,82.0,rohtak
+2010,14,Haryana,2,Sirsa,6,79.0,sirsa
+2010,14,Haryana,13,Sonepat,6,76.0,sonipat
+2010,14,Haryana,20,Yamunanagar,6,71.0,yamunanagar
+2010,5,Himachal Pradesh,7,Bilaspur,2,30.0,bilaspur
+2010,5,Himachal Pradesh,8,Chamba,2,23.0,chamba
+2010,5,Himachal Pradesh,1,Hamirpur,2,28.0,hamirpur
+2010,5,Himachal Pradesh,2,Kangra,2,24.0,kangra
+2010,5,Himachal Pradesh,9,Kinnaur,2,34.0,kinnaur
+2010,5,Himachal Pradesh,10,Kullu,2,26.0,kullu
+2010,5,Himachal Pradesh,6,Mandi,2,27.0,mandi
+2010,5,Himachal Pradesh,11,Shimla,2,33.0,shimla
+2010,5,Himachal Pradesh,3,Sirmaur,2,32.0,sirmaur
+2010,5,Himachal Pradesh,5,Solan,2,31.0,solan
+2010,5,Himachal Pradesh,4,Una,2,29.0,una
+2010,12,Jammu and Kashmir,4,Anantnag,1,14.0,anantnag
+2010,12,Jammu and Kashmir,8,Budgam,1,2.0,badgam
+2010,12,Jammu and Kashmir,18,Bandipora,1,9.0,bandipore
+2010,12,Jammu and Kashmir,3,Baramulla,1,8.0,baramula
+2010,12,Jammu and Kashmir,15,Doda,1,16.0,doda
+2010,12,Jammu and Kashmir,7,Ganderbal,1,11.0,ganderbal
+2010,12,Jammu and Kashmir,19,Jammu,1,21.0,jammu
+2010,12,Jammu and Kashmir,17,Kargil,1,4.0,kargil
+2010,12,Jammu and Kashmir,1,Kathua,1,7.0,kathua
+2010,12,Jammu and Kashmir,22,Kishtwar,1,18.0,kishtwar
+2010,12,Jammu and Kashmir,20,Kulgam,1,15.0,kulgam
+2010,12,Jammu and Kashmir,11,Kupwara,1,1.0,kupwara
+2010,12,Jammu and Kashmir,6,Pulwama,1,12.0,pulwama
+2010,12,Jammu and Kashmir,12,Poonch,1,5.0,punch
+2010,12,Jammu and Kashmir,13,Rajouri,1,6.0,rajouri
+2010,12,Jammu and Kashmir,14,Ramban,1,17.0,ramban
+2010,12,Jammu and Kashmir,9,Reasi,1,20.0,reasi
+2010,12,Jammu and Kashmir,21,Samba,1,22.0,samba
+2010,12,Jammu and Kashmir,10,Shopian,1,13.0,shupiyan
+2010,12,Jammu and Kashmir,5,Srinagar,1,10.0,srinagar
+2010,12,Jammu and Kashmir,2,Udhampur,1,19.0,udhampur
+2010,7,Jharkhand,1,Bokaro,20,355.0,bokaro
+2010,7,Jharkhand,13,Chatra,20,347.0,chatra
+2010,7,Jharkhand,16,Deoghar,20,350.0,deoghar
+2010,7,Jharkhand,9,Dhanbad,20,354.0,dhanbad
+2010,7,Jharkhand,2,Dumka,20,362.0,dumka
+2010,7,Jharkhand,20,Garhwa,20,346.0,garhwa
+2010,7,Jharkhand,10,Giridih,20,349.0,giridih
+2010,7,Jharkhand,6,Godda,20,351.0,godda
+2010,7,Jharkhand,5,Gumla,20,366.0,gumla
+2010,7,Jharkhand,7,Hazaribagh,20,360.0,hazaribagh
+2010,7,Jharkhand,12,Jamtara,20,363.0,jamtara
+2010,7,Jharkhand,24,KHUNTI,20,365.0,khunti
+2010,7,Jharkhand,3,Koderma,20,348.0,kodarma
+2010,7,Jharkhand,19,Latehar,20,359.0,latehar
+2010,7,Jharkhand,8,Lohardaga,20,356.0,lohardaga
+2010,7,Jharkhand,14,Pakur,20,353.0,pakur
+2010,7,Jharkhand,23,RAMGARH,20,361.0,ramgarh
+2010,7,Jharkhand,22,Ranchi,20,364.0,ranchi
+2010,7,Jharkhand,21,Sahibganj,20,352.0,sahibganj
+2010,7,Jharkhand,18,Simdega,20,367.0,simdega
+2010,3,Karnataka,2,BAGALKOT,29,556.0,bagalkot
+2010,3,Karnataka,20,BENGALURU,29,572.0,bangalore
+2010,3,Karnataka,21,BENGALURU RURAL,29,583.0,bangalore rural
+2010,3,Karnataka,12,BALLARI,29,565.0,bellary
+2010,3,Karnataka,5,BIDAR,29,558.0,bidar
+2010,3,Karnataka,27,CHAMRAJNAGAR,29,578.0,chamarajanagar
+2010,3,Karnataka,29,CHIKKABALLAPUR,29,582.0,chikkaballapura
+2010,3,Karnataka,17,CHIKKAMAGALURU,29,570.0,chikmagalur
+2010,3,Karnataka,13,CHITRADURGA,29,566.0,chitradurga
+2010,3,Karnataka,24,DAKSHINA KANNADA,29,575.0,dakshina kannada
+2010,3,Karnataka,14,DAVANGERE,29,567.0,davanagere
+2010,3,Karnataka,9,DHARWAD,29,562.0,dharwad
+2010,3,Karnataka,8,GADAG,29,561.0,gadag
+2010,3,Karnataka,23,HASSAN,29,574.0,hassan
+2010,3,Karnataka,11,HAVERI,29,564.0,haveri
+2010,3,Karnataka,25,KODAGU,29,576.0,kodagu
+2010,3,Karnataka,19,KOLAR,29,581.0,kolar
+2010,3,Karnataka,7,KOPPAL,29,560.0,koppal
+2010,3,Karnataka,22,MANDYA,29,573.0,mandya
+2010,3,Karnataka,26,MYSURU,29,577.0,mysore
+2010,3,Karnataka,6,RAICHUR,29,559.0,raichur
+2010,3,Karnataka,28,RAMANAGARAM,29,584.0,ramanagara
+2010,3,Karnataka,15,SHIVAMOGGA,29,568.0,shimoga
+2010,3,Karnataka,18,TUMAKURU,29,571.0,tumkur
+2010,3,Karnataka,16,UDUPI,29,569.0,udupi
+2010,3,Karnataka,10,UTTARA KANNADA,29,563.0,uttara kannada
+2010,3,Karnataka,30,YADGIR.,29,580.0,yadgir
+2010,4,Kerala,6,Alappuzha,32,598.0,alappuzha
+2010,4,Kerala,2,Ernakulam,32,595.0,ernakulam
+2010,4,Kerala,7,Idukki,32,596.0,idukki
+2010,4,Kerala,3,Kannur,32,589.0,kannur
+2010,4,Kerala,1,Kasaragod,32,588.0,kasaragod
+2010,4,Kerala,15,Kollam,32,600.0,kollam
+2010,4,Kerala,10,Kottayam,32,597.0,kottayam
+2010,4,Kerala,5,Kozhikode,32,591.0,kozhikode
+2010,4,Kerala,11,Malappuram,32,592.0,malappuram
+2010,4,Kerala,8,Palakkad,32,593.0,palakkad
+2010,4,Kerala,12,Pathanamthitta,32,599.0,pathanamthitta
+2010,4,Kerala,9,Thiruvananthapuram,32,601.0,thiruvananthapuram
+2010,4,Kerala,4,Thrissur,32,594.0,thrissur
+2010,4,Kerala,16,Wayanad,32,590.0,wayanad
+2010,23,Madhya Pradesh,8,Alirajpur,23,465.0,alirajpur
+2010,23,Madhya Pradesh,22,Anuppur,23,461.0,anuppur
+2010,23,Madhya Pradesh,48,Ashoknagr,23,459.0,ashoknagar
+2010,23,Madhya Pradesh,26,Balaghat,23,457.0,balaghat
+2010,23,Madhya Pradesh,18,Barwani,23,441.0,barwani
+2010,23,Madhya Pradesh,37,Betul,23,447.0,betul
+2010,23,Madhya Pradesh,29,Bhind,23,420.0,bhind
+2010,23,Madhya Pradesh,50,Bhopal,23,444.0,bhopal
+2010,23,Madhya Pradesh,49,Burhanpur,23,467.0,burhanpur
+2010,23,Madhya Pradesh,39,Chhatarpur,23,425.0,chhatarpur
+2010,23,Madhya Pradesh,20,Chhindwara,23,455.0,chhindwara
+2010,23,Madhya Pradesh,27,Damoh,23,428.0,damoh
+2010,23,Madhya Pradesh,13,Datia,23,422.0,datia
+2010,23,Madhya Pradesh,40,Dewas,23,437.0,dewas
+2010,23,Madhya Pradesh,38,Dhar,23,438.0,dhar
+2010,23,Madhya Pradesh,6,Dindori,23,453.0,dindori
+2010,23,Madhya Pradesh,30,Guna,23,458.0,guna
+2010,23,Madhya Pradesh,44,Gwalior,23,421.0,gwalior
+2010,23,Madhya Pradesh,4,Harda,23,448.0,harda
+2010,23,Madhya Pradesh,3,Hoshangabad,23,449.0,hoshangabad
+2010,23,Madhya Pradesh,47,Indore,23,439.0,indore
+2010,23,Madhya Pradesh,1,Jabalpur,23,451.0,jabalpur
+2010,23,Madhya Pradesh,9,Jhabua,23,464.0,jhabua
+2010,23,Madhya Pradesh,34,Katni,23,450.0,katni
+2010,23,Madhya Pradesh,41,Mandla,23,454.0,mandla
+2010,23,Madhya Pradesh,35,Mandsaur,23,433.0,mandsaur
+2010,23,Madhya Pradesh,15,Morena,23,419.0,morena
+2010,23,Madhya Pradesh,17,Neemuch,23,432.0,neemuch
+2010,23,Madhya Pradesh,7,Panna,23,426.0,panna
+2010,23,Madhya Pradesh,24,Raisen,23,446.0,raisen
+2010,23,Madhya Pradesh,14,Rajgarh,23,442.0,rajgarh
+2010,23,Madhya Pradesh,42,Ratlam,23,434.0,ratlam
+2010,23,Madhya Pradesh,46,Rewa,23,430.0,rewa
+2010,23,Madhya Pradesh,43,Sagar,23,427.0,sagar
+2010,23,Madhya Pradesh,32,Satna,23,429.0,satna
+2010,23,Madhya Pradesh,25,Sehore,23,445.0,sehore
+2010,23,Madhya Pradesh,33,Seoni,23,456.0,seoni
+2010,23,Madhya Pradesh,11,Shahdol,23,460.0,shahdol
+2010,23,Madhya Pradesh,19,Shajapur,23,436.0,shajapur
+2010,23,Madhya Pradesh,12,Sheopur,23,418.0,sheopur
+2010,23,Madhya Pradesh,23,Shivpuri,23,423.0,shivpuri
+2010,23,Madhya Pradesh,21,Sidhi,23,462.0,sidhi
+2010,23,Madhya Pradesh,31,Singrauli,23,463.0,singrauli
+2010,23,Madhya Pradesh,36,Tikamgarh,23,424.0,tikamgarh
+2010,23,Madhya Pradesh,45,Ujjain,23,435.0,ujjain
+2010,23,Madhya Pradesh,5,Umaria,23,431.0,umaria
+2010,23,Madhya Pradesh,28,Vidisha,23,443.0,vidisha
+2010,1,Maharashtra,26,Ahmednagar,27,522.0,ahmadnagar
+2010,1,Maharashtra,5,Akola,27,501.0,akola
+2010,1,Maharashtra,7,Amravati,27,503.0,amravati
+2010,1,Maharashtra,19,Aurangabad,27,515.0,aurangabad
+2010,1,Maharashtra,10,Bhandara,27,506.0,bhandara
+2010,1,Maharashtra,27,Beed,27,523.0,bid
+2010,1,Maharashtra,4,Buldhana,27,500.0,buldana
+2010,1,Maharashtra,13,Chandrapur,27,509.0,chandrapur
+2010,1,Maharashtra,2,Dhule,27,498.0,dhule
+2010,1,Maharashtra,12,Gadchiroli,27,508.0,gadchiroli
+2010,1,Maharashtra,11,Gondia,27,507.0,gondiya
+2010,1,Maharashtra,3,Jalgaon,27,499.0,jalgaon
+2010,1,Maharashtra,18,Jalna,27,514.0,jalna
+2010,1,Maharashtra,34,Kolhapur,27,530.0,kolhapur
+2010,1,Maharashtra,28,Latur,27,524.0,latur
+2010,1,Maharashtra,9,Nagpur,27,505.0,nagpur
+2010,1,Maharashtra,15,Nanded,27,511.0,nanded
+2010,1,Maharashtra,1,Nandurbar,27,497.0,nandurbar
+2010,1,Maharashtra,20,Nashik,27,516.0,nashik
+2010,1,Maharashtra,29,Osmanabad,27,525.0,osmanabad
+2010,1,Maharashtra,17,Parbhani,27,513.0,parbhani
+2010,1,Maharashtra,25,Pune,27,521.0,pune
+2010,1,Maharashtra,24,Raigad,27,520.0,raigarh
+2010,1,Maharashtra,32,Ratnagiri,27,528.0,ratnagiri
+2010,1,Maharashtra,35,Sangli,27,531.0,sangli
+2010,1,Maharashtra,31,Satara,27,527.0,satara
+2010,1,Maharashtra,33,Sindhudurg,27,529.0,sindhudurg
+2010,1,Maharashtra,30,Solapur,27,526.0,solapur
+2010,1,Maharashtra,21,Thane,27,517.0,thane
+2010,1,Maharashtra,8,Wardha,27,504.0,wardha
+2010,1,Maharashtra,36,Washim,27,502.0,washim
+2010,1,Maharashtra,14,Yavatmal,27,510.0,yavatmal
+2010,25,Manipur,3,Bishnupur,14,275.0,bishnupur
+2014,25,Manipur,8,Chandel,14,280.0,chandel
+2010,25,Manipur,6,Churachandpur,14,274.0,churachandpur
+2010,25,Manipur,1,Imphal East,14,278.0,imphal east
+2010,25,Manipur,2,Imphal West,14,277.0,imphal west
+2010,25,Manipur,5,Senapati,14,272.0,senapati
+2010,25,Manipur,9,Tamenglong,14,273.0,tamenglong
+2010,25,Manipur,4,Thoubal,14,276.0,thoubal
+2010,21,Meghalaya,4,East Garo Hills,17,294.0,east garo hills
+2010,21,Meghalaya,1,East Khasi Hills,17,298.0,east khasi hills
+2010,21,Meghalaya,5,Ri Bhoi,17,297.0,ribhoi
+2010,21,Meghalaya,2,West Garo Hills,17,293.0,west garo hills
+2014,21,Meghalaya,7,West Khasi Hills,17,296.0,west khasi hills
+2010,19,Mizoram,1,Aizawl,15,283.0,aizawl
+2010,19,Mizoram,2,Lunglei,15,286.0,lunglei
+2010,26,Delhi,8,Central,7,95.0,central
+2010,26,Delhi,3,East,7,93.0,east
+2010,26,Delhi,7,New Delhi,7,94.0,new delhi
+2010,26,Delhi,4,North,7,91.0,north
+2010,26,Delhi,1,North East,7,92.0,north east
+2010,26,Delhi,5,North West,7,90.0,north west
+2010,26,Delhi,10,South,7,98.0,south
+2010,26,Delhi,6,South West,7,97.0,south west
+2010,26,Delhi,11,South East,7,97.0,south west
+2010,26,Delhi,9,West,7,96.0,west
+2010,11,Orissa,27,Anugul,21,384.0,anugul
+2010,11,Orissa,17,Balangir,21,393.0,balangir
+2010,11,Orissa,29,Bargarh,21,370.0,bargarh
+2010,11,Orissa,24,Boudh,21,391.0,baudh
+2010,11,Orissa,18,Bhadrak,21,378.0,bhadrak
+2010,11,Orissa,1,Cuttack,21,381.0,cuttack
+2010,11,Orissa,30,Deogarh,21,373.0,debagarh
+2010,11,Orissa,7,Dhenkanal,21,383.0,dhenkanal
+2010,11,Orissa,9,Gajapati,21,389.0,gajapati
+2010,11,Orissa,4,Ganjam,21,388.0,ganjam
+2010,11,Orissa,14,Jagatsinghpur,21,380.0,jagatsinghapur
+2010,11,Orissa,19,Jajpur,21,382.0,jajapur
+2010,11,Orissa,12,Jharsuguda,21,371.0,jharsuguda
+2010,11,Orissa,10,Kalahandi,21,395.0,kalahandi
+2010,11,Orissa,23,Kandhamal,21,390.0,kandhamal
+2010,11,Orissa,2,Kendrapada,21,379.0,kendrapara
+2010,11,Orissa,8,Khurda,21,386.0,khordha
+2010,11,Orissa,6,Koraput,21,398.0,koraput
+2010,11,Orissa,31,Malkangiri,21,399.0,malkangiri
+2010,11,Orissa,26,Mayurbhanj,21,376.0,mayurbhanj
+2010,11,Orissa,32,Nabarangpur,21,397.0,nabarangapur
+2010,11,Orissa,22,Nayagarh,21,385.0,nayagarh
+2010,11,Orissa,3,Nuapada,21,394.0,nuapada
+2010,11,Orissa,15,Puri,21,387.0,puri
+2010,11,Orissa,21,Rayagada,21,396.0,rayagada
+2010,11,Orissa,11,Sambalpur,21,372.0,sambalpur
+2010,11,Orissa,16,Sundargarh,21,374.0,sundargarh
+2010,22,Punjab,8,Amritsar,3,49.0,amritsar
+2010,22,Punjab,16,Barnala,3,54.0,barnala
+2010,22,Punjab,17,Bathinda,3,46.0,bathinda
+2010,22,Punjab,9,Faridkot,3,45.0,faridkot
+2010,22,Punjab,4,Fatehgarh Sahib,3,40.0,fatehgarh sahib
+2010,22,Punjab,10,Gurdaspur,3,35.0,gurdaspur
+2010,22,Punjab,18,Hoshiarpurr,3,38.0,hoshiarpur
+2017,22,Punjab,18,Hoshiarpur,3,38.0,hoshiarpur
+2010,22,Punjab,2,Jalandhar,3,37.0,jalandhar
+2010,22,Punjab,11,Kapurthala,3,36.0,kapurthala
+2010,22,Punjab,1,Ludhiana,3,41.0,ludhiana
+2010,22,Punjab,13,Mansa,3,47.0,mansa
+2010,22,Punjab,12,Moga,3,42.0,moga
+2010,22,Punjab,5,Patiala,3,48.0,patiala
+2010,22,Punjab,3,Rupnagar,3,51.0,rupnagar
+2010,22,Punjab,19,Sangrur,3,53.0,sangrur
+2010,22,Punjab,23,Tarn Taran,3,50.0,tarn taran
+2010,9,Rajasthan,14,Ajmer,8,119.0,ajmer
+2010,9,Rajasthan,2,Alwar,8,104.0,alwar
+2010,9,Rajasthan,25,Banswara,8,125.0,banswara
+2010,9,Rajasthan,12,Baran,8,128.0,baran
+2010,9,Rajasthan,13,Bharatpur,8,105.0,bharatpur
+2010,9,Rajasthan,31,Bhilwara,8,122.0,bhilwara
+2010,9,Rajasthan,6,Bikaner,8,101.0,bikaner
+2010,9,Rajasthan,10,Bundi,8,121.0,bundi
+2010,9,Rajasthan,30,Chittorgarh,8,126.0,chittaurgarh
+2010,9,Rajasthan,33,Churu,8,102.0,churu
+2010,9,Rajasthan,3,Dausa,8,109.0,dausa
+2010,9,Rajasthan,34,Dholpur,8,106.0,dhaulpur
+2010,9,Rajasthan,24,Dungarpur,8,124.0,dungarpur
+2010,9,Rajasthan,7,Ganganagar,8,99.0,ganganagar
+2010,9,Rajasthan,11,Hanumangarh,8,100.0,hanumangarh
+2010,9,Rajasthan,32,Jaiselmer,8,114.0,jaisalmer
+2010,9,Rajasthan,21,Jalore,8,116.0,jalor
+2010,9,Rajasthan,22,Jhalawar,8,129.0,jhalawar
+2010,9,Rajasthan,18,Jhunjhunu,8,103.0,jhunjhunun
+2010,9,Rajasthan,29,Karauli,8,107.0,karauli
+2010,9,Rajasthan,20,Kota,8,127.0,kota
+2010,9,Rajasthan,19,Pali,8,118.0,pali
+2010,9,Rajasthan,23,Pratapgarh,8,131.0,pratapgarh
+2010,9,Rajasthan,1,Rajsamand,8,123.0,rajsamand
+2010,9,Rajasthan,36,Sawai Madhopur,8,108.0,sawai madhopur
+2010,9,Rajasthan,35,Sikar,8,111.0,sikar
+2010,9,Rajasthan,26,Sirohi,8,117.0,sirohi
+2010,9,Rajasthan,5,Tonk,8,120.0,tonk
+2010,9,Rajasthan,9,Udaipur,8,130.0,udaipur
+2010,10,Tamil Nadu,30,Ariyalur,33,616.0,ariyalur
+2010,10,Tamil Nadu,13,Chennai,33,603.0,chennai
+2010,10,Tamil Nadu,18,Coimbatore,33,632.0,coimbatore
+2010,10,Tamil Nadu,20,Cuddalore,33,617.0,cuddalore
+2010,10,Tamil Nadu,1,Dharmapuri,33,630.0,dharmapuri
+2010,10,Tamil Nadu,27,Dindigul,33,612.0,dindigul
+2010,10,Tamil Nadu,24,Erode,33,610.0,erode
+2010,10,Tamil Nadu,31,Kancheepuram,33,604.0,kancheepuram
+2010,10,Tamil Nadu,7,Kanniyakumari,33,629.0,kanniyakumari
+2010,10,Tamil Nadu,19,Karur,33,613.0,karur
+2010,10,Tamil Nadu,26,Krishnagiri,33,631.0,krishnagiri
+2010,10,Tamil Nadu,15,Madurai,33,623.0,madurai
+2010,10,Tamil Nadu,6,Nagapattinam,33,618.0,nagapattinam
+2010,10,Tamil Nadu,5,Namakkal,33,609.0,namakkal
+2010,10,Tamil Nadu,23,Perambalur,33,615.0,perambalur
+2010,10,Tamil Nadu,2,Pudukkottai,33,621.0,pudukkottai
+2010,10,Tamil Nadu,21,Ramanathapuram,33,626.0,ramanathapuram
+2010,10,Tamil Nadu,12,Salem,33,608.0,salem
+2010,10,Tamil Nadu,29,Sivagangai,33,622.0,sivaganga
+2010,10,Tamil Nadu,17,Thanjavur,33,620.0,thanjavur
+2010,10,Tamil Nadu,16,The Nilgiris,33,611.0,the nilgiris
+2010,10,Tamil Nadu,4,Theni,33,624.0,theni
+2010,10,Tamil Nadu,32,Tiruvallur,33,602.0,thiruvallur
+2010,10,Tamil Nadu,25,Tiruvarur,33,619.0,thiruvarur
+2010,10,Tamil Nadu,9,Thoothukudi,33,627.0,thoothukkudi
+2010,10,Tamil Nadu,8,Tiruchirappalli,33,614.0,tiruchirappalli
+2010,10,Tamil Nadu,3,Tirunelveli,33,628.0,tirunelveli
+2010,10,Tamil Nadu,33,Tiruppur,33,633.0,tiruppur
+2010,10,Tamil Nadu,22,Tiruvannamalai,33,606.0,tiruvannamalai
+2010,10,Tamil Nadu,11,Vellore,33,605.0,vellore
+2010,10,Tamil Nadu,10,Viluppuram,33,607.0,viluppuram
+2010,10,Tamil Nadu,14,Virudhunagar,33,625.0,virudhunagar
+2010,20,Tripura,2,North Tripura,16,292.0,north tripura
+2010,20,Tripura,3,SouthTripura,16,290.0,south tripura
+2010,20,Tripura,1,West Tripura,16,289.0,west tripura
+2010,13,Uttar Pradesh,30,Agra,9,146.0,agra
+2010,13,Uttar Pradesh,43,Aligarh,9,143.0,aligarh
+2010,13,Uttar Pradesh,1,Allahabad,9,175.0,allahabad
+2010,13,Uttar Pradesh,15,Ambedkar Nagar,9,178.0,ambedkar nagar
+2010,13,Uttar Pradesh,17,Auraiya,9,162.0,auraiya
+2010,13,Uttar Pradesh,44,Azamgarh,9,191.0,azamgarh
+2010,13,Uttar Pradesh,45,Baghpat,9,139.0,baghpat
+2010,13,Uttar Pradesh,7,Bahraich,9,180.0,bahraich
+2010,13,Uttar Pradesh,21,Ballia,9,193.0,ballia
+2010,13,Uttar Pradesh,67,Balrampur,9,182.0,balrampur
+2010,13,Uttar Pradesh,39,Banda,9,170.0,banda
+2010,13,Uttar Pradesh,36,Barabanki,9,176.0,bara banki
+2010,13,Uttar Pradesh,2,Bareilly,9,150.0,bareilly
+2010,13,Uttar Pradesh,46,Basti,9,185.0,basti
+2010,13,Uttar Pradesh,47,Bijnor,9,134.0,bijnor
+2010,13,Uttar Pradesh,18,Budaun,9,149.0,budaun
+2010,13,Uttar Pradesh,48,Bulandshahr,9,142.0,bulandshahr
+2010,13,Uttar Pradesh,75,Chandauli,9,196.0,chandauli
+2010,13,Uttar Pradesh,5,Chitrakoot,9,171.0,chitrakoot
+2010,13,Uttar Pradesh,41,Deoria,9,190.0,deoria
+2010,13,Uttar Pradesh,25,Etah,9,201.0,etah
+2010,13,Uttar Pradesh,33,Etawah,9,161.0,etawah
+2010,13,Uttar Pradesh,49,Faizabad,9,177.0,faizabad
+2010,13,Uttar Pradesh,63,Farrukhabad,9,159.0,farrukhabad
+2010,13,Uttar Pradesh,9,Fatehpur,9,172.0,fatehpur
+2010,13,Uttar Pradesh,29,Firozabad,9,147.0,firozabad
+2010,13,Uttar Pradesh,20,Gautam Buddha Nagar,9,141.0,gautam buddha nagar
+2010,13,Uttar Pradesh,8,Ghaziabad,9,140.0,ghaziabad
+2010,13,Uttar Pradesh,28,Ghazipur,9,195.0,ghazipur
+2010,13,Uttar Pradesh,50,Gonda,9,183.0,gonda
+2010,13,Uttar Pradesh,3,Gorakhpur,9,188.0,gorakhpur
+2010,13,Uttar Pradesh,64,Hamirpur,9,168.0,hamirpur
+2010,13,Uttar Pradesh,4,Hardoi,9,155.0,hardoi
+2010,13,Uttar Pradesh,70,Jalaun,9,165.0,jalaun
+2010,13,Uttar Pradesh,12,Jaunpur,9,194.0,jaunpur
+2010,13,Uttar Pradesh,66,Jhansi,9,166.0,jhansi
+2010,13,Uttar Pradesh,35,Jyotiba Phule Nagar,9,137.0,jyotiba phule nagar
+2010,13,Uttar Pradesh,69,Kannauj,9,160.0,kannauj
+2010,13,Uttar Pradesh,51,Kanpur Dehat,9,163.0,kanpur dehat
+2010,13,Uttar Pradesh,19,Kanpur Nagar,9,164.0,kanpur nagar
+2010,13,Uttar Pradesh,40,Kanshi Ram Nagar,9,202.0,kanshiram nagar
+2010,13,Uttar Pradesh,37,Kaushambi,9,174.0,kaushambi
+2010,13,Uttar Pradesh,34,Kushinagar,9,189.0,kushinagar
+2010,13,Uttar Pradesh,23,Lalitpur,9,167.0,lalitpur
+2010,13,Uttar Pradesh,24,Lucknow,9,157.0,lucknow
+2010,13,Uttar Pradesh,38,Mahoba,9,169.0,mahoba
+2010,13,Uttar Pradesh,52,Maharajganj,9,187.0,mahrajganj
+2010,13,Uttar Pradesh,14,Mainpuri,9,148.0,mainpuri
+2010,13,Uttar Pradesh,53,Mathura,9,145.0,mathura
+2010,13,Uttar Pradesh,42,Mau,9,192.0,mau
+2010,13,Uttar Pradesh,6,Meerut,9,138.0,meerut
+2010,13,Uttar Pradesh,68,Mirzapur,9,199.0,mirzapur
+2010,13,Uttar Pradesh,54,Moradabad,9,135.0,moradabad
+2010,13,Uttar Pradesh,26,Muzaffarnagar,9,133.0,muzaffarnagar
+2010,13,Uttar Pradesh,13,Pilibhit,9,151.0,pilibhit
+2010,13,Uttar Pradesh,31,Pratapgarh,9,173.0,pratapgarh
+2010,13,Uttar Pradesh,55,Raebareli,9,158.0,rae bareli
+2010,13,Uttar Pradesh,56,Rampur,9,136.0,rampur
+2010,13,Uttar Pradesh,57,Saharanpur,9,132.0,saharanpur
+2010,13,Uttar Pradesh,71,Santkabir Nagar,9,186.0,sant kabir nagar
+2010,13,Uttar Pradesh,58,Shahjahanpur,9,152.0,shahjahanpur
+2010,13,Uttar Pradesh,11,Shravasti,9,181.0,shrawasti
+2010,13,Uttar Pradesh,59,Siddharthnagar,9,184.0,siddharthnagar
+2010,13,Uttar Pradesh,16,Sitapur,9,154.0,sitapur
+2010,13,Uttar Pradesh,60,Sonbhadra,9,200.0,sonbhadra
+2010,13,Uttar Pradesh,61,Sultanpur,9,179.0,sultanpur
+2010,13,Uttar Pradesh,62,Unnao,9,156.0,unnao
+2010,13,Uttar Pradesh,27,Varanasi,9,197.0,varanasi
+2010,15,Uttarakhand,7,Almora,5,64.0,almora
+2010,15,Uttarakhand,14,Bageshwar,5,63.0,bageshwar
+2010,15,Uttarakhand,8,Chamoli,5,57.0,chamoli
+2010,15,Uttarakhand,13,Champawat,5,65.0,champawat
+2010,15,Uttarakhand,5,Dehradun,5,60.0,dehradun
+2010,15,Uttarakhand,9,Haridwar,5,68.0,hardwar
+2010,15,Uttarakhand,1,Nainital,5,66.0,nainital
+2010,15,Uttarakhand,15,Pithoragarh,5,62.0,pithoragarh
+2011,15,Uttarakhand,16,Rudraprayag,5,58.0,rudraprayag
+2010,15,Uttarakhand,3,Tehri Garhwal,5,59.0,tehri garhwal
+2010,15,Uttarakhand,4,Udham Singh Nagar,5,67.0,udham singh nagar
+2010,15,Uttarakhand,6,Uttarkashi,5,56.0,uttarkashi
+2010,16,West Bengal,19,Bankura,19,339.0,bankura
+2010,16,West Bengal,8,Birbhum,19,334.0,birbhum
+2010,16,West Bengal,17,Darjeeling,19,327.0,darjiling
+2010,16,West Bengal,11,Howrah,19,341.0,haora
+2010,16,West Bengal,2,Hooghly,19,338.0,hugli
+2010,16,West Bengal,4,Jalpaiguri,19,328.0,jalpaiguri
+2010,16,West Bengal,1,Malda,19,332.0,maldah
+2010,16,West Bengal,12,Murshidabad,19,333.0,murshidabad
+2010,16,West Bengal,22,Nadia,19,336.0,nadia
+2010,16,West Bengal,14,North  Twenty Four Parganas,19,337.0,north twenty four parganas
+2010,16,West Bengal,7,Paschim Medinpur,19,344.0,paschim medinipur
+2010,16,West Bengal,9,Purba Medinipur,19,345.0,purba medinipur
+2010,16,West Bengal,10,Purulia,19,340.0,puruliya
+2010,16,West Bengal,20,South Twenty Four Parganas,19,343.0,south twenty four parganas
