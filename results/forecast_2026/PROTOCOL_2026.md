@@ -37,3 +37,23 @@ State ranges use the q10/q90 of this method's backtest errors; the national rang
 - Also reported, whatever they show: state-level q10–q90 coverage (target 80%), national error, and a comparison
   with an oracle that knows the true national growth rate.
 - Run: `python3 grade_2026.py --actual actual_2026.csv`.
+
+## Addendum (8 October 2026, after locking; the forecast above is unchanged)
+A review after locking found these weaknesses. They are recorded here instead of fixing the forecast, because
+changing a locked forecast would defeat its purpose. They will be reported alongside the score.
+- **State ranges are not equally reliable by size.** In the backtest, the q10–q90 range held 79% of outcomes
+  overall (target 80%), but 69% for the smallest third of states and union territories and 90% for the largest
+  third. Expect small units to fall outside their range more often than 1 in 5.
+- **The national range is narrow.** It spans the minimum to maximum of only six backtest errors, so it is not a
+  calibrated probability interval.
+- **The "2022" figure is mid-December, not year-end** (see `official_series.py`). This slightly distorts the
+  backtest targets 2022 and 2023.
+- **The chosen method wins narrowly.** Its caseload-weighted error (0.051) is close to the next two methods'
+  (0.053 and 0.054). Picking any of them would have been reasonable.
+
+## Integrity
+SHA-256 of the files as locked in commit 391dca6:
+- `forecast_states_2026.csv`: `adf62cd20085e545730b10e62a7ffa66dae5e3f90207d197c5207f2aa5c96d2d`
+- `forecast_meta.json`: `1715bda1eed20622d7c43f89ea813ccf8b4d294f69a4380c40d39578174f4c13`
+
+`tests/test_locked_forecast.py` fails if either file changes.

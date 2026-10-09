@@ -39,5 +39,7 @@
     "mean_growth_2015_2019": 5613664.069851853,
     "mean_growth_2017_2019": 4775489.295310527,
     "mean_growth_2016_2019": 5056424.606030136
-  }
+  },
+  "range_note": "low/high span the 6 pre-COVID backtest error rates (min to max); not a probability interval",
+  "flows_note": "2017-2019 average as normal; filings implied by the stock-flow identity; 2022 disposals are a partial year and are not used"
 }
