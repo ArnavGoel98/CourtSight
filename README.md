@@ -95,7 +95,7 @@ same court number, so courtroom matching is weak. We report this as no reliable 
 | `pendency_forecast.py` | District pipeline: stock-flow reconstruction, features, quantile models, validation, attribution, elasticities |
 | `compress_ddl.py`, `ddl_compact/` | Shrinks the 5 GB DDL download to aggregated counts on your own computer |
 | `grade_state_2019.py`, `naive_benchmarks.py` | 2019 grading and the strict benchmarks |
-| `build_site.py`, `site/`, `docs/` | Project site and calculator (built from `results/`, served from `docs/`) |
+| `build_site.py`, `site/`, `docs/` | Project site and calculator (built from `results/`, served from `docs/`); `site/card.html` is the link-preview image (`docs/og.png`) |
 | `backlog_clock.py`, `time_to_decision.py`, `judge_transfer.py` | Clearance clock, time to decision, judge handover study |
 | `results/ddl_2010_2018/` | Model outputs, metrics, charts and `RESULTS.md` |
 | `sources/` | The official documents used, with URLs and SHA-256 fingerprints |
@@ -119,6 +119,7 @@ python3 tests/test_official_series.py && python3 tests/test_locked_forecast.py &
   2019). These are reported, and results are shown with and without them.
 
 ## Data and licences
+Code: MIT (`LICENSE`). To cite, see `CITATION.cff`.
 - **Case records:** Development Data Lab, Indian judicial data (eCourts, 2010–2018), CC BY-NC-SA 4.0. Derived files
   here carry the same licence; see [`DATA_LICENSE.md`](DATA_LICENSE.md).
 - **Official pendency:** Lok Sabha Unstarred Questions 1838 (16.12.2022) and 2362 (13.02.2026), Ministry of Law &

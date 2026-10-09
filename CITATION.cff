@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you use CourtSight's code or results, please cite it as below."
+title: "CourtSight: measuring and forecasting India's district-court backlog"
+authors:
+  - family-names: Goel
+    given-names: Arnav
+date-released: 2026-10-09
+url: "https://arnavgoel98.github.io/CourtSight/"
+repository-code: "https://github.com/ArnavGoel98/CourtSight"
+license: MIT
+keywords: [India, courts, judicial backlog, survival analysis, forecasting, eCourts]
