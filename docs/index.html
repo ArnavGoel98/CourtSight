@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CourtSight</title>
 <meta name="description" content="India's district-court backlog, measured: 80.9 million case records, official series to 2025, a locked forecast for 2026, and how long cases really take.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%227%22 fill=%22%231f5f8b%22/%3E%3Cpath d=%22M7 23h18M9 23V13m5 10V9m5 14v-7m5 7V11%22 stroke=%22white%22 stroke-width=%222.6%22 stroke-linecap=%22round%22/%3E%3C/svg%3E">
+<meta property="og:type" content="website">
+<meta property="og:title" content="CourtSight: India's court backlog, measured">
+<meta property="og:description" content="India's district-court backlog, measured: 80.9 million case records, official series to 2025, a locked forecast for 2026, and how long cases really take.">
+<meta property="og:url" content="https://arnavgoel98.github.io/CourtSight/">
+<meta property="og:image" content="https://arnavgoel98.github.io/CourtSight/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://arnavgoel98.github.io/CourtSight/og.png">
 <style>:root{
   color-scheme:light;
   --bg:#f7f6f2;--surface:#fcfcfb;--ink:#0b0b0b;--ink-2:#52514e;--ink-3:#7a7873;--line:#e4e1d9;--grid:#ecebe6;
@@ -92,7 +100,7 @@ select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:1
 </head>
 <body>
 <nav><div class="wrap"><b>CourtSight</b>
-<a href="#backlog">Backlog</a><a href="#clock">Clock</a><a href="#time">Time to decision</a><a href="#judges">Judge changes</a><a href="#method">Method</a><a href="calculator.html">Calculator →</a>
+<a href="#backlog">Backlog</a><a href="#clock">Clock</a><a href="#time">Time to decision</a><a href="#judges">Judge changes</a><a href="#method">Method</a><a href="#data">Data</a><a href="calculator.html">Calculator →</a>
 </div></nav>
 <main class="wrap">
 <header class="hero">
@@ -178,6 +186,21 @@ select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:1
     <dd>No public case-level data exists after 2018, and the 2023–2025 series has no disposal figures. "Decided" includes dismissals, withdrawals and transfers. The data cannot say how many judges would be needed.</dd>
   </dl></div>
   </div>
+</section>
+<section id="data">
+  <div class="num">06</div>
+  <h2>Data and code</h2>
+  <p class="prose">Everything behind this page is in the repository and can be downloaded as plain CSV. Only aggregate counts are published.</p>
+  <div class="card" style="overflow-x:auto"><table>
+  <tr><th>File</th><th>What it holds</th></tr>
+  <tr><td><a href="https://github.com/ArnavGoel98/CourtSight/blob/main/results/time_to_decision/by_district_case_type.csv">by_district_case_type.csv</a></td><td>Time to decision, 626 districts × 10 case types</td></tr>
+  <tr><td><a href="https://github.com/ArnavGoel98/CourtSight/blob/main/results/backlog_clock/states.csv">backlog_clock/states.csv</a></td><td>Backlog clock for every state</td></tr>
+  <tr><td><a href="https://github.com/ArnavGoel98/CourtSight/blob/main/results/covid_excess/by_state_2021.csv">covid_excess/by_state_2021.csv</a></td><td>COVID excess backlog by state</td></tr>
+  <tr><td><a href="https://github.com/ArnavGoel98/CourtSight/blob/main/results/forecast_2026/forecast_states_2026.csv">forecast_states_2026.csv</a></td><td>Locked forecast for 31.12.2026, every state</td></tr>
+  <tr><td><a href="https://github.com/ArnavGoel98/CourtSight/blob/main/official_series.py">official_series.py</a></td><td>The official state series 2014–2025, transcribed with sources and checks</td></tr>
+  <tr><td><a href="https://github.com/ArnavGoel98/CourtSight/tree/main/ddl_compact">ddl_compact/</a></td><td>80.9 million case records compressed to filing × decision month counts (21 MB)</td></tr>
+  </table></div>
+  <p class="prose">To cite: Goel, A. (2026). <i>CourtSight: measuring and forecasting India's district-court backlog.</i> https://github.com/ArnavGoel98/CourtSight</p>
 </section>
 </main>
 <footer><div class="wrap">CourtSight by Arnav Goel · <a href="https://github.com/ArnavGoel98/CourtSight">Code, data and method on GitHub</a> · Case records: Development Data Lab (CC BY-NC-SA 4.0) · Official series: Ministry of Law &amp; Justice answers in the Lok Sabha.</div></footer>
