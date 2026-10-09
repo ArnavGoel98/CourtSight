@@ -1,0 +1,36 @@
+{
+  "civil": {
+    "r2_structural": 0.079,
+    "r2_with_throughput": 0.551,
+    "districts": 583,
+    "mean_pending_3y": 0.3588,
+    "p10_p90_pending_3y": [
+      0.1952,
+      0.5377
+    ]
+  },
+  "criminal": {
+    "r2_structural": 0.066,
+    "r2_with_throughput": 0.662,
+    "districts": 592,
+    "mean_pending_3y": 0.3079,
+    "p10_p90_pending_3y": [
+      0.0884,
+      0.5553
+    ]
+  },
+  "feature_means": {
+    "log_filings_per_court": 7.256,
+    "log_filings": 9.377,
+    "criminal_share": 0.646,
+    "judge_tenure_months": 13.485,
+    "disposal_ratio": 0.774
+  },
+  "feature_sds": {
+    "log_filings_per_court": 0.884,
+    "log_filings": 1.017,
+    "criminal_share": 0.174,
+    "judge_tenure_months": 7.463,
+    "disposal_ratio": 0.181
+  }
+}

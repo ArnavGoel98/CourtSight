@@ -4,6 +4,8 @@
   docs/index.html       the findings, with charts: national backlog, COVID excess, the locked 2026 forecast,
                         the backlog clock by state, time to decision by case type, and the judge-handover placebo
   docs/calculator.html  "how long will my case take?": survival curves for every district x case type
+  docs/paper.html       the working paper (make_paper_pdf.py prints it to docs/courtsight-paper.pdf)
+  docs/calculator-hi.html  the same calculator in Hindi
 
 Both pages are single files: the data is embedded as JSON (aggregates only, no case-level rows) and the charts are
 drawn in the browser as SVG, with no external scripts. Templates: site/*.html, shared styles: site/style.css.
@@ -68,6 +70,12 @@ def site_data() -> dict[str, object]:
     locked = {n: hashlib.sha256((RES / "forecast_2026" / n).read_bytes()).hexdigest()
               for n in ("forecast_states_2026.csv", "forecast_meta.json")}
     med = bench.loc[bench["tau"] == 0.5]
+    wy = json.loads((RES / "waiting_years" / "national.json").read_text())
+    age = pd.read_csv(RES / "waiting_years" / "age_profile.csv")
+    dd = pd.read_csv(RES / "district_drivers" / "districts.csv").dropna(subset=["district_name", "pending_after_3y_civil"])
+    dd = dd.merge(pd.read_csv(RES / "waiting_years" / "districts.csv")[["district_id", "case_years"]], on="district_id")
+    co = pd.read_csv(RES / "district_drivers" / "coefficients.csv")
+    dsum = json.loads((RES / "district_drivers" / "summary.json").read_text())
     return {
         "pending": {str(k): int(v) for k, v in p.items()},
         "covid": [{"year": int(r.year), "actual": int(r.actual), "cf": int(r.counterfactual),
@@ -89,6 +97,13 @@ def site_data() -> dict[str, object]:
                   "true": [v[0] for v in jt["effect_by_month"].values()],
                   "lo": [v[1] for v in jt["effect_by_month"].values()], "hi": [v[2] for v in jt["effect_by_month"].values()],
                   "placebo": jt.get("placebo_effect_by_month", {}), "means": jt.get("placebo_mean_post_effect", {})},
+        "waiting": {**{k: v for k, v in wy.items() if k != "collection_months"},
+                    "age": {"civil": age["civil"].tolist(), "criminal": age["criminal"].tolist()}},
+        "districts": [[r.state_name, r.district_name, _num(r.pending_after_3y_civil), _num(r.pending_after_3y_criminal),
+                       _num(r.median_months_civil), _num(r.judge_tenure_months, 1), int(r.case_years)]
+                      for r in dd.sort_values(["pending_after_3y_civil", "state_name", "district_name"], kind="mergesort").itertuples()],
+        "drivers": {"coef": [{k: (_num(v, 4) if isinstance(v, float) else v) for k, v in r.items()}
+                             for r in co.to_dict("records")], "summary": dsum},
         "model": {"skill_vs_best_naive": [_num(med["skill_vs_best_naive"].min(), 2), _num(med["skill_vs_best_naive"].max(), 2)]},
     }
 
@@ -110,19 +125,72 @@ def calc_data() -> dict[str, object]:
             "states": states}
 
 
-def render(template: str, data: dict[str, object], out: Path) -> None:
+def paper_vars(d: dict) -> dict[str, str]:
+    """Numbers quoted in the paper's prose, all taken from the same data as its figures."""
+    P, ttd, W, F = d["pending"], {r["type"]: r for r in d["ttd"]}, d["waiting"], d["forecast"]
+    nat = pd.read_csv(RES / "time_to_decision" / "national_civil_criminal.csv").set_index("case_type")
+    wy = json.loads((RES / "waiting_years" / "national.json").read_text())
+    c21 = next(r for r in d["covid"] if r["year"] == 2021)
+    cov = pd.read_csv(RES / "covid_excess" / "national.csv").set_index("year")
+    clock = pd.read_csv(RES / "backlog_clock" / "national.csv").iloc[0]
+    sm, co = d["drivers"]["summary"], {(r["outcome"], r["model"], r["feature"]): r for r in d["drivers"]["coef"]}
+    c = lambda f: co[("civil", "structural", f)]
+    pp = lambda v: f"{v * 100:+.1f}".replace("-", "−")
+    yrs = sorted(P, key=int)
+    cr = lambda v: f"{v / 1e7:.2f}"
+    J = d["judge"]["means"]
+    return {
+        "date": "October 2026", "first": yrs[0], "last": yrs[-1], "pending_first": cr(P[yrs[0]]), "pending_last": cr(P[yrs[-1]]),
+        "cases_m": f"{W['cases_filed'] / 1e6:.1f}", "districts_ttd": "626",
+        "coll_first": "December 2018", "coll_last": "July 2020",
+        "civ_med": f"{ttd['civ_suit']['median_months']:.0f}", "civ_5y": f"{ttd['civ_suit']['pending_after_5y'] * 100:.0f}",
+        "fam_med": f"{ttd['civ_family']['median_months']:.0f}",
+        "civil_med": f"{nat.loc['civil', 'median_months']:.0f}", "crim_med": f"{nat.loc['criminal', 'median_months']:.0f}",
+        "crim_5y": f"{nat.loc['criminal', 'pending_after_5y'] * 100:.0f}",
+        "cy_all": f"{W['case_years_all'] / 1e7:.1f}", "cy_pending": f"{W['case_years_pending'] / 1e7:.1f}",
+        "pend_cr": f"{W['pending_at_collection'] / 1e7:.1f}", "age_med": f"{W['median_age_years'] + 1e-9:.1f}",
+        "age_mean": f"{W['mean_age_years']:.1f}", "over3": f"{W['share_over_3y'] * 100:.0f}", "over5": f"{W['share_over_5y'] * 100:.0f}",
+        "covid21": f"{c21['excess'] / 1e5:.0f}", "covid21_lo": f"{c21['excess_lo'] / 1e5:.0f}", "covid21_hi": f"{c21['excess_hi'] / 1e5:.0f}",
+        "covid21_share": f"{cov.loc[2021, 'excess_share_of_backlog'] * 100:.0f}",
+        "per_year": f"{clock['change_per_year'] / 1e5:.0f}", "clear10": f"{clock['extra_disposals_to_clear_in_10y'] / 1e5:.0f}",
+        "clear10_pct": f"{clock['clear_in_10y_vs_2021_disposals'] * 100:.0f}",
+        "drv_n": str(sm["civil"]["districts"]), "drv_p10": f"{sm['civil']['p10_p90_pending_3y'][0] * 100:.0f}",
+        "drv_p90": f"{sm['civil']['p10_p90_pending_3y'][1] * 100:.0f}",
+        "load_b": pp(c("log_filings_per_court")["coef_per_sd"]), "load_lo": pp(c("log_filings_per_court")["lo"]),
+        "load_hi": pp(c("log_filings_per_court")["hi"]), "ten_b": pp(c("judge_tenure_months")["coef_per_sd"]),
+        "ten_sd": f"{sm['feature_sds']['judge_tenure_months']:.0f}", "crim_b": pp(c("criminal_share")["coef_per_sd"]),
+        "r2s": f"{sm['civil']['r2_structural'] * 100:.0f}", "r2t": f"{sm['civil']['r2_with_throughput'] * 100:.0f}",
+        "j_events": f"{d['judge']['events']:,}", "j_districts": str(d["judge"]["districts"]),
+        "j_true": f"{-J['true_date'] * 100:.0f}", "j_p18": f"{-J['18_months_earlier'] * 100:.0f}",
+        "j_p30": f"{-J['30_months_earlier'] * 100:.0f}", "j_link": f"{d['judge']['link'] * 100:.0f}",
+        "skill_lo": f"{d['model']['skill_vs_best_naive'][0] * 100:.0f}", "skill_hi": f"{d['model']['skill_vs_best_naive'][1] * 100:.0f}",
+        "f50": cr(F["q50"]), "f10": cr(F["q10"]), "f90": cr(F["q90"]), "locked_on": F["locked_on"], "commit": F["commit"],
+        "sha": F["sha"]["forecast_states_2026.csv"],
+    }
+
+
+def render(template: str, data: dict[str, object], out: Path, lang: str = "en", fill: dict[str, str] | None = None) -> None:
     css = (SITE / "style.css").read_text()
     charts = (SITE / "charts.js").read_text()
     page = ((SITE / template).read_text().replace("/*CSS*/", css).replace("/*CHARTS*/", charts)
-            .replace("/*DATA*/null", json.dumps(data, separators=(",", ":"))))
+            .replace("/*DATA*/null", json.dumps(data, separators=(",", ":"))).replace('"/*LANG*/en"', json.dumps(lang)))
+    for k, v in (fill or {}).items():
+        page = page.replace("{{" + k + "}}", v)
+    assert "{{" not in page, f"unfilled placeholder in {template}"
+    if lang != "en":
+        page = page.replace('<html lang="en">', f'<html lang="{lang}">')
     out.write_text(page)
     print(f"wrote {out.relative_to(HERE)} ({out.stat().st_size / 1e3:.0f} kB)")
 
 
 def main() -> None:
     (HERE / "docs").mkdir(exist_ok=True)
-    render("index.html", site_data(), HERE / "docs" / "index.html")
-    render("calculator.html", calc_data(), HERE / "docs" / "calculator.html")
+    sd = site_data()
+    render("index.html", sd, HERE / "docs" / "index.html")
+    render("paper.html", sd, HERE / "docs" / "paper.html", fill=paper_vars(sd))
+    cd = calc_data()
+    render("calculator.html", cd, HERE / "docs" / "calculator.html")
+    render("calculator.html", cd, HERE / "docs" / "calculator-hi.html", lang="hi")
 
 
 if __name__ == "__main__":

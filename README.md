@@ -9,6 +9,8 @@ and the weaker results are reported alongside the strong ones.
 
 **Project site:** https://arnavgoel98.github.io/CourtSight/ (interactive charts of every result below) ·
 **[Case time calculator](https://arnavgoel98.github.io/CourtSight/calculator.html)**
+([हिन्दी में](https://arnavgoel98.github.io/CourtSight/calculator-hi.html)) ·
+**[Working paper](https://arnavgoel98.github.io/CourtSight/paper.html)** ([PDF](docs/courtsight-paper.pdf))
 
 ## Results
 
@@ -55,7 +57,21 @@ a year), divorce and family cases take a median **13 months**, motor-accident cl
 **Try it:** [`docs/calculator.html`](docs/calculator.html), a "how long will my case take?" page with the full
 survival curve for every district and case type, next to the national curve and the state's other districts.
 
-### 5. What a change of judge costs a courtroom: no reliable estimate (a negative result)
+### 5. 13.3 crore case-years of waiting
+The 80.8 million cases filed in 2010–2018 spent a combined **13.3 crore case-years** undecided, counting up to each
+state's collection date. The **2.2 crore** still pending at collection had already waited **6.4 crore case-years**, and
+that clock was still running: the typical pending case was **2.3 years** old, **39%** were older than 3 years and
+**18%** older than 5. These are lower bounds, since cases filed before 2010 are not in the data
+(`waiting_years.py`, [`results/waiting_years/`](results/waiting_years/)).
+
+### 6. Slow districts are not explained by caseload (correlation, not cause)
+The share of civil cases still pending after 3 years ranges from **20%** in the fastest tenth of districts to **54%**
+in the slowest. Across 583 districts, caseload per courtroom barely predicts it (−0.4 points per SD, 95% interval
+−2.1 to +1.2). Longer judge tenure goes with faster courts (−2.7 points per SD), and a heavier criminal docket with
+slower civil cases (+2.5). Together these explain only **8%** of the variation; most of what makes a district slow is
+not in this data (`district_drivers.py`, [`results/district_drivers/`](results/district_drivers/)).
+
+### 7. What a change of judge costs a courtroom: no reliable estimate (a negative result)
 [`judge_transfer.py`](judge_transfer.py) compares courtroom disposals around 11,142 judge handovers (447 districts)
 with courtrooms in the same district that had no change. On synthetic data it recovers a planted 30% drop. On the
 real data it finds disposals about **10% lower for a year** after a handover, **but a placebo test fails**: moving
@@ -65,7 +81,7 @@ slowing down anyway, not the cost of the change itself. Only 42% of judge-months
 same court number, so courtroom matching is weak. We report this as no reliable estimate rather than publish the
 −10%. Details: [`results/judge_transfer/summary.json`](results/judge_transfer/summary.json).
 
-### 6. A district-level model on 80.9 million cases, graded honestly
+### 8. A district-level model on 80.9 million cases, graded honestly
 - **Model:** quantile models (best case, median, worst case) of each district's 12-month backlog growth and clearance
   ratio (disposals ÷ filings). They are built from every case's filing and decision dates in Development Data Lab's
   eCourts data: 632 districts, 2010–2018.
@@ -97,6 +113,8 @@ same court number, so courtroom matching is weak. We report this as no reliable 
 | `grade_state_2019.py`, `naive_benchmarks.py` | 2019 grading and the strict benchmarks |
 | `build_site.py`, `site/`, `docs/` | Project site and calculator (built from `results/`, served from `docs/`); `site/card.html` is the link-preview image (`docs/og.png`) |
 | `backlog_clock.py`, `time_to_decision.py`, `judge_transfer.py` | Clearance clock, time to decision, judge handover study |
+| `waiting_years.py`, `district_drivers.py` | Case-years of waiting; what slow districts have in common |
+| `site/paper.html`, `make_paper_pdf.py` | Working paper (numbers filled in from `results/` at build time) and its PDF |
 | `results/ddl_2010_2018/` | Model outputs, metrics, charts and `RESULTS.md` |
 | `sources/` | The official documents used, with URLs and SHA-256 fingerprints |
 | `tests/` | Transcription checks against printed totals, locked-forecast integrity, grading arithmetic |
@@ -108,6 +126,8 @@ python3 covid_excess.py                     # COVID estimate (official data is b
 python3 forecast_2026.py                    # rebuilds the 2026 forecast and its backtest
 python3 pendency_forecast.py --ddl-compact ddl_compact --ddl-only --out outputs/   # district model (~5 min)
 python3 make_charts.py                      # charts
+python3 waiting_years.py && python3 district_drivers.py   # needs ddl_compact/
+python3 build_site.py && python3 make_paper_pdf.py         # site, paper and PDF (PDF needs playwright)
 python3 tests/test_official_series.py && python3 tests/test_locked_forecast.py && python3 tests/test_grade_2019.py
 ```
 

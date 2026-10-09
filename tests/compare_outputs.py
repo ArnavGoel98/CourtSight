@@ -48,6 +48,7 @@ def main() -> None:
         if not ok:
             bad.append(str(f.relative_to(old)))
     if bad:
+        print(f"::error::results differ: {bad}")
         raise SystemExit(f"results differ from the committed ones: {bad}")
     print("regenerated results match the committed ones")
 

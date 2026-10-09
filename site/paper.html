@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CourtSight Working Paper</title>
+<meta name="description" content="Measuring, explaining and forecasting India's district-court backlog: survival analysis of 80.8 million cases, a COVID counterfactual, and a forecast locked before the outcome.">
+<meta property="og:title" content="How long do India's district courts take? A working paper">
+<meta property="og:image" content="https://arnavgoel98.github.io/CourtSight/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<style>/*CSS*/
+.paper{max-width:760px}
+.paper h1{max-width:none;font-size:clamp(1.8rem,4vw,2.5rem)}
+.paper h2{font-size:1.25rem;margin:40px 0 8px}
+.paper h3{font-size:1rem;margin:22px 0 4px}
+.paper p,.paper li{color:var(--ink-2);text-align:justify;hyphens:auto}
+.paper p b,.paper li b{color:var(--ink)}
+.abstract{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin:24px 0}
+.abstract p{margin:0}
+.byline{color:var(--ink-2);margin:0}
+figure{margin:24px 0;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;break-inside:avoid}
+figcaption{font-size:.85rem;color:var(--ink-3);margin-top:8px}
+figcaption b{color:var(--ink)}
+.paper table{margin:12px 0;break-inside:avoid}
+.refs li{font-size:.9rem;margin-bottom:6px;text-align:left}
+.dl{display:inline-block;margin-top:8px;font-size:.92rem}
+@media print{
+  nav,.dl{display:none}
+  body{font-size:10.5pt;background:#fff}
+  .wrap{max-width:none;padding:0}
+  header.hero{padding:0 0 8px}
+  figure{border-color:#ddd}
+  .paper h2{break-after:avoid}
+  footer{margin-top:24px}
+}
+@page{size:A4;margin:18mm 17mm}
+</style>
+</head>
+<body>
+<nav><div class="wrap"><b>CourtSight</b><a href="index.html">Findings</a><a href="paper.html" aria-current="page">Paper</a><a href="calculator.html">Calculator →</a></div></nav>
+<main class="wrap paper">
+<header class="hero" style="padding-top:40px">
+  <div class="kicker">Working paper · {{date}}</div>
+  <h1>How long do India's district courts take? Measuring, explaining and forecasting the backlog</h1>
+  <p class="byline">Arnav Goel · <a href="https://github.com/ArnavGoel98/CourtSight">github.com/ArnavGoel98/CourtSight</a></p>
+  <a class="dl" href="courtsight-paper.pdf">Download PDF</a>
+</header>
+
+<div class="abstract"><p><b>Abstract.</b> India's district and subordinate courts held {{pending_last}} crore pending cases at the end of {{last}}, up from {{pending_first}} crore in {{first}}. We combine the government's state-wise pending and disposal counts (2014–{{last}}) with {{cases_m}} million case records from {{districts_ttd}} districts (filed 2010–2018). Four results follow. (i) Kaplan–Meier estimates that account for still-pending cases put the median time to a decision at {{civ_med}} months for an ordinary civil suit, with {{civ_5y}}% still undecided after five years. (ii) The cases filed in 2010–2018 spent {{cy_all}} crore case-years waiting; the {{pend_cr}} crore still undecided at collection had a median age of {{age_med}} years. (iii) COVID added an estimated {{covid21}} lakh cases ({{covid21_lo}}–{{covid21_hi}} lakh) to the backlog by the end of 2021, calibrated against the projection method's own pre-COVID errors. (iv) Across districts, caseload per courtroom barely predicts slowness, and structural features explain only {{r2s}}% of the variation. Two negative results are reported in full: a judge-handover design fails its placebo test, and a district-level forecasting model ties, rather than beats, simple official-series forecasts for 2019. A forecast of every state's pending count on 31 December 2026 was locked by hash before the outcome exists.</p></div>
+
+<h2>1. Introduction</h2>
+<p>Delay is the most visible failure of Indian courts, and the least well measured. Official dashboards report how many cases are pending, but not how long a case takes: a pending count mixes old and new cases, and averages over decided cases alone leave out exactly the slow ones that are still waiting. This paper measures delay with methods that handle unfinished cases, puts a number on the total time spent waiting, separates the COVID shock from the trend that was already under way, and asks what slow districts have in common. It also commits to a forecast that can be checked.</p>
+<p>The emphasis throughout is on claims that can be falsified. Each estimate is paired with a benchmark or a placebo test, the results that failed are reported alongside those that held, and every figure is rebuilt from the public repository by continuous integration.</p>
+
+<h2>2. Data</h2>
+<p><b>Official series.</b> State-wise pending cases at 31 December for 2014–{{last}} and disposals for 2014–2021, transcribed from the Ministry of Law and Justice's answers to Lok Sabha questions (USQ 1838, 16 December 2022; USQ 2362, 13 February 2026), which in turn draw on the National Judicial Data Grid. The state figures are tested against the printed national totals; Kerala's 2016 disposal figure, roughly ten times its neighbouring years, fails and is excluded. Filings are never published for all years, so they are recovered from the stock–flow identity <span class="eq" style="display:inline;padding:1px 6px">filed<sub>t</sub> = P<sub>t</sub> − P<sub>t−1</sub> + D<sub>t</sub></span>.</p>
+<p><b>Case records.</b> The Development Data Lab's eCourts extract (CC BY-NC-SA 4.0): {{cases_m}} million cases filed between January 2010 and December 2018, with filing date, decision date (if any), case type, court and district. Each state was collected at a different time, between {{coll_first}} and {{coll_last}}. A state's collection month is defined as the last month in which recorded decisions reach 20% of its 2018 monthly average; later decision dates, including typographical ones such as the year 9201, are treated as undecided. Case types are grouped into ten categories from the free-text names each court uses. The judge table gives each judge's courtroom and start and end dates.</p>
+<p><b>What is published.</b> Only aggregates: counts by district, filing month and decision month. No case-level rows and no names of people leave the analysis.</p>
+
+<h2>3. How long does a case take?</h2>
+<p>For each district and case type, the time from filing to any final disposal is estimated with the Kaplan–Meier product-limit estimator, <span class="eq" style="display:inline;padding:1px 6px">Ŝ(t) = ∏<sub>tᵢ ≤ t</sub>(1 − dᵢ/nᵢ)</span>, at monthly resolution. Cases still undecided at the collection month are right-censored there, so slow cases contribute the time they are known to have waited instead of being dropped. Intervals use Greenwood's variance. "Decided" means any disposal, including dismissal, withdrawal, settlement and transfer.</p>
+<figure><div class="legend"><span><i style="background:var(--s1)"></i>Civil suit</span><span><i style="background:var(--s2)"></i>Sessions trial</span><span><i style="background:var(--s3)"></i>Cheque bounce</span><span><i style="background:#9b59b6"></i>Family</span><span><i style="background:var(--neutral)"></i>Other types</span></div><div id="f-km"></div><figcaption><b>Figure 1.</b> Share of cases still pending, by months since filing, national, by case type (Kaplan–Meier). Highlighted: civil suits, sessions trials, cheque-bounce cases and family cases.</figcaption></figure>
+<div style="overflow-x:auto"><table id="t-ttd"></table></div>
+<p>The ordering is stable and large. Bail applications are decided within weeks. Family cases take a median of {{fam_med}} months. Civil suits are the slowest major category: median {{civ_med}} months, and {{civ_5y}}% are still pending five years after filing. Across all civil cases the median is {{civil_med}} months, against {{crim_med}} for criminal cases, but the criminal tail is as long: {{crim_5y}}% of criminal cases are still pending after five years. District-level curves for 626 districts are published in the interactive calculator, in English and Hindi.</p>
+
+<h2>4. Years of waiting</h2>
+<p>A pending count treats a case filed last month and a case filed eight years ago alike. Summing the age of each pending case at collection gives a measure of accumulated delay. Of the {{cases_m}} million cases filed in 2010–2018, <b>{{pend_cr}} crore</b> were still undecided when their state's data was collected. Together they had waited <b>{{cy_pending}} crore case-years</b>; adding the time spent by the cases decided before collection gives <b>{{cy_all}} crore case-years</b>. The median pending case had waited {{age_med}} years (mean {{age_mean}}); {{over3}}% had waited more than three years and {{over5}}% more than five. These are lower bounds: cases filed before 2010 are not in the data, and most cases involve two or more people.</p>
+<figure><div id="f-age"></div><figcaption><b>Figure 2.</b> Cases filed 2010–2018 still pending at collection, by full years already waited. Blue: civil; orange: criminal.</figcaption></figure>
+
+<h2>5. The COVID shock</h2>
+<p>The counterfactual for each state projects its mean log growth over 2015–2019 forward from 2019, a rule fixed before post-2019 data was examined. In backtests from 2016–2018 origins, this projection under-predicted a backlog that was already accelerating (national error between about −3% and +2% per year of horizon). The headline counterfactual is corrected by the median backtest error, and its range spans the backtest errors, so the stated uncertainty is the method's own observed error rather than a model of it. By the end of 2021 the backlog stood <b>{{covid21}} lakh</b> above the counterfactual (range {{covid21_lo}}–{{covid21_hi}} lakh), {{covid21_share}}% of the stock. The gap narrows after 2022, and by 2025 the range includes zero.</p>
+<figure><div id="f-backlog"></div><figcaption><b>Figure 3.</b> Pending cases at year end (blue), the no-COVID counterfactual with its backtest-calibrated range (grey), and the locked 2026 forecast with its 10–90% range (orange).</figcaption></figure>
+<p>At the 2023–2025 pace, the national backlog grows by about {{per_year}} lakh cases a year and does not clear; clearing it within ten years would take about {{clear10}} lakh extra decisions every year, {{clear10_pct}}% more than courts decided in 2021.</p>
+
+<h2>6. What do slow districts have in common?</h2>
+<p>For {{drv_n}} districts with at least 2,000 cases, the outcome is the share of civil cases still pending three years after filing (Kaplan–Meier). It ranges from {{drv_p10}}% in the fastest tenth of districts to {{drv_p90}}% in the slowest. We regress it on standardised district features computed from the case and judge records for 2014–2017: caseload per active courtroom (log), district size (log annual filings), the criminal share of filings, and the median months a judge stays in one courtroom. The 95% intervals come from 2,000 bootstrap resamples of districts.</p>
+<figure><div id="f-coef"></div><figcaption><b>Figure 4.</b> Change in the share of civil cases pending after three years for a one-standard-deviation increase in each feature, with 95% bootstrap intervals.</figcaption></figure>
+<p>Caseload per courtroom, the usual explanation, barely predicts slowness ({{load_b}} percentage points per standard deviation, interval {{load_lo}} to {{load_hi}}). Longer judge tenure goes with faster courts ({{ten_b}} points per SD of about {{ten_sd}} months), and a heavier criminal docket with slower civil cases ({{crim_b}} points). Together these features explain only <b>{{r2s}}%</b> of the variance between districts. A throughput variable (decisions ÷ filings) raises this to {{r2t}}%, but it is close to a restatement of the outcome and is not interpreted. These are cross-sectional correlations: districts with longer-serving judges may differ in many other ways, and most of what makes a district slow (local practice, adjournments, vacancies, the bar) is not recorded in this data.</p>
+
+<h2>7. Does a change of judge slow a courtroom? A failed design</h2>
+<p>Judges in India are transferred often, and a new judge must learn a docket. We built a stacked difference-in-differences event study around {{j_events}} judge handovers in {{j_districts}} districts: each courtroom's monthly disposals relative to its own previous twelve months, minus the same for same-district courtrooms without a change, with a district block bootstrap. A planted synthetic −30% effect is recovered. On real data, disposals are about {{j_true}}% lower in the year after a handover.</p>
+<p>The design does not pass a placebo test. Moving every handover 18 or 30 months earlier, to dates when no judge changed, still yields drops of {{j_p18}}% and {{j_p30}}%. The decline is under way before the new judge arrives; the comparison picks up courtrooms that were already slowing. We therefore report no estimate. A further limitation: courtroom numbers in the judge and case tables agree in only {{j_link}}% of judge-months.</p>
+<figure><div id="f-judge"></div><figcaption><b>Figure 5.</b> Disposals relative to pre-handover levels, by month from the handover: real dates with 95% interval (blue), and placebo dates 18 (orange) and 30 (green) months earlier.</figcaption></figure>
+
+<h2>8. Forecasting, and grading forecasts honestly</h2>
+<p><b>2019, graded.</b> A district-level LightGBM quantile model trained on the case records beats the best simple forecast by {{skill_lo}}–{{skill_hi}}% (pinball loss) on held-out 2016 and 2017 origins. Its 2019 state forecasts were committed before any 2019 outcome was examined and then scored against the official figures for 27 states. At state level it matches simple forecasts built from the official series (mean absolute error of backlog growth 0.077, against 0.075 for a common rate and 0.076 for repeating 2018) but does not beat them. We report this as a tie.</p>
+<p><b>2026, locked.</b> Pending cases on 31 December 2026, for every state, were forecast from data through 2025 with a method chosen by a rule fixed before any backtest (lowest case-weighted error of one-year state log growth across six target years). The national median forecast is <b>{{f50}} crore</b> (10–90%: {{f10}}–{{f90}} crore). The forecast files were committed on {{locked_on}} (commit <code>{{commit}}</code>) and are guarded by a test that fails if they change. SHA-256 of the state forecast file:</p>
+<p class="hash">{{sha}}</p>
+<p>The forecast will be graded once the government publishes the 2026 figure.</p>
+
+<h2>9. Limitations</h2>
+<ul>
+<li>No public case-level data exists after 2018. The official 2023–2025 series has no disposal figures, and some state series jump in single years (Tripura −75%, Uttarakhand −17%).</li>
+<li>"Decided" includes dismissals, withdrawals and transfers; a transfer can end one case record and open another.</li>
+<li>Case-type grouping relies on court-specific names; 9% of cases fall in "other".</li>
+<li>Nothing here identifies how many judges would be needed, or what would happen if a policy changed. The district analysis is descriptive, and the one causal design attempted failed.</li>
+<li>High Courts and the Supreme Court are not covered.</li>
+</ul>
+
+<h2>10. Conclusion</h2>
+<p>Measured properly, delay in India's district courts is longer than averages over decided cases suggest, and the backlog was growing before COVID and is still growing after it. The variation between districts is large and is mostly not explained by caseload per courtroom, which argues for studying how courts work, not just how many there are. The methods, data aggregates, interactive tools and a forecast waiting to be graded are public, so each claim here can be checked and, if wrong, corrected.</p>
+
+<h2>References</h2>
+<ol class="refs">
+<li>Ash, E., Asher, S., Bhowmick, A., Bhupatiraju, S., Chen, D., Devi, T., Goessmann, C., Novosad, P., Siddiqi, B. (2021). <i>In-group bias in the Indian judiciary: Evidence from 5 million criminal cases.</i> Development Data Lab.</li>
+<li>Development Data Lab. <i>Judicial data: eCourts case records 2010–2018.</i> CC BY-NC-SA 4.0.</li>
+<li>Government of India, Ministry of Law and Justice. Lok Sabha Unstarred Question 1838 (16 December 2022) and 2362 (13 February 2026).</li>
+<li>Greenwood, M. (1926). <i>The natural duration of cancer.</i> Reports on Public Health and Medical Subjects 33.</li>
+<li>Kaplan, E. L., Meier, P. (1958). Nonparametric estimation from incomplete observations. <i>Journal of the American Statistical Association</i> 53(282), 457–481.</li>
+<li>National Judicial Data Grid. https://njdg.ecourts.gov.in</li>
+<li>Cengiz, D., Dube, A., Lindner, A., Zipperer, B. (2019). The effect of minimum wages on low-wage jobs. <i>Quarterly Journal of Economics</i> 134(3), 1405–1454. (Stacked event-study design.)</li>
+</ol>
+</main>
+<footer><div class="wrap">Code: MIT licence. Case-record aggregates: CC BY-NC-SA 4.0, following the source. Cite as: Goel, A. (2026). <i>How long do India's district courts take? Measuring, explaining and forecasting the backlog.</i> CourtSight working paper.</div></footer>
+<script>
+const D=/*DATA*/null;
+/*CHARTS*/
+const P=D.pending, years=Object.keys(P).map(Number), F=D.forecast, cr=v=>(v/1e7).toFixed(2), lakh=v=>Math.round(v/1e5).toLocaleString("en-IN");
+const xsM=[...Array(41).keys()].map(i=>i*3), HL=["civ_suit","crim_sessions","crim_ni138","civ_family"], PAL=["var(--s1)","var(--s2)","var(--s3)","#9b59b6"];
+document.getElementById("t-ttd").innerHTML=`<tr><th>Case type</th><th>Cases</th><th>Median (months)</th><th>Pending at 1 yr</th><th>at 3 yrs</th><th>at 5 yrs</th></tr>`+
+  [...D.ttd].sort((a,b)=>b.cases-a.cases).map(r=>`<tr><td>${r.label}</td><td>${(r.cases/1e6).toFixed(1)} M</td><td>${r.median_months}</td><td>${Math.round(r.pending_after_1y*100)}%</td><td>${Math.round(r.pending_after_3y*100)}%</td><td>${Math.round(r.pending_after_5y*100)}%</td></tr>`).join("");
+function draw(){
+  lineChart(document.getElementById("f-km"),{x:xsM,ymin:0,ymax:1,height:280,yfmt:v=>Math.round(v*100)+"%",xfmt:v=>v%12?"":(v/12)+"y",xticks:xsM.filter(v=>v%12===0),right:20,
+    series:[...D.ttd.filter(r=>!HL.includes(r.type)).map(r=>({name:r.short,values:D.curves[r.type],color:"var(--neutral)",width:1,step:true,noTip:true})),
+      ...HL.map((t,i)=>({name:D.ttd.find(r=>r.type===t).short,values:D.curves[t],color:PAL[i],width:2.25,step:true}))]});
+  const W=D.waiting;
+  columnChart(document.getElementById("f-age"),W.age.civil.map((_,i)=>i===9?"9+":i+" yr"),[{name:"Civil",values:W.age.civil,color:"var(--s1)"},{name:"Criminal",values:W.age.criminal,color:"var(--s2)"}],{height:230,yfmt:v=>lakh(v)+" L"});
+  const xs=[...years,2026], get=k=>xs.map(y=>{const r=D.covid.find(c=>c.year===y);return r?r[k]:(y===2019?P[2019]:null)});
+  lineChart(document.getElementById("f-backlog"),{x:xs,ymin:2e7,ymax:5.5e7,height:280,yfmt:v=>(v/1e7).toFixed(1)+" cr",right:60,marks:[{x:2020,label:"COVID"}],
+    series:[{name:"Without COVID",values:get("cf"),color:"var(--ink-3)",dash:"5 5",band:{lo:get("lo"),hi:get("hi")}},
+      {name:"2026 forecast",values:xs.map(y=>y===2025?P[2025]:y===2026?F.q50:null),color:"var(--s2)",dash:"2 4",band:{lo:xs.map(y=>y===2025?P[2025]:y===2026?F.q10:null),hi:xs.map(y=>y===2025?P[2025]:y===2026?F.q90:null),color:"var(--band-2)"}},
+      {name:"Pending",values:xs.map(y=>P[y]??null),color:"var(--s1)",width:2.5,label:cr(P[years[years.length-1]])+" cr"}]});
+  const FN={log_filings_per_court:"Caseload per courtroom (log)",log_filings:"District size (log filings)",criminal_share:"Criminal share of docket",judge_tenure_months:"Judge tenure in a courtroom"};
+  dotWhisker(document.getElementById("f-coef"),D.drivers.coef.filter(r=>r.outcome==="civil"&&r.model==="structural").map(r=>({name:FN[r.feature],v:r.coef_per_sd,lo:r.lo,hi:r.hi})),{fmt:fmtPP});
+  const J=D.judge, xj=[...Array(19).keys()].map(i=>i-6), jv=[...J.lo,...J.hi,...Object.values(J.placebo).flat()].filter(v=>v!=null);
+  lineChart(document.getElementById("f-judge"),{x:xj,height:260,ymin:Math.floor(Math.min(...jv)*20)/20,ymax:Math.ceil(Math.max(...jv,0)*20)/20,yfmt:fmtPct,xfmt:v=>v===0?"handover":(v>0?"+":"")+v,xticks:[-6,-3,0,3,6,9,12],marks:[{x:0,label:""}],
+    series:[{name:"30 months earlier",values:J.placebo["30_months_earlier"]||[],color:"var(--s3)",dash:"5 4"},{name:"18 months earlier",values:J.placebo["18_months_earlier"]||[],color:"var(--s2)"},
+      {name:"Real dates",values:J.true,color:"var(--s1)",width:2.5,band:{lo:J.lo,hi:J.hi}}]});
+}
+onResize(draw);
+</script>
+</body>
+</html>
