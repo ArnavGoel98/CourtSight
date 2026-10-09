@@ -74,7 +74,7 @@ def main() -> None:
     d["mean_age_years"] = d["case_years"] / d["pending"]
     d["share_over_3y"] = d["over3"] / d["pending"]
     d["case_years"] = d["case_years"].round().astype(int)
-    d = d.drop(columns="over3").reset_index().sort_values("case_years", ascending=False)
+    d = d.drop(columns="over3").reset_index().sort_values(["case_years", "district_id"], ascending=[False, True])
     d.round(4).to_csv(OUT / "districts.csv", index=False)
     print(json.dumps(nat, indent=2))
 
