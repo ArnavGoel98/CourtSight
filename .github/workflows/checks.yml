@@ -23,7 +23,11 @@ jobs:
       - name: Project site is up to date with the results
         run: |
           python build_site.py
-          git diff --exit-code docs/
+          if ! git diff --quiet docs/; then
+            git diff --stat docs/ | sed 's/^/::error::/'
+            git diff -U0 docs/ | grep '^[-+][^-+]' | cut -c1-300 | head -6 | sed 's/^/::error::/'
+            exit 1
+          fi
       - name: COVID estimate and 2019 grading reproduce
         run: |
           mkdir -p /tmp/committed/grading
