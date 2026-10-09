@@ -64,7 +64,7 @@ def events(j: pd.DataFrame) -> pd.DataFrame:
 
 def event_study(panel: pd.Series, ev: pd.DataFrame, starts: pd.DataFrame, min_base: float) -> pd.DataFrame:
     """One row per usable event: treated and control paths for k = -PRE..POST, scaled by pre-event mean."""
-    wide = panel.unstack("t", fill_value=0.0)
+    wide = panel.astype(float).unstack("t", fill_value=0.0)
     cols = wide.columns.to_numpy()
     ks = np.arange(-PRE, POST + 1)
     rows = []
@@ -150,11 +150,18 @@ def main() -> None:
     link = hits / max(total, 1)
     ev = events(j)
     es = event_study(panel, ev, j[["district_id", "court_no", "s"]], args.min_base)
-    es.to_csv(args.out / "events.csv", index=False)
     res = {"courtroom_link_rate": link, "candidate_handovers": int(len(ev)), **summarise(es, args.draws)}
     for lab, sub in (("vacancy_0_1m", es.loc[es["vacancy_months"] <= 1]), ("vacancy_2m_plus", es.loc[es["vacancy_months"] >= 2])):
         if len(sub) >= 30:
             res[f"by_{lab}"] = {k: v for k, v in summarise(sub, max(args.draws // 5, 50)).items() if k != "effect_by_month"}
+    # placebo: the same design with each handover moved 18 and 30 months earlier, where no judge changed.
+    # A real handover cost shows up at the true date only; a similar "effect" at fake dates means the design is
+    # picking up courtrooms that were declining anyway (or mean reversion from the baseline window).
+    k_post = [f"k{k}" for k in range(0, POST)]
+    res["placebo_mean_post_effect"] = {"true_date": float(es[k_post].mean().mean())}
+    for shift in (18, 30):
+        pe = event_study(panel, ev.assign(t0=ev["t0"] - shift), j[["district_id", "court_no", "s"]], args.min_base)
+        res["placebo_mean_post_effect"][f"{shift}_months_earlier"] = float(pe[k_post].mean().mean())
     (args.out / "summary.json").write_text(json.dumps(res, indent=2))
     print(json.dumps({k: v for k, v in res.items() if k != "effect_by_month"}, indent=2))
     print({k: round(v[0], 3) for k, v in res["effect_by_month"].items()})
