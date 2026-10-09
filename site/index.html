@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CourtSight</title>
+<meta name="description" content="India's district-court backlog, measured: 80.9 million case records, official series to 2025, a locked forecast for 2026, and how long cases really take.">
+<style>/*CSS*/</style>
+</head>
+<body>
+<nav><div class="wrap"><b>CourtSight</b>
+<a href="#backlog">Backlog</a><a href="#clock">Clock</a><a href="#time">Time to decision</a><a href="#judges">Judge changes</a><a href="#method">Method</a><a href="calculator.html">Calculator →</a>
+</div></nav>
+<main class="wrap">
+<header class="hero">
+  <div class="kicker">India · district &amp; subordinate courts · 2010–2026</div>
+  <h1 id="h1">Crore cases are waiting in India's district courts.</h1>
+  <p class="lede">CourtSight measures the backlog from two independent sources: the government's own state-by-state pending counts (2014–2025), and <b>80.9 million individual case records</b> from 632 districts (2010–2018). It estimates what COVID added, how long cases really take, and when each state would clear its backlog. Its forecast for 2026 was locked before the outcome exists, so it can be graded against the official count.</p>
+  <div class="tiles" id="tiles"></div>
+</header>
+
+<section id="backlog">
+  <div class="num">01</div>
+  <h2>The backlog, and what COVID added</h2>
+  <p class="prose" id="backlog-text"></p>
+  <div class="card">
+    <div class="legend"><span><i style="background:var(--s1)"></i>Pending cases, official (31 Dec)</span><span><i class="dash" style="color:var(--ink-3)"></i>Without COVID (trend counterfactual)</span><span><i class="box" style="background:var(--band)"></i>Counterfactual range (backtest-calibrated)</span><span><i style="background:var(--s2)"></i>Locked 2026 forecast, 80% interval</span></div>
+    <div id="c-backlog"></div>
+    <div class="caption">Sources: Lok Sabha USQ 1838 (2022) and USQ 2362 (2026). Counterfactual: each state's mean 2015–2019 growth, corrected by its own backtest error. Hover for values.</div>
+  </div>
+</section>
+
+<section id="clock">
+  <div class="num">02</div>
+  <h2>The backlog clock</h2>
+  <p class="prose" id="clock-text"></p>
+  <div class="card">
+    <div class="legend"><span><i class="box" style="background:var(--neg)"></i>Growing</span><span><i class="box" style="background:var(--pos)"></i>Shrinking</span></div>
+    <div id="c-clock"></div>
+    <div class="caption">Mean yearly change in pending cases, 31.12.2023 → 31.12.2025, as a share of the 2023 backlog. Hover a state for the size of the backlog and the years to clear it at this pace.</div>
+  </div>
+</section>
+
+<section id="time">
+  <div class="num">03</div>
+  <h2>How long a case really takes</h2>
+  <p class="prose">Average "age of pending cases" figures only look at cases still waiting, and ignore the ones already decided. Instead, CourtSight follows every case from filing to decision with a <b>Kaplan–Meier survival estimate</b>. Cases still pending when each state's data was collected are counted as undecided up to that date (right-censored), not dropped. The curve shows the share of cases still waiting after each month.</p>
+  <div class="card">
+    <div class="seg" id="seg" role="group" aria-label="Case types"></div>
+    <div id="c-km" style="margin-top:12px"></div>
+    <div class="caption">80.9 million cases filed 2010–2018. Up to four highlighted types (coloured underline = line colour), the rest in grey. Pick case types above; hover to read the share still pending at any month.</div>
+  </div>
+  <div class="card" style="overflow-x:auto"><table id="t-ttd"></table></div>
+  <a class="cta" href="calculator.html">Look up any district →</a>
+</section>
+
+<section id="judges">
+  <div class="num">04</div>
+  <h2>Does a change of judge slow a courtroom down? <span class="badge neg">no reliable estimate</span></h2>
+  <p class="prose" id="judge-text"></p>
+  <div class="card">
+    <div class="legend"><span><i style="background:var(--s1)"></i>Real handover dates (95% band)</span><span><i style="background:var(--s2)"></i>Placebo: dates moved 18 months earlier</span><span><i class="dash" style="color:var(--s3);background:var(--s3)"></i>Placebo: 30 months earlier</span></div>
+    <div id="c-judge"></div>
+    <div class="caption">Stacked difference-in-differences: courtroom disposals relative to the courtroom's own previous 12 months, minus the same for same-district courtrooms with no judge change. Interval: district block bootstrap.</div>
+  </div>
+</section>
+
+<section id="method">
+  <div class="num">05</div>
+  <h2>Method, and how it can be checked</h2>
+  <div class="grid2">
+  <div class="card method"><dl>
+    <dt>Stock–flow accounting</dt>
+    <dd>Filings are never published for all years, so they are recovered from the identity
+      <div class="eq">filed<sub>t</sub> = P<sub>t</sub> − P<sub>t−1</sub> + D<sub>t</sub></div>
+      and the state series is tested against the printed national totals (Kerala's 2016 disposal figure fails and is excluded).</dd>
+    <dt>COVID counterfactual</dt>
+    <dd>Each state's mean log growth 2015–2019, projected forward. The bias and spread of the same projection method in pre-COVID backtests shift and widen the band.</dd>
+    <dt>Time to decision</dt>
+    <dd><div class="eq">Ŝ(t) = ∏<sub>tᵢ ≤ t</sub> (1 − dᵢ / nᵢ)</div>
+      Monthly Kaplan–Meier estimate by district × case type, censored at each state's collection month (the last month where decisions reach 20% of its 2018 average). Intervals: Greenwood variance.</dd>
+    <dt>Judge handovers</dt>
+    <dd><div class="eq">β<sub>k</sub> = E[ y<sub>c,t₀+k</sub>/ȳ<sub>c,pre</sub> − mean<sub>c′</sub> y<sub>c′,t₀+k</sub>/ȳ<sub>c′,pre</sub> ]</div>
+      Planted-effect test: recovers a synthetic −30% drop. Placebo test on real data: fails (see 04).</dd>
+  </dl></div>
+  <div class="card method"><dl>
+    <dt>A forecast that can be proven wrong</dt>
+    <dd>Pending cases on 31.12.2026, for every state, were committed on <b id="lock-date"></b> (commit <code id="lock-commit"></code>). The method was chosen by a rule fixed before any backtest was run, and it is graded once the government publishes the figure. A test fails if the files change:
+      <div class="hash" id="hashes"></div></dd>
+    <dt>Graded against hard baselines</dt>
+    <dd>A district-level quantile model on the case records beats the best simple forecast by <b id="skill"></b> on held-out years. Graded against the official 2019 figures, it <b>matches simple forecasts but does not beat them</b>, and this page says so.</dd>
+    <dt>Reproducible</dt>
+    <dd>Every number on this page is rebuilt from the repository by CI on each change. Only aggregates are published: no case-level rows and no names of people.</dd>
+    <dt>Limits</dt>
+    <dd>No public case-level data exists after 2018, and the 2023–2025 series has no disposal figures. "Decided" includes dismissals, withdrawals and transfers. The data cannot say how many judges would be needed.</dd>
+  </dl></div>
+  </div>
+</section>
+</main>
+<footer><div class="wrap">CourtSight by Arnav Goel · <a href="https://github.com/ArnavGoel98/CourtSight">Code, data and method on GitHub</a> · Case records: Development Data Lab (CC BY-NC-SA 4.0) · Official series: Ministry of Law &amp; Justice answers in the Lok Sabha.</div></footer>
+<script>
+const D=/*DATA*/null;
+/*CHARTS*/
+const P=D.pending, years=Object.keys(P).map(Number), last=years[years.length-1];
+const cr=v=>(v/1e7).toFixed(2), lakh=v=>Math.round(v/1e5).toLocaleString("en-IN");
+document.getElementById("h1").textContent=`${cr(P[last])} crore cases are waiting in India's district courts.`;
+const civ=D.ttd.find(r=>r.type==="civ_suit"), ex21=D.covid.find(r=>r.year===2021);
+const tiles=[
+  [cr(P[last])+" cr", `cases pending on 31 Dec ${last}, up from ${cr(P[years[0]])} crore in ${years[0]}`],
+  ["+"+lakh(D.clock_nat.per_year)+" L", "added to the backlog every year (2023–2025 average)"],
+  [lakh(ex21.excess)+" L", `extra backlog from COVID by end-2021 (${lakh(ex21.excess_lo)}–${lakh(ex21.excess_hi)} L)`],
+  [Math.round(civ.pending_after_5y*100)+"%", `of ordinary civil suits still pending after 5 years (median ${Math.round(civ.median_months)} months)`],
+];
+document.getElementById("tiles").innerHTML=tiles.map(([v,l])=>`<div class="tile"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("");
+
+// 01 backlog
+const F=D.forecast;
+document.getElementById("backlog-text").innerHTML=`The official count rose from <b>${cr(P[years[0]])} crore</b> in ${years[0]} to <b>${cr(P[last])} crore</b> in ${last}. Growth jumped when courts closed in 2020–21: by the end of 2021 the backlog was <b>${lakh(ex21.excess)} lakh cases</b> above its pre-COVID trend. Since then the gap has been narrowing, but the backlog itself keeps growing. The locked forecast for 31 Dec 2026 is <b>${cr(F.q50)} crore</b> (80% interval ${cr(F.q10)}–${cr(F.q90)}).`;
+function drawBacklog(){
+  const xs=[...years,2026], act=xs.map(y=>P[y]??null);
+  const cf=xs.map(y=>{const r=D.covid.find(c=>c.year===y);return r?r.cf:(y===2019?P[2019]:null)});
+  const lo=xs.map(y=>{const r=D.covid.find(c=>c.year===y);return r?r.lo:(y===2019?P[2019]:null)});
+  const hi=xs.map(y=>{const r=D.covid.find(c=>c.year===y);return r?r.hi:(y===2019?P[2019]:null)});
+  const fc=xs.map(y=>y===2025?P[2025]:y===2026?F.q50:null);
+  const flo=xs.map(y=>y===2025?P[2025]:y===2026?F.q10:null), fhi=xs.map(y=>y===2025?P[2025]:y===2026?F.q90:null);
+  lineChart(document.getElementById("c-backlog"),{x:xs,ymin:2e7,ymax:5.5e7,yfmt:v=>(v/1e7).toFixed(1)+" cr",tipfmt:v=>cr(v)+" cr",right:56,
+    marks:[{x:2020,label:"COVID"}],
+    series:[
+      {name:"Without COVID",values:cf,color:"var(--ink-3)",dash:"5 5",band:{lo,hi}},
+      {name:"2026 forecast",values:fc,color:"var(--s2)",dash:"2 4",band:{lo:flo,hi:fhi,color:"var(--band-2)"}},
+      {name:"Pending",values:act,color:"var(--s1)",width:2.5,label:cr(P[last])+" cr"},
+    ]});
+}
+
+// 02 clock
+const CN=D.clock_nat;
+document.getElementById("clock-text").innerHTML=`At the 2023–2025 pace, the national backlog <b>never clears</b>: it grows by about <b>${lakh(CN.per_year)} lakh cases a year</b>. Clearing it within ten years would need about <b>${lakh(CN.clear10)} lakh extra decisions every year</b>. ${CN.growing} of ${CN.units} states and union territories are still growing.`;
+function drawClock(){
+  const rows=D.clock.filter(r=>r.pending>=1e5).sort((a,b)=>b.pct-a.pct).map(r=>({name:r.state,value:r.pct,
+    note:`${lakh(r.pending)} lakh pending · ${r.per_year>0?"+":""}${lakh(r.per_year)} L a year · ${r.years==null?"never clears at this pace":"clears in ~"+Math.round(r.years)+" years"}`}));
+  divergingBars(document.getElementById("c-clock"),rows,{fmt:fmtPct,label:"Yearly change in backlog by state"});
+}
+
+// 03 survival
+const KM_DEFAULT=["crim_bail","civ_family","crim_sessions","civ_suit"];
+const PAL=["var(--s1)","var(--s2)","var(--s3)","#eda100"];
+let kmSel=KM_DEFAULT.slice();
+const seg=document.getElementById("seg");
+D.ttd.slice().sort((a,b)=>(a.median_months??999)-(b.median_months??999)).forEach(r=>{
+  const b=document.createElement("button");b.textContent=r.short;b.dataset.t=r.type;
+  b.setAttribute("aria-pressed",kmSel.includes(r.type));
+  b.onclick=()=>{if(kmSel.includes(r.type)){kmSel=kmSel.filter(x=>x!==r.type)}else{kmSel.push(r.type);if(kmSel.length>4)kmSel.shift()}
+    seg.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",kmSel.includes(x.dataset.t)));drawKM()};
+  seg.appendChild(b)});
+function drawKM(){
+  const xs=[...Array(41).keys()].map(i=>i*3);
+  const others=D.ttd.filter(r=>!kmSel.includes(r.type)).map(r=>({name:r.short,values:D.curves[r.type],color:"var(--neutral)",width:1,noTip:true,step:true,opacity:.6}));
+  const sel=kmSel.map((t,i)=>({name:D.ttd.find(r=>r.type===t).short,values:D.curves[t],color:PAL[i%4],width:2.25,step:true}));
+  seg.querySelectorAll("button").forEach(b=>{const i=kmSel.indexOf(b.dataset.t);b.style.boxShadow=i<0?"":`inset 0 -3px 0 ${PAL[i%4]}`});
+  lineChart(document.getElementById("c-km"),{x:xs,ymin:0,ymax:1,yfmt:v=>Math.round(v*100)+"%",xfmt:v=>v%12?"":(v/12)+"y",xticks:xs.filter(v=>v%12===0),
+    tipx:v=>`${v} months (${(v/12).toFixed(1)} years) after filing — still pending:`,right:20,series:[...others,...sel]});
+}
+const pc=v=>v==null?"–":Math.round(v*100)+"%", mo=v=>v==null?"–":v;
+document.getElementById("t-ttd").innerHTML="<tr><th>Case type</th><th>Cases</th><th>Median (months)</th><th>Slowest 10% (months)</th><th>Pending 1y</th><th>3y</th><th>5y</th></tr>"+
+  D.ttd.slice().sort((a,b)=>b.cases-a.cases).map(r=>`<tr><td>${r.label}</td><td>${(r.cases/1e6).toFixed(1)}M</td><td>${mo(r.median_months)}</td><td>${r.p90_months==null?"over 120":r.p90_months}</td><td>${pc(r.pending_after_1y)}</td><td>${pc(r.pending_after_3y)}</td><td>${pc(r.pending_after_5y)}</td></tr>`).join("");
+
+// 04 judges
+const J=D.judge, Mn=J.means;
+document.getElementById("judge-text").innerHTML=`Across <b>${J.events.toLocaleString("en-IN")} judge handovers</b> in ${J.districts} districts, courtroom disposals are about <b>${Math.round(-Mn.true_date*100)}% lower for a year</b> after a new judge arrives. That looks like a cost of judge transfers. <b>It does not survive a placebo test.</b> When every handover is moved 18 or 30 months earlier, to dates when no judge changed, the same comparison still shows a drop of ${Math.round(-Mn["18_months_earlier"]*100)}% and ${Math.round(-Mn["30_months_earlier"]*100)}%. The decline was already under way before the new judge arrived. So the design picks up courtrooms that were slowing down anyway, not the effect of the change, and the −${Math.round(-Mn.true_date*100)}% is not published as a finding. Courtroom numbers in the judge and case records match in only ${Math.round(J.link*100)}% of judge-months.`;
+function drawJudge(){
+  const xs=[...Array(19).keys()].map(i=>i-6);
+  const jv=[...J.lo,...J.hi,...Object.values(J.placebo).flat()].filter(v=>v!=null);
+  lineChart(document.getElementById("c-judge"),{x:xs,ymin:Math.floor(Math.min(...jv)*20)/20,ymax:Math.ceil(Math.max(...jv,0)*20)/20,yfmt:fmtPct,tipfmt:fmtPct1,xfmt:v=>v===0?"handover":(v>0?"+":"")+v,
+    xticks:[-6,-3,0,3,6,9,12],tipx:v=>`${v} months from the handover`,marks:[{x:0,label:""}],
+    series:[
+      {name:"30 months earlier",values:J.placebo["30_months_earlier"]||[],color:"var(--s3)",dash:"5 4"},
+      {name:"18 months earlier",values:J.placebo["18_months_earlier"]||[],color:"var(--s2)"},
+      {name:"Real dates",values:J.true,color:"var(--s1)",width:2.5,band:{lo:J.lo,hi:J.hi}},
+    ]});
+}
+
+// 05
+document.getElementById("lock-date").textContent=F.locked_on;
+document.getElementById("lock-commit").textContent=F.commit;
+document.getElementById("hashes").innerHTML=Object.entries(F.sha).map(([k,v])=>`${k}<br>${v}`).join("<br>");
+document.getElementById("skill").textContent=`${Math.round(D.model.skill_vs_best_naive[0]*100)}–${Math.round(D.model.skill_vs_best_naive[1]*100)}%`;
+
+const drawAll=()=>{drawBacklog();drawClock();drawKM();drawJudge()};
+onResize(drawAll);
+</script>
+</body>
+</html>

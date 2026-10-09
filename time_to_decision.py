@@ -8,7 +8,8 @@ the last month whose decisions reach 20% of that state's 2018 monthly average. D
 as year 9201) are treated as undecided.
 Output per district x case type: cases, median months to decision (blank if over half are still pending when
 the data ends), 90th percentile, and the share still pending after 1, 3 and 5 years, with a 95% interval
-(Greenwood) on the 3-year figure. Rows with fewer than --min-cases cases are dropped.
+(Greenwood) on the 3-year figure. The whole curve (share still pending every 3 months, 0-120) goes to
+curves_*.csv for the charts. Rows with fewer than --min-cases cases are dropped.
 """
 from __future__ import annotations
 
@@ -83,7 +84,8 @@ def km_table(c: pd.DataFrame, min_cases: int) -> pd.DataFrame:
                      "median_months": q(0.5), "p90_months": q(0.9),
                      "pending_after_1y": at(12), "pending_after_3y": at(36), "pending_after_5y": at(60),
                      "pending_after_3y_lo": max(at(36) - 1.96 * se36, 0.0) if 36 <= reach else np.nan,
-                     "pending_after_3y_hi": min(at(36) + 1.96 * se36, 1.0) if 36 <= reach else np.nan})
+                     "pending_after_3y_hi": min(at(36) + 1.96 * se36, 1.0) if 36 <= reach else np.nan,
+                     "curve_q": " ".join("" if m > reach else f"{s[m]:.3f}" for m in range(0, H + 1, 3))})
     return pd.DataFrame(rows)
 
 
@@ -103,8 +105,13 @@ def main() -> None:
             k = k.sort_values("year").drop_duplicates(["state_code", "dist_code"], keep="last")
         k["district_id"] = k["state_code"] * 1000 + k["dist_code"]
         t = t.merge(k[["district_id", "state_name", "district_name"]], on="district_id", how="left")
+    curve_cols = ["district_id", "case_type", "curve_q"]
+    t[curve_cols].to_csv(args.out / f"curves_by_district_{level}.csv.gz", index=False)
+    t = t.drop(columns="curve_q")
     t.to_csv(args.out / f"by_district_{level}.csv", index=False)
     nat = km_table(c.assign(district_id=0), args.min_cases).drop(columns="district_id")
+    nat[["case_type", "curve_q"]].to_csv(args.out / f"curves_national_{level}.csv", index=False)
+    nat = nat.drop(columns="curve_q")
     nat.to_csv(args.out / f"national_{level}.csv", index=False)
     pd.set_option("display.width", 200)
     print(nat.round(3).to_string(index=False))

@@ -158,10 +158,13 @@ def main() -> None:
     # A real handover cost shows up at the true date only; a similar "effect" at fake dates means the design is
     # picking up courtrooms that were declining anyway (or mean reversion from the baseline window).
     k_post = [f"k{k}" for k in range(0, POST)]
+    kcols = [f"k{k}" for k in range(-PRE, POST + 1)]
     res["placebo_mean_post_effect"] = {"true_date": float(es[k_post].mean().mean())}
+    res["placebo_effect_by_month"] = {}
     for shift in (18, 30):
         pe = event_study(panel, ev.assign(t0=ev["t0"] - shift), j[["district_id", "court_no", "s"]], args.min_base)
         res["placebo_mean_post_effect"][f"{shift}_months_earlier"] = float(pe[k_post].mean().mean())
+        res["placebo_effect_by_month"][f"{shift}_months_earlier"] = [float(v) for v in pe[kcols].mean()]
     (args.out / "summary.json").write_text(json.dumps(res, indent=2))
     print(json.dumps({k: v for k, v in res.items() if k != "effect_by_month"}, indent=2))
     print({k: round(v[0], 3) for k, v in res["effect_by_month"].items()})

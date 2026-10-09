@@ -1,4 +1,4 @@
-"""The 31.12.2026 forecast is locked: these hashes are the files as first committed (commit 391dca6)."""
+"""The 31.12.2026 forecast is locked: these hashes are the files as first committed (commit 84732fc, originally 391dca6)."""
 import hashlib
 from pathlib import Path
 
