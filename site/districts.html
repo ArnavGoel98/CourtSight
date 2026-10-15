@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>District Court Rankings</title>
+<meta name="description" content="Every Indian district court ranked by how long cases took, by case type: sort, filter and download. 80.9 million cases filed 2010-2018.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%227%22 fill=%22%231f5f8b%22/%3E%3Cpath d=%22M7 23h18M9 23V13m5 10V9m5 14v-7m5 7V11%22 stroke=%22white%22 stroke-width=%222.6%22 stroke-linecap=%22round%22/%3E%3C/svg%3E">
+<meta property="og:title" content="Which district courts are fastest and slowest?">
+<meta property="og:description" content="Every Indian district court ranked by how long cases took, by case type.">
+<meta property="og:url" content="https://arnavgoel98.github.io/CourtSight/districts.html">
+<meta property="og:image" content="https://arnavgoel98.github.io/CourtSight/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<style>/*CSS*/
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0 4px}
+@media (max-width:640px){.controls{grid-template-columns:1fr}}
+.controls input,.controls select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit}
+.bar-row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:14px 0 8px}
+.count{color:var(--ink-2);font-size:.9rem}
+.rank th{position:sticky;top:0;background:var(--surface);z-index:1;white-space:normal;vertical-align:bottom;line-height:1.25}
+.rank th button{all:unset;cursor:pointer;color:inherit}
+.rank th button:focus-visible{outline:2px solid var(--s1)}
+.rank th[aria-sort] button::after{content:" ↕";opacity:.35}
+.rank th[aria-sort="ascending"] button::after{content:" ↑";opacity:1}
+.rank th[aria-sort="descending"] button::after{content:" ↓";opacity:1}
+.rank td a{color:var(--ink);text-decoration:none;font-weight:600}
+.rank td a:hover{color:var(--s1);text-decoration:underline}
+.rank td.st{color:var(--ink-3);font-size:.82rem;text-align:left}
+.rank tr.nat td{background:var(--hl);font-weight:600}
+.rank td.n{color:var(--ink-3)}
+.rank th:nth-child(2),.rank td:nth-child(2){text-align:left}
+.meter{display:inline-block;vertical-align:middle;width:44px;height:8px;border-radius:4px;background:var(--grid);margin-left:8px;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--neg);border-radius:4px}
+@media (max-width:640px){.meter,.hide-sm{display:none}.rank th,.rank td{padding:6px 5px}.rank{font-size:.84rem}}
+.tablewrap{overflow:auto;max-height:75vh;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:4px 8px}
+</style>
+</head>
+<body>
+<nav><div class="wrap"><b>CourtSight</b><a href="calculator.html">Calculator</a><a href="districts.html" aria-current="page">Rankings</a><a href="index.html">Findings</a><a href="paper.html">Paper</a></div></nav>
+<main class="wrap">
+<header class="hero" style="padding:36px 0 8px">
+  <div class="kicker">626 districts · 10 case types · 2010–2018</div>
+  <h1>Which district courts are fastest and slowest?</h1>
+  <p class="lede">Every district, ranked by how long cases took. Pick a type of case, filter by state, sort any column, and download what you see.</p>
+</header>
+
+<label>Type of case</label>
+<div class="chips" id="types" role="group"></div>
+<div class="controls">
+  <div><label for="state">State</label><select id="state"><option value="">All states</option></select></div>
+  <div><label for="find">Find a district</label><input id="find" type="search" autocomplete="off" spellcheck="false" placeholder="e.g. Pune"></div>
+</div>
+<div class="bar-row">
+  <div class="count" id="count" aria-live="polite">Loading…</div>
+  <button class="btn ghost" id="csv" type="button">Download this table (CSV)</button>
+</div>
+<div class="tablewrap"><table class="rank" id="tbl"></table></div>
+<p class="caption">Kaplan–Meier estimates: cases still pending when the data was collected count as undecided up to that date. "Median" is blank where over half were still pending when the data ends. Districts with fewer than 200 cases of a type are left out. Rank 1 = smallest share still pending after 3 years. Click a district for its full curve. Descriptive only: a slow district is not necessarily a badly run one (case mix, vacancies and local practice all differ).</p>
+</main>
+<footer><div class="wrap">CourtSight by Arnav Goel · <a href="https://github.com/ArnavGoel98/CourtSight">Code and method</a> · Data: Development Data Lab eCourts records 2010–2018 (CC BY-NC-SA 4.0). You may reuse this table with attribution under the same licence.</div></footer>
+<script>
+/*CHARTS*/
+const $=id=>document.getElementById(id);
+const ORDER=["civ_suit","civ_family","crim_ni138","civ_mact","crim_bail","crim_sessions","crim_magisterial","civ_execution","civ_misc","other"];
+const COLS=[
+  {k:"rank",l:"#",num:true},
+  {k:"district",l:"District"},
+  {k:"cases",l:"Cases",num:true,cls:"hide-sm",f:v=>v.toLocaleString("en-IN")},
+  {k:"median_months",l:"Median time",num:true,f:v=>v==null?"over half pending":v<24?`${v} mo`:`${(v/12).toFixed(1)} yrs`},
+  {k:"d1",l:"Decided in 1 yr",num:true,cls:"hide-sm",f:v=>v==null?"–":Math.round(v*100)+"%"},
+  {k:"pending_after_3y",l:"Pending at 3 yrs",num:true,f:v=>v==null?"–":Math.round(v*100)+"%"},
+  {k:"pending_after_5y",l:"Pending at 5 yrs",num:true,cls:"hide-sm",f:v=>v==null?"–":Math.round(v*100)+"%"},
+  {k:"p90_months",l:"Slowest 1 in 10",num:true,cls:"hide-sm",f:v=>v==null?"10+ yrs":v<24?`${v} mo`:`${(v/12).toFixed(1)} yrs`},
+];
+const q=new URLSearchParams(location.hash.slice(1));
+const st={t:q.get("t")||"civ_suit",s:q.get("s")||"",f:q.get("q")||"",sort:q.get("sort")||"pending_after_3y",dir:q.get("dir")==="desc"?-1:1};
+let D,C,ROWS=[],VIEW=[];
+fetch("calc-data.json").then(r=>{if(!r.ok)throw r.status;return r.json()}).then(j=>{D=j;C=Object.fromEntries(D.cols.map((c,i)=>[c,i]));init()})
+  .catch(()=>{$("count").textContent="Could not load the data. Please refresh the page."});
+
+function init(){
+  for(const s of Object.keys(D.states).sort()){const o=document.createElement("option");o.value=s;o.textContent=s;$("state").appendChild(o)}
+  $("state").value=D.states[st.s]?st.s:""; $("find").value=st.f;
+  $("state").onchange=e=>{st.s=e.target.value;build()};
+  $("find").oninput=e=>{st.f=e.target.value;draw()};
+  $("csv").onclick=csv;
+  build();
+}
+function chips(){
+  const box=$("types");box.innerHTML="";
+  for(const t of ORDER){const b=document.createElement("button");b.type="button";b.className="chip";b.textContent=D.short[t];b.title=D.labels[t];
+    b.setAttribute("aria-pressed",t===st.t);b.onclick=()=>{st.t=t;build()};box.appendChild(b)}
+}
+function build(){   // rows for this case type (and state), ranked by share pending at 3 years
+  chips();
+  ROWS=[];
+  for(const [s,ds] of Object.entries(D.states)){ if(st.s&&s!==st.s)continue;
+    for(const [d,l] of Object.entries(ds)){const r=l.find(x=>x[0]===st.t);if(!r)continue;
+      ROWS.push({district:d,state:s,cases:r[C.cases],median_months:r[C.median_months],p90_months:r[C.p90_months],
+        d1:r[C.pending_after_1y]==null?null:1-r[C.pending_after_1y],pending_after_3y:r[C.pending_after_3y],pending_after_5y:r[C.pending_after_5y]})}}
+  const ranked=ROWS.filter(r=>r.pending_after_3y!=null).sort((a,b)=>a.pending_after_3y-b.pending_after_3y);
+  ranked.forEach((r,i)=>r.rank=i+1);
+  draw();
+}
+function cmp(a,b){const k=st.sort,x=a[k],y=b[k];
+  if(x==null&&y==null)return 0; if(x==null)return 1; if(y==null)return -1;   // blanks always last
+  return (typeof x==="string"?x.localeCompare(y):x-y)*st.dir}
+function draw(){
+  const f=st.f.trim().toLowerCase();
+  VIEW=ROWS.filter(r=>!f||r.district.toLowerCase().includes(f)||r.state.toLowerCase().includes(f)).sort(cmp);
+  history.replaceState(null,"",`#t=${st.t}`+(st.s?`&s=${encodeURIComponent(st.s)}`:"")+(st.f?`&q=${encodeURIComponent(st.f)}`:"")+`&sort=${st.sort}&dir=${st.dir<0?"desc":"asc"}`);
+  const n=D.national.find(r=>r[0]===st.t);
+  const max=Math.max(...ROWS.map(r=>r.pending_after_3y||0),.01);
+  const head=`<tr>${COLS.map(c=>`<th class="${c.cls||""}" ${c.k===st.sort?`aria-sort="${st.dir>0?"ascending":"descending"}"`:`aria-sort="none"`}><button data-k="${c.k}">${c.l}</button></th>`).join("")}</tr>`;
+  const cell=(c,r)=>{const v=r[c.k];
+    if(c.k==="district")return `<td><a href="calculator.html#s=${encodeURIComponent(r.state)}&d=${encodeURIComponent(r.district)}&t=${st.t}">${r.district}</a><div class="st" style="color:var(--ink-3);font-size:.8rem;font-weight:400">${r.state}</div></td>`;
+    if(c.k==="rank")return `<td class="n">${v??"–"}</td>`;
+    const txt=c.f?c.f(v):v;
+    if(c.k==="pending_after_3y"&&v!=null)return `<td>${txt}<span class="meter"><i style="width:${Math.round(v/max*100)}%"></i></span></td>`;
+    return `<td class="${c.cls||""}">${txt}</td>`};
+  const nat=n?`<tr class="nat"><td class="n"></td><td>All of India</td><td class="hide-sm">${n[C.cases].toLocaleString("en-IN")}</td><td>${COLS[3].f(n[C.median_months])}</td><td class="hide-sm">${COLS[4].f(1-n[C.pending_after_1y])}</td><td>${COLS[5].f(n[C.pending_after_3y])}</td><td class="hide-sm">${COLS[6].f(n[C.pending_after_5y])}</td><td class="hide-sm">${COLS[7].f(n[C.p90_months])}</td></tr>`:"";
+  $("tbl").innerHTML=`<thead>${head}</thead><tbody>${nat}${VIEW.map(r=>`<tr>${COLS.map(c=>cell(c,r)).join("")}</tr>`).join("")}</tbody>`;
+  $("tbl").querySelectorAll("th button").forEach(b=>b.onclick=()=>{const k=b.dataset.k;
+    if(st.sort===k)st.dir=-st.dir;else{st.sort=k;st.dir=(k==="cases"||k==="d1")?-1:1}draw()});
+  $("count").textContent=`${VIEW.length} of ${ROWS.length} districts${st.s?` in ${st.s}`:""} · ${D.labels[st.t]}`;
+}
+function csv(){
+  const esc=v=>v==null?"":/[",\n]/.test(String(v))?`"${String(v).replace(/"/g,'""')}"`:String(v);
+  const hdr=["rank","district","state","case_type","cases","median_months","decided_within_1y","pending_after_3y","pending_after_5y","p90_months"];
+  const lines=[hdr.join(","),...VIEW.map(r=>[r.rank,r.district,r.state,st.t,r.cases,r.median_months,r.d1==null?"":r.d1.toFixed(3),r.pending_after_3y,r.pending_after_5y,r.p90_months].map(esc).join(","))];
+  const blob=new Blob(["# CourtSight district rankings. Source: Development Data Lab eCourts 2010-2018, CC BY-NC-SA 4.0. https://arnavgoel98.github.io/CourtSight/\n"+lines.join("\n")+"\n"],{type:"text/csv"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`courtsight_${st.t}${st.s?"_"+st.s.replace(/\W+/g,"_"):""}.csv`;a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+</script>
+</body>
+</html>

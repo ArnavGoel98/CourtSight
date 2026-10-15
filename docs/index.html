@@ -13,6 +13,7 @@
 <meta property="og:image" content="https://arnavgoel98.github.io/CourtSight/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://arnavgoel98.github.io/CourtSight/og.png">
+<link rel="prefetch" href="calc-data.json">
 <style>:root{
   color-scheme:light;
   --bg:#f7f6f2;--surface:#fcfcfb;--ink:#0b0b0b;--ink-2:#52514e;--ink-3:#7a7873;--line:#e4e1d9;--grid:#ecebe6;
@@ -127,7 +128,7 @@ details.card[open]>summary{margin-bottom:12px}
 </style>
 </head>
 <body>
-<nav><div class="wrap"><b>CourtSight</b><a href="calculator.html">Calculator</a><a href="#backlog">Findings</a><a href="paper.html">Paper</a><a href="#data">Data</a><a href="calculator-hi.html" lang="hi">हिन्दी</a></div></nav>
+<nav><div class="wrap"><b>CourtSight</b><a href="calculator.html">Calculator</a><a href="districts.html">Rankings</a><a href="#backlog">Findings</a><a href="paper.html">Paper</a><a href="#data">Data</a><a href="calculator-hi.html" lang="hi">हिन्दी</a></div></nav>
 <main class="wrap">
 <header class="hero">
   <div class="kicker">India · district &amp; subordinate courts · 2010–2026</div>
@@ -135,7 +136,7 @@ details.card[open]>summary{margin-bottom:12px}
   <p class="lede">What 80.9 million court records and the government's own figures say about how long justice takes, district by district.</p>
   <form class="finder" id="finder">
     <h2>How long do cases take in your district?</h2>
-    <p>Type a district to see how long cases like yours took there, by case type. English and हिन्दी.</p>
+    <p>Type a district to see how long cases like yours took there, by case type. English and हिन्दी. Or <a href="districts.html">rank all 626 districts</a>.</p>
     <div class="row search"><input id="fq" list="fdl" autocomplete="off" spellcheck="false" placeholder="Start typing, e.g. Pune" aria-label="District"><button class="btn" type="submit">Show me</button></div>
     <datalist id="fdl"></datalist>
     <div class="hint" id="fhint"></div>

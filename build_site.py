@@ -3,6 +3,9 @@
 
   docs/index.html       the findings, with charts: national backlog, COVID excess, the locked 2026 forecast,
                         the backlog clock by state, time to decision by case type, and the judge-handover placebo
+  docs/calc-data.json   district x case type figures shared by the calculator (both languages) and the rankings page;
+                        curves are stored as per-mille drops (see _delta)
+  docs/districts.html   sortable, filterable rankings of every district, with CSV download
   docs/calculator.html  "how long will my case take?": survival curves for every district x case type
   docs/paper.html       the working paper (make_paper_pdf.py prints it to docs/courtsight-paper.pdf)
   docs/calculator-hi.html  the same calculator in Hindi
@@ -110,6 +113,21 @@ def site_data() -> dict[str, object]:
     }
 
 
+def _delta(c: list[float | None]) -> list[int | None]:
+    """Survival curve -> per-mille drops from 1000 (trailing gaps dropped). About half the size of the raw floats."""
+    while c and c[-1] is None:
+        c = c[:-1]
+    out, prev = [], 1000
+    for x in c:
+        if x is None:
+            out.append(None)
+            continue
+        v = round(x * 1000)
+        out.append(prev - v)
+        prev = v
+    return out
+
+
 def calc_data() -> dict[str, object]:
     t = pd.read_csv(RES / "time_to_decision" / "by_district_case_type.csv").dropna(subset=["state_name", "district_name"])
     cv = pd.read_csv(RES / "time_to_decision" / "curves_by_district_case_type.csv.gz")
@@ -118,7 +136,7 @@ def calc_data() -> dict[str, object]:
         pd.read_csv(RES / "time_to_decision" / "curves_national_case_type.csv"), on="case_type")
 
     def row(r: object) -> list[object]:
-        return [r.case_type] + [_num(getattr(r, c)) for c in STATS] + [_curve(r.curve_q)]
+        return [r.case_type] + [_num(getattr(r, c)) for c in STATS] + [_delta(_curve(r.curve_q))]
 
     states: dict[str, dict[str, list[list[object]]]] = {}
     for (s, d), g in t.sort_values(["state_name", "district_name"]).groupby(["state_name", "district_name"], sort=False):
@@ -191,8 +209,11 @@ def main() -> None:
     render("index.html", sd, HERE / "docs" / "index.html")
     render("paper.html", {k: v for k, v in sd.items() if k != "district_keys"}, HERE / "docs" / "paper.html", fill=paper_vars(sd))
     cd = calc_data()
-    render("calculator.html", cd, HERE / "docs" / "calculator.html")
-    render("calculator.html", cd, HERE / "docs" / "calculator-hi.html", lang="hi")
+    (HERE / "docs" / "calc-data.json").write_text(json.dumps(cd, separators=(",", ":")))
+    print(f"wrote docs/calc-data.json ({(HERE / 'docs' / 'calc-data.json').stat().st_size / 1e3:.0f} kB)")
+    render("calculator.html", {}, HERE / "docs" / "calculator.html")
+    render("calculator.html", {}, HERE / "docs" / "calculator-hi.html", lang="hi")
+    render("districts.html", {}, HERE / "docs" / "districts.html")
 
 
 if __name__ == "__main__":

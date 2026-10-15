@@ -10,6 +10,7 @@ and the weaker results are reported alongside the strong ones.
 **Project site:** https://arnavgoel98.github.io/CourtSight/ (interactive charts of every result below) ·
 **[Case time calculator](https://arnavgoel98.github.io/CourtSight/calculator.html)**
 ([हिन्दी में](https://arnavgoel98.github.io/CourtSight/calculator-hi.html)) ·
+**[District rankings](https://arnavgoel98.github.io/CourtSight/districts.html)** (sort, filter, download CSV) ·
 **[Working paper](https://arnavgoel98.github.io/CourtSight/paper.html)** ([PDF](docs/courtsight-paper.pdf))
 
 ## Results
