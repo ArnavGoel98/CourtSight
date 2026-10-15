@@ -91,6 +91,34 @@ select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:1
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:2px;background:var(--surface);flex-wrap:wrap}
 .seg button{border:0;background:none;color:var(--ink-2);font:inherit;font-size:.85rem;padding:4px 12px;border-radius:999px;cursor:pointer}
 .seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.search input{width:100%;padding:14px 16px;border:1.5px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);font:inherit;font-size:1.1rem}
+.search input:focus{outline:none;border-color:var(--s1);box-shadow:0 0 0 3px var(--band)}
+.hint{font-size:.85rem;color:var(--neg);min-height:1.2em;margin-top:4px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 4px}
+.chip{border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:.92rem;padding:8px 14px;border-radius:999px;cursor:pointer}
+.chip:hover:not(:disabled){border-color:var(--ink-3)}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip:disabled{opacity:.4;cursor:not-allowed}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.btn{border:1px solid var(--ink);background:var(--ink);color:var(--bg);font:inherit;font-size:.92rem;font-weight:600;padding:9px 16px;border-radius:10px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.ghost:hover{border-color:var(--ink-3)}
+button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var(--s1);outline-offset:2px}
+.finder{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;margin:28px 0 8px}
+.finder h2{font-size:1.25rem;margin:0 0 4px}
+.finder p{margin:0 0 12px;color:var(--ink-2);font-size:.95rem}
+.finder .row{display:flex;gap:10px}
+.finder .row input{flex:1}
+@media (max-width:560px){.finder .row{flex-direction:column}}
+.jump{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.88rem;margin-top:14px;color:var(--ink-3)}
+.jump a{color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--line)}
+.jump a:hover{color:var(--ink)}
+details.card>summary{font-weight:600;color:var(--ink)}
+details.card[open]>summary{margin-bottom:12px}
+.hint{display:flex;flex-wrap:wrap;gap:6px;align-items:center;color:var(--ink-2)}
+.hint .chip{font-size:.85rem;padding:5px 12px}
+.hint .err{color:var(--neg)}
+@media (max-width:480px){nav .wrap{gap:12px}nav a{font-size:.85rem}}
 
 .paper{max-width:760px}
 .paper h1{max-width:none;font-size:clamp(1.8rem,4vw,2.5rem)}
@@ -120,7 +148,7 @@ figcaption b{color:var(--ink)}
 </style>
 </head>
 <body>
-<nav><div class="wrap"><b>CourtSight</b><a href="index.html">Findings</a><a href="paper.html" aria-current="page">Paper</a><a href="calculator.html">Calculator →</a></div></nav>
+<nav><div class="wrap"><b>CourtSight</b><a href="calculator.html">Calculator</a><a href="index.html">Findings</a><a href="paper.html" aria-current="page">Paper</a><a href="calculator-hi.html" lang="hi">हिन्दी</a></div></nav>
 <main class="wrap paper">
 <header class="hero" style="padding-top:40px">
   <div class="kicker">Working paper · October 2026</div>

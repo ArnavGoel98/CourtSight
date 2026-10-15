@@ -104,6 +104,8 @@ def site_data() -> dict[str, object]:
                       for r in dd.sort_values(["pending_after_3y_civil", "state_name", "district_name"], kind="mergesort").itertuples()],
         "drivers": {"coef": [{k: (_num(v, 4) if isinstance(v, float) else v) for k, v in r.items()}
                              for r in co.to_dict("records")], "summary": dsum},
+        "district_keys": sorted({(r.state_name, r.district_name) for r in pd.read_csv(
+            RES / "time_to_decision" / "by_district_case_type.csv").dropna(subset=["state_name", "district_name"]).itertuples()}),
         "model": {"skill_vs_best_naive": [_num(med["skill_vs_best_naive"].min(), 2), _num(med["skill_vs_best_naive"].max(), 2)]},
     }
 
@@ -121,7 +123,7 @@ def calc_data() -> dict[str, object]:
     states: dict[str, dict[str, list[list[object]]]] = {}
     for (s, d), g in t.sort_values(["state_name", "district_name"]).groupby(["state_name", "district_name"], sort=False):
         states.setdefault(s, {})[d] = [row(r) for r in g.itertuples()]
-    return {"labels": LABELS, "cols": ["type"] + STATS + ["curve"], "national": [row(r) for r in nat.itertuples()],
+    return {"labels": LABELS, "short": SHORT, "cols": ["type"] + STATS + ["curve"], "national": [row(r) for r in nat.itertuples()],
             "states": states}
 
 
@@ -187,7 +189,7 @@ def main() -> None:
     (HERE / "docs").mkdir(exist_ok=True)
     sd = site_data()
     render("index.html", sd, HERE / "docs" / "index.html")
-    render("paper.html", sd, HERE / "docs" / "paper.html", fill=paper_vars(sd))
+    render("paper.html", {k: v for k, v in sd.items() if k != "district_keys"}, HERE / "docs" / "paper.html", fill=paper_vars(sd))
     cd = calc_data()
     render("calculator.html", cd, HERE / "docs" / "calculator.html")
     render("calculator.html", cd, HERE / "docs" / "calculator-hi.html", lang="hi")
