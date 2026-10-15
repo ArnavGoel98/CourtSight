@@ -472,7 +472,7 @@ if(HI){document.querySelectorAll("[data-i]").forEach(e=>{e.innerHTML=HIS[e.datas
 const label=t=>HI?(HIL[t]||t):(D.labels[t]||t), short=t=>HI?(HIS2[t]||t):(D.short[t]||t);
 const C=Object.fromEntries(D.cols.map((c,i)=>[c,i]));
 const yrs=m=>(m/12).toFixed(1).replace(/\.0$/,"");
-const fmtM=m=>m==null?null:HI?(m<1?"एक महीने से कम":m<24?`${m} महीने`:`${yrs(m)} साल`):(m<1?"under a month":m<24?`${m} month${m==1?"":"s"}`:`${yrs(m)} years`);
+const fmtM=m=>m==null?null:HI?(m<1?"एक महीने से कम":m===1?"1 महीना":m<24?`${m} महीने`:`${yrs(m)} साल`):(m<1?"under a month":m<24?`${m} month${m==1?"":"s"}`:`${yrs(m)} years`);
 const pc=x=>x==null?"–":`${Math.round(x*100)}%`;
 const row=(list,t)=>list&&list.find(r=>r[0]===t);
 
@@ -533,7 +533,7 @@ function tenOf(r){
   const n1=Math.round(10*(1-r[C.pending_after_1y])), n3=r[C.pending_after_3y]==null?null:Math.round(10*(1-r[C.pending_after_3y]));
   const p5=r[C.pending_after_5y], s5=p5==null?null:Math.round(10*p5);
   if(HI)return `ऐसे हर 10 मामलों में से लगभग <b>${n1}</b> का फ़ैसला 1 साल में हुआ`+(n3!=null?`, <b>${n3}</b> का 3 साल में`:"")+(s5!=null?`, और <b>${s5}</b> ${s5===1?"मामला":"मामले"} 5 साल बाद भी लंबित ${s5===1?"था":"थे"}।`:"।");
-  return `Out of every 10 such cases, about <b>${n1}</b> were decided within a year`+(n3!=null?`, <b>${n3}</b> within 3 years`:"")+(s5!=null?(s5?`, and <b>${s5}</b> ${s5===1?"was":"were"} still waiting after 5 years.`:", and almost none were still waiting after 5 years."):".");
+  return `Out of every 10 such cases, about <b>${n1}</b> ${n1===1?"was":"were"} decided within a year`+(n3!=null?`, <b>${n3}</b> within 3 years`:"")+(s5!=null?(s5?`, and <b>${s5}</b> ${s5===1?"was":"were"} still waiting after 5 years.`:", and almost none were still waiting after 5 years."):".");
 }
 function render(){
   const [s,d]=st.A, list=D.states[s][d]; chips(list);
