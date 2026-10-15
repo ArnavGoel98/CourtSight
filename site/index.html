@@ -16,15 +16,21 @@
 <style>/*CSS*/</style>
 </head>
 <body>
-<nav><div class="wrap"><b>CourtSight</b>
-<a href="#backlog">Backlog</a><a href="#clock">Clock</a><a href="#time">Time to decision</a><a href="#waiting">Years of waiting</a><a href="#districts">Slow districts</a><a href="#judges">Judge changes</a><a href="#method">Method</a><a href="#data">Data</a><a href="paper.html">Paper</a><a href="calculator.html">Calculator →</a><a href="calculator-hi.html" lang="hi">हिन्दी</a>
-</div></nav>
+<nav><div class="wrap"><b>CourtSight</b><a href="calculator.html">Calculator</a><a href="#backlog">Findings</a><a href="paper.html">Paper</a><a href="#data">Data</a><a href="calculator-hi.html" lang="hi">हिन्दी</a></div></nav>
 <main class="wrap">
 <header class="hero">
   <div class="kicker">India · district &amp; subordinate courts · 2010–2026</div>
   <h1 id="h1">Crore cases are waiting in India's district courts.</h1>
-  <p class="lede">CourtSight measures the backlog from two independent sources: the government's own state-by-state pending counts (2014–2025), and <b>80.9 million individual case records</b> from 632 districts (2010–2018). It estimates what COVID added, how long cases really take, and when each state would clear its backlog. Its forecast for 2026 was locked before the outcome exists, so it can be graded against the official count.</p>
+  <p class="lede">What 80.9 million court records and the government's own figures say about how long justice takes, district by district.</p>
+  <form class="finder" id="finder">
+    <h2>How long do cases take in your district?</h2>
+    <p>Type a district to see how long cases like yours took there, by case type. English and हिन्दी.</p>
+    <div class="row search"><input id="fq" list="fdl" autocomplete="off" spellcheck="false" placeholder="Start typing, e.g. Pune" aria-label="District"><button class="btn" type="submit">Show me</button></div>
+    <datalist id="fdl"></datalist>
+    <div class="hint" id="fhint"></div>
+  </form>
   <div class="tiles" id="tiles"></div>
+  <div class="jump"><span>On this page:</span><a href="#backlog">Backlog</a><a href="#clock">When it clears</a><a href="#time">Time to decision</a><a href="#waiting">Years of waiting</a><a href="#districts">Slow districts</a><a href="#judges">Judge changes</a><a href="#method">Method</a></div>
 </header>
 
 <section id="backlog">
@@ -112,6 +118,8 @@
 <section id="method">
   <div class="num">07</div>
   <h2>Method, and how it can be checked</h2>
+  <p class="prose">Every number on this site is rebuilt from the public repository by CI on each change, and the 2026 forecast is locked by a SHA-256 hash.</p>
+  <details class="card"><summary>Show the methods: formulas, tests and limits</summary>
   <div class="grid2">
   <div class="card method"><dl>
     <dt>Stock–flow accounting</dt>
@@ -139,6 +147,7 @@
     <dd>No public case-level data exists after 2018, and the 2023–2025 series has no disposal figures. "Decided" includes dismissals, withdrawals and transfers. The data cannot say how many judges would be needed.</dd>
   </dl></div>
   </div>
+  </details>
 </section>
 <section id="data">
   <div class="num">08</div>
@@ -283,6 +292,18 @@ document.getElementById("lock-commit").textContent=F.commit;
 document.getElementById("hashes").innerHTML=Object.entries(F.sha).map(([k,v])=>`${k}<br>${v}`).join("<br>");
 document.getElementById("skill").textContent=`${Math.round(D.model.skill_vs_best_naive[0]*100)}–${Math.round(D.model.skill_vs_best_naive[1]*100)}%`;
 
+// district finder
+const FK={}, FN2={}, fdl=document.getElementById("fdl");
+for(const [st,d] of D.district_keys){const k=`${d}, ${st}`;FK[k.toLowerCase()]=[st,d];FN2[k.toLowerCase()]=k;const o=document.createElement("option");o.value=k;fdl.appendChild(o)}
+document.getElementById("finder").onsubmit=e=>{e.preventDefault();
+  const t=document.getElementById("fq").value.trim().toLowerCase();
+  let r=FK[t]; if(!r){const h=Object.entries(FK).filter(([k])=>k.split(",")[0]===t||k.startsWith(t));if(h.length===1)r=h[0][1];}
+  if(!r){const m=t.length<2?[]:Object.keys(FK).filter(k=>k.includes(t)).slice(0,12), h=document.getElementById("fhint");
+    h.innerHTML=m.length?"<span>Did you mean:</span>"+m.map(k=>`<button type="button" class="chip" data-k="${k}">${FN2[k]}</button>`).join("")
+      :`<span class="err">${t?"No district found. Check the spelling, or try the old name.":"Type a district name, e.g. Pune."}</span>`;
+    h.querySelectorAll("button").forEach(b=>b.onclick=()=>{document.getElementById("fq").value=FN2[b.dataset.k];document.getElementById("finder").requestSubmit()});return}
+  location.href=`calculator.html#s=${encodeURIComponent(r[0])}&d=${encodeURIComponent(r[1])}&t=civ_suit`};
+document.getElementById("fq").addEventListener("input",e=>{if(FK[e.target.value.trim().toLowerCase()])document.getElementById("finder").requestSubmit()});
 const drawAll=()=>{drawBacklog();drawClock();drawKM();drawAge();drawDrivers();drawJudge()};
 onResize(drawAll);
 </script>

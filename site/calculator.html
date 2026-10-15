@@ -14,36 +14,57 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://arnavgoel98.github.io/CourtSight/og.png">
 <style>/*CSS*/
-.big{font-size:clamp(2.2rem,6vw,3.2rem);font-weight:800;letter-spacing:-.025em;line-height:1.05;font-variant-numeric:tabular-nums}
+.big{font-size:clamp(2.4rem,7vw,3.4rem);font-weight:800;letter-spacing:-.025em;line-height:1.05;font-variant-numeric:tabular-nums}
 .facts{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px}
 @media (max-width:700px){.facts{grid-template-columns:repeat(2,1fr)}}
 .facts div{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
 .facts b{display:block;font-size:1.35rem;font-variant-numeric:tabular-nums}
-html[lang=hi] .kicker{font-family:inherit;letter-spacing:0;font-size:.85rem}
 .facts span{font-size:.8rem;color:var(--ink-2)}
+.facts em{display:block;font-style:normal;font-size:.8rem;color:var(--s3);margin-top:2px}
+html[lang=hi] .kicker{font-family:inherit;letter-spacing:0;font-size:.85rem}
+.tenof{font-size:1.05rem;color:var(--ink);margin:10px 0 0;max-width:62ch}
+.based{font-size:.82rem;color:var(--ink-3);margin-top:12px}
 </style>
 </head>
 <body>
-<nav><div class="wrap"><b>CourtSight</b><a href="index.html" data-i="nav1">Findings</a><a href="calculator.html" aria-current="page" data-i="nav2">Calculator</a><a id="lang" href="calculator-hi.html" lang="hi">हिन्दी</a></div></nav>
+<nav><div class="wrap"><b>CourtSight</b><a href="calculator.html" aria-current="page" data-i="nav2">Calculator</a><a href="index.html" data-i="nav1">Findings</a><a href="paper.html" data-i="nav3">Paper</a><a id="lang" href="calculator-hi.html" lang="hi">हिन्दी</a></div></nav>
 <main class="wrap">
-<header class="hero" style="padding-bottom:12px">
+<header class="hero" style="padding:36px 0 8px">
   <div class="kicker" data-i="kicker">80.9 million cases · 620 districts · 10 case types</div>
   <h1 data-i="h1">How long will my case take?</h1>
   <p class="lede" data-i="lede">How long cases like yours took in your district court, based on every case filed there in 2010–2018.</p>
 </header>
-<div class="pick">
-  <div><label for="st" data-i="st">State</label><select id="st"></select></div>
-  <div><label for="di" data-i="di">District</label><select id="di"></select></div>
-  <div><label for="ty" data-i="ty">Type of case</label><select id="ty"></select></div>
+
+<div class="search">
+  <label for="q" data-i="q">1. Your district</label>
+  <input id="q" list="dl" autocomplete="off" spellcheck="false" placeholder="Start typing, e.g. Pune">
+  <datalist id="dl"></datalist>
+  <div class="hint" id="q-hint"></div>
 </div>
-<div class="card">
+<label style="margin-top:18px" data-i="tl">2. Type of case</label>
+<div class="chips" id="types" role="group"></div>
+
+<div class="card" id="answer" aria-live="polite">
   <div class="big" id="head"></div>
   <div class="prose" id="sub" style="margin-top:6px"></div>
+  <p class="tenof" id="tenof"></p>
   <div class="facts" id="facts"></div>
+  <div class="based" id="based"></div>
+  <div class="actions">
+    <button class="btn" id="share" type="button" data-i="share">Copy link to this result</button>
+    <button class="btn ghost" id="cmp-open" type="button" data-i="cmp">+ Compare with another district</button>
+  </div>
+  <div class="search" id="cmp-box" hidden style="margin-top:14px">
+    <label for="q2" data-i="q2">Compare with</label>
+    <div style="display:flex;gap:8px"><input id="q2" list="dl" autocomplete="off" spellcheck="false" placeholder="Another district">
+    <button class="btn ghost" id="cmp-close" type="button" aria-label="Remove comparison">✕</button></div>
+    <div class="hint" id="q2-hint"></div>
+  </div>
 </div>
+
 <div class="card">
   <h3 data-i="ch">Share of cases still waiting, month by month</h3>
-  <div class="legend"><span><i style="background:var(--s1)"></i><span id="lg-here">This district</span></span><span><i style="background:var(--s2)"></i><span data-i="lg2">All of India, same type</span></span><span><i style="background:var(--neutral)"></i><span data-i="lg3">Other districts in the state</span></span></div>
+  <div class="legend"><span><i style="background:var(--s1)"></i><span id="lg-here">This district</span></span><span id="lg-b" hidden><i style="background:var(--s3)"></i><span id="lg-b-name"></span></span><span><i style="background:var(--s2)"></i><span data-i="lg2">All of India, same type</span></span><span><i style="background:var(--neutral)"></i><span data-i="lg3">Other districts in the state</span></span></div>
   <div id="c-curve"></div>
   <div class="caption" data-i="cap">Kaplan–Meier estimate. Cases still pending when the data was collected count as undecided up to that date. Hover to read any month.</div>
 </div>
@@ -73,61 +94,125 @@ const HIS={nav1:"निष्कर्ष",nav2:"कैलकुलेटर",ki
 <li>यह अतीत का विवरण है, किसी एक मुक़दमे की भविष्यवाणी नहीं: 2018 के बाद अदालतें बदली हैं, और हर मुक़दमा अपने तथ्यों और तारीख़ों पर निर्भर करता है।</li>
 <li>मामलों के प्रकार अदालतों द्वारा इस्तेमाल किए गए नामों से समूहित किए गए हैं; जो समूहित नहीं हो सके वे "अन्य" में हैं। जिन ज़िलों में किसी प्रकार के 200 से कम मामले हैं, वे नहीं दिखाए गए। उच्च न्यायालय और सर्वोच्च न्यायालय शामिल नहीं हैं। राज्यों और ज़िलों के नाम मूल डेटा की तरह अंग्रेज़ी में हैं।</li>`,
  foot:`CourtSight: अर्णव गोयल · <a href="https://github.com/ArnavGoel98/CourtSight">कोड और विधि</a> · डेटा: डेवलपमेंट डेटा लैब, ई-कोर्ट्स रिकॉर्ड 2010–2018 (CC BY-NC-SA 4.0)।`};
+Object.assign(HIS,{nav3:"शोध-पत्र",q:"1. आपका ज़िला",tl:"2. मामले का प्रकार",share:"इस नतीजे का लिंक कॉपी करें",cmp:"+ किसी दूसरे ज़िले से तुलना करें",q2:"इससे तुलना करें"});
 const HIL={civ_suit:"दीवानी वाद (संपत्ति, अनुबंध, पैसा)",civ_execution:"निष्पादन (डिक्री लागू कराना)",civ_family:"तलाक़ / पारिवारिक",
  civ_mact:"मोटर दुर्घटना दावा",civ_misc:"अन्य दीवानी आवेदन",crim_bail:"ज़मानत आवेदन",crim_magisterial:"मजिस्ट्रेट के समक्ष आपराधिक मामला",
  crim_sessions:"सत्र विचारण (गंभीर अपराध)",crim_ni138:"चेक बाउंस (एनआई एक्ट धारा 138)",other:"अन्य / अवर्गीकृत"};
+const HIS2={civ_suit:"दीवानी वाद",civ_execution:"निष्पादन",civ_family:"तलाक़ / परिवार",civ_mact:"मोटर दुर्घटना",civ_misc:"अन्य दीवानी",
+ crim_bail:"ज़मानत",crim_magisterial:"मजिस्ट्रेट आपराधिक",crim_sessions:"सत्र विचारण",crim_ni138:"चेक बाउंस",other:"अन्य"};
+const ORDER=["civ_suit","civ_family","crim_ni138","civ_mact","crim_bail","crim_sessions","crim_magisterial","civ_execution","civ_misc","other"];
+const $=id=>document.getElementById(id);
 if(HI){document.querySelectorAll("[data-i]").forEach(e=>{e.innerHTML=HIS[e.dataset.i]});document.title="मुक़दमे का समय कैलकुलेटर";
-  const l=document.getElementById("lang");l.textContent="English";l.lang="en";l.href="calculator.html";document.querySelector('nav a[aria-current]').href="calculator-hi.html"}
-const label=t=>HI?(HIL[t]||t):(D.labels[t]||t);
+  $("q").placeholder="टाइप करें, जैसे Pune";$("q2").placeholder="दूसरा ज़िला";
+  const l=$("lang");l.textContent="English";l.lang="en";l.href="calculator.html";document.querySelector('nav a[aria-current]').href="calculator-hi.html";
+  document.querySelectorAll('nav a[href="index.html"],nav a[href="paper.html"]').forEach(a=>a.lang="hi")}
+const label=t=>HI?(HIL[t]||t):(D.labels[t]||t), short=t=>HI?(HIS2[t]||t):(D.short[t]||t);
 const C=Object.fromEntries(D.cols.map((c,i)=>[c,i]));
-const $=id=>document.getElementById(id), st=$("st"), di=$("di"), ty=$("ty");
-const opt=(s,v,t)=>{const o=document.createElement("option");o.value=v;o.textContent=t;s.appendChild(o)};
 const yrs=m=>(m/12).toFixed(1).replace(/\.0$/,"");
 const fmtM=m=>m==null?null:HI?(m<1?"एक महीने से कम":m<24?`${m} महीने`:`${yrs(m)} साल`):(m<1?"under a month":m<24?`${m} month${m==1?"":"s"}`:`${yrs(m)} years`);
 const pc=x=>x==null?"–":`${Math.round(x*100)}%`;
-const row=(list,t)=>list.find(r=>r[0]===t);
-Object.keys(D.states).forEach(s=>opt(st,s,s));
+const row=(list,t)=>list&&list.find(r=>r[0]===t);
+
+// one searchable list of "District, State"
+const KEYS={}, NAME={}, dl=$("dl");
+for(const s of Object.keys(D.states).sort())for(const d of Object.keys(D.states[s]).sort()){
+  const k=`${d}, ${s}`;KEYS[k.toLowerCase()]=[s,d];NAME[k.toLowerCase()]=k;const o=document.createElement("option");o.value=k;dl.appendChild(o)}
+function lookup(txt){
+  const t=txt.trim().toLowerCase(); if(!t)return null;
+  if(KEYS[t])return KEYS[t];
+  const hits=Object.entries(KEYS).filter(([k])=>k.split(",")[0]===t);   // district name alone
+  if(hits.length===1)return hits[0][1];
+  const pre=Object.entries(KEYS).filter(([k])=>k.startsWith(t));
+  return pre.length===1?pre[0][1]:null;
+}
+const st={A:null,B:null,t:"civ_suit"};
 const q=new URLSearchParams(location.hash.slice(1));
-function fillDistricts(){di.innerHTML="";Object.keys(D.states[st.value]).forEach(d=>opt(di,d,d));fillTypes()}
-function fillTypes(){const prev=ty.value;ty.innerHTML="";D.states[st.value][di.value].forEach(r=>opt(ty,r[0],label(r[0])));
-  if([...ty.options].some(o=>o.value===prev))ty.value=prev;else if([...ty.options].some(o=>o.value==="civ_suit"))ty.value="civ_suit";render()}
+st.A=(q.get("s")&&q.get("d")&&D.states[q.get("s")]?.[q.get("d")])?[q.get("s"),q.get("d")]:(D.states.Delhi?.Central?["Delhi","Central"]:KEYS[Object.keys(KEYS)[0]]);
+if(q.get("cs")&&q.get("cd")&&D.states[q.get("cs")]?.[q.get("cd")])st.B=[q.get("cs"),q.get("cd")];
+if(q.get("t"))st.t=q.get("t");
+
+function matches(txt){const t=txt.trim().toLowerCase();return t.length<2?[]:Object.keys(KEYS).filter(k=>k.includes(t)).slice(0,12)}
+function bindSearch(inp,hint,set){
+  inp.addEventListener("focus",()=>inp.select());
+  let shown=null;
+  const pick=r=>{hint.innerHTML="";shown=null;set(r)};
+  const go=()=>{const r=lookup(inp.value);
+    if(r){shown=null;pick(r);return}
+    if(shown===inp.value)return;   // a blur before clicking a suggestion must not redraw it away
+    shown=inp.value;
+    const m=matches(inp.value);
+    hint.innerHTML=m.length?`<span>${HI?"इनमें से चुनें:":"Did you mean:"}</span>`+m.map(k=>`<button type="button" class="chip" data-k="${k}">${NAME[k]}</button>`).join("")
+      :(inp.value.trim()?`<span class="err">${HI?"कोई ज़िला नहीं मिला। वर्तनी जाँचें या पुराना नाम आज़माएँ।":"No district found. Check the spelling, or try the old name."}</span>`:"");
+    hint.querySelectorAll("button").forEach(b=>b.onclick=()=>{const r2=KEYS[b.dataset.k];pick(r2)});
+  };
+  inp.addEventListener("change",go);inp.addEventListener("input",()=>{if(KEYS[inp.value.trim().toLowerCase()])go()});
+  inp.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();go()}});
+}
+bindSearch($("q"),$("q-hint"),r=>{st.A=r;render()});
+bindSearch($("q2"),$("q2-hint"),r=>{st.B=r;render()});
+$("cmp-open").onclick=()=>{$("cmp-box").hidden=false;$("cmp-open").hidden=true;$("q2").focus()};
+$("cmp-close").onclick=()=>{st.B=null;$("q2").value="";$("cmp-box").hidden=true;$("cmp-open").hidden=false;render()};
+$("share").onclick=async()=>{const b=$("share"),old=b.textContent;
+  try{if(navigator.share&&matchMedia("(pointer:coarse)").matches){await navigator.share({title:document.title,url:location.href});return}
+    await navigator.clipboard.writeText(location.href);b.textContent=HI?"कॉपी हो गया ✓":"Copied ✓"}
+  catch(e){prompt(HI?"यह लिंक कॉपी करें:":"Copy this link:",location.href)}
+  setTimeout(()=>b.textContent=old,1800)};
+
+function chips(list){
+  const box=$("types");box.innerHTML="";
+  if(!row(list,st.t))st.t=row(list,"civ_suit")?"civ_suit":list[0][0];
+  for(const t of ORDER){const r=row(list,t);const b=document.createElement("button");b.type="button";b.className="chip";
+    b.textContent=short(t);b.title=label(t);b.disabled=!r;b.setAttribute("aria-pressed",t===st.t);
+    if(!r)b.title=HI?"इस ज़िले में पर्याप्त मामले नहीं":"Too few cases of this type in this district";
+    b.onclick=()=>{st.t=t;render()};box.appendChild(b)}
+}
+function tenOf(r){
+  const n1=Math.round(10*(1-r[C.pending_after_1y])), n3=r[C.pending_after_3y]==null?null:Math.round(10*(1-r[C.pending_after_3y]));
+  const p5=r[C.pending_after_5y], s5=p5==null?null:Math.round(10*p5);
+  if(HI)return `ऐसे हर 10 मामलों में से लगभग <b>${n1}</b> का फ़ैसला 1 साल में हुआ`+(n3!=null?`, <b>${n3}</b> का 3 साल में`:"")+(s5!=null?`, और <b>${s5}</b> ${s5===1?"मामला":"मामले"} 5 साल बाद भी लंबित ${s5===1?"था":"थे"}।`:"।");
+  return `Out of every 10 such cases, about <b>${n1}</b> were decided within a year`+(n3!=null?`, <b>${n3}</b> within 3 years`:"")+(s5!=null?(s5?`, and <b>${s5}</b> ${s5===1?"was":"were"} still waiting after 5 years.`:", and almost none were still waiting after 5 years."):".");
+}
 function render(){
-  const r=row(D.states[st.value][di.value],ty.value), n=row(D.national,ty.value); if(!r)return;
-  const h=`#s=${encodeURIComponent(st.value)}&d=${encodeURIComponent(di.value)}&t=${ty.value}`;
+  const [s,d]=st.A, list=D.states[s][d]; chips(list);
+  const r=row(list,st.t), n=row(D.national,st.t), B=st.B?row(D.states[st.B[0]][st.B[1]],st.t):null;
+  const h=`#s=${encodeURIComponent(s)}&d=${encodeURIComponent(d)}&t=${st.t}`+(st.B?`&cs=${encodeURIComponent(st.B[0])}&cd=${encodeURIComponent(st.B[1])}`:"");
   history.replaceState(null,"",h); $("lang").href=(HI?"calculator.html":"calculator-hi.html")+h;
-  const med=r[C.median_months], p90=r[C.p90_months], lab=label(ty.value), N=r[C.cases].toLocaleString("en-IN");
+  if(document.activeElement!==$("q"))$("q").value=`${d}, ${s}`;
+  if(st.B&&document.activeElement!==$("q2")){$("q2").value=`${st.B[1]}, ${st.B[0]}`;$("cmp-box").hidden=false;$("cmp-open").hidden=true}
+  const med=r[C.median_months], p90=r[C.p90_months], lab=label(st.t), N=r[C.cases].toLocaleString("en-IN");
   $("head").textContent=med==null?(HI?"आधे से ज़्यादा मामले अब भी लंबित":"Over half still pending"):fmtM(med);
   $("sub").innerHTML=HI
-    ?(med==null?`डेटा ख़त्म होने तक ऐसे आधे से ज़्यादा मामले लंबित थे, इसलिए सामान्य समय डेटा की पहुँच से ज़्यादा है। ${lab}, ${di.value}।`
-      :`<b>${di.value}</b> में <b>${lab}</b> के मामले में फ़ैसला आने का सामान्य समय: आधे मामलों में इससे पहले फ़ैसला हुआ, आधों में बाद में। ${N} मामलों पर आधारित।`)
-    :(med==null?`More than half of these cases were still pending when the data ends, so the typical time is longer than the data can show. ${lab}, ${di.value}.`
-      :`is the typical time to a decision for a <b>${lab.toLowerCase()}</b> in <b>${di.value}</b>: half were decided sooner, half later. Based on ${N} cases.`);
+    ?(med==null?`डेटा ख़त्म होने तक ऐसे आधे से ज़्यादा मामले लंबित थे, इसलिए सामान्य समय डेटा की पहुँच से ज़्यादा है। ${lab}, ${d}।`
+      :`<b>${d}</b> में <b>${lab}</b> के मामले में फ़ैसला आने का सामान्य समय: आधे मामलों में इससे पहले फ़ैसला हुआ, आधों में बाद में।`)
+    :(med==null?`More than half of these cases were still pending when the data ends, so the typical time is longer than the data can show. ${lab}, ${d}.`
+      :`is the typical time to a decision for a <b>${lab.toLowerCase()}</b> in <b>${d}</b>: half were decided sooner, half later.`);
+  $("tenof").innerHTML=tenOf(r);
+  const bv=(k,f)=>B?`<em>${st.B[1]}: ${f(B)}</em>`:"";
   $("facts").innerHTML=[["pending_after_1y",1],["pending_after_3y",3],["pending_after_5y",5]].map(([k,y])=>
-    `<div><b>${r[C[k]]==null?"–":pc(1-r[C[k]])}</b><span>${HI?`${y} साल के भीतर फ़ैसला`:`decided within ${y} year${y>1?"s":""}`}</span></div>`).join("")+
-    `<div><b>${p90==null?(HI?"10+ साल":"10+ yrs"):fmtM(p90)}</b><span>${HI?"सबसे धीमे 10 में से 1 मामले में":"for the slowest 1 in 10"}</span></div>`;
-  $("lg-here").textContent=di.value;
+    `<div><b>${r[C[k]]==null?"–":pc(1-r[C[k]])}</b><span>${HI?`${y} साल के भीतर फ़ैसला`:`decided within ${y} year${y>1?"s":""}`}</span>${bv(k,x=>x[C[k]]==null?"–":pc(1-x[C[k]]))}</div>`).join("")+
+    `<div><b>${p90==null?(HI?"10+ साल":"10+ yrs"):fmtM(p90)}</b><span>${HI?"सबसे धीमे 10 में से 1 मामले में":"for the slowest 1 in 10"}</span>${bv("p90",x=>x[C.p90_months]==null?(HI?"10+ साल":"10+ yrs"):fmtM(x[C.p90_months]))}</div>`;
+  $("based").textContent=(HI?`${s} के ${d} में दर्ज ${N} मामलों पर आधारित (2010–2018)।`:`Based on ${N} cases filed in ${d}, ${s}, 2010–2018.`)+
+    (st.B&&!B?(HI?` ${st.B[1]} में इस प्रकार के पर्याप्त मामले नहीं हैं।`:` ${st.B[1]} has too few cases of this type to compare.`):"");
+  $("lg-here").textContent=d; $("lg-b").hidden=!B; if(B)$("lg-b-name").textContent=st.B[1];
   const xs=[...Array(41).keys()].map(i=>i*3);
-  const others=Object.entries(D.states[st.value]).filter(([d])=>d!==di.value).map(([d,l])=>row(l,ty.value)).filter(Boolean)
-    .map(o=>({name:"",values:o[C.curve],color:"var(--neutral)",width:1,step:true,noTip:true,opacity:.55}));
+  const others=Object.entries(D.states[s]).filter(([k])=>k!==d).map(([,l])=>row(l,st.t)).filter(Boolean)
+    .map(o=>({name:"",values:o[C.curve],color:"var(--neutral)",width:1,step:true,noTip:true,opacity:.45}));
   lineChart($("c-curve"),{x:xs,ymin:0,ymax:1,yfmt:v=>Math.round(v*100)+"%",xfmt:v=>v%12?"":(v/12)+(HI?" साल":"y"),xticks:xs.filter(v=>v%12===0),right:20,
     tipx:v=>HI?`दर्ज होने के ${v} महीने बाद, अब भी लंबित:`:`${v} months after filing, still pending:`,
     series:[...others,{name:HI?"पूरा भारत":"All of India",values:n?n[C.curve]:[],color:"var(--s2)",width:2,step:true},
-            {name:di.value,values:r[C.curve],color:"var(--s1)",width:2.75,step:true}]});
-  const peers=Object.entries(D.states[st.value]).map(([d,l])=>[d,row(l,ty.value)]).filter(([,x])=>x&&x[C.pending_after_3y]!=null)
+      ...(B?[{name:st.B[1],values:B[C.curve],color:"var(--s3)",width:2.5,step:true}]:[]),
+      {name:d,values:r[C.curve],color:"var(--s1)",width:2.75,step:true}]});
+  const peers=Object.entries(D.states[s]).map(([k,l])=>[k,row(l,st.t)]).filter(([,x])=>x&&x[C.pending_after_3y]!=null)
     .sort((a,b)=>a[1][C.pending_after_3y]-b[1][C.pending_after_3y]);
-  const pos=peers.findIndex(([d])=>d===di.value);
+  const pos=peers.findIndex(([k])=>k===d);
   const nat3=n?n[C.pending_after_3y]:null, me3=r[C.pending_after_3y], cmp=me3!=null&&nat3!=null;
-  const fast=peers.length?`${peers[0][0]} (${pc(peers[0][1][C.pending_after_3y])})`:"", slow=peers.length?`${peers[peers.length-1][0]} (${pc(peers[peers.length-1][1][C.pending_after_3y])})`:"";
+  const link=k=>`<a href="#s=${encodeURIComponent(s)}&d=${encodeURIComponent(k)}&t=${st.t}" data-d="${k}">${k}</a>`;
+  const fast=peers.length?`${link(peers[0][0])} (${pc(peers[0][1][C.pending_after_3y])})`:"", slow=peers.length?`${link(peers[peers.length-1][0])} (${pc(peers[peers.length-1][1][C.pending_after_3y])})`:"";
   $("rank").innerHTML=pos<0?"":HI
-    ?`<h3>${di.value} की तुलना</h3><p class="prose">दर्ज होने के 3 साल बाद, यहाँ ऐसे <b>${pc(me3)}</b> मामले अब भी लंबित थे, जबकि पूरे भारत में <b>${pc(nat3)}</b>${cmp?` (राष्ट्रीय आँकड़े से ${me3<nat3?"तेज़":"धीमा"})`:""}। ${st.value} के ${peers.length} ज़िलों में, सबसे तेज़ से सबसे धीमे के क्रम में ${di.value} का स्थान <b>${pos+1}</b> है। सबसे तेज़: ${fast}; सबसे धीमा: ${slow}।</p>`
-    :`<h3>How ${di.value} compares</h3><p class="prose">After 3 years, <b>${pc(me3)}</b> of these cases were still pending here, against <b>${pc(nat3)}</b> across India${cmp?` (${me3<nat3?"faster":"slower"} than the national figure)`:""}. Among ${peers.length} districts in ${st.value}, ${di.value} ranks <b>${pos+1}</b> from fastest to slowest. Fastest: ${fast}; slowest: ${slow}.</p>`;
+    ?`<h3>${d} की तुलना</h3><p class="prose">दर्ज होने के 3 साल बाद, यहाँ ऐसे <b>${pc(me3)}</b> मामले अब भी लंबित थे, जबकि पूरे भारत में <b>${pc(nat3)}</b>${cmp?` (राष्ट्रीय आँकड़े से ${me3<nat3?"तेज़":"धीमा"})`:""}। ${s} के ${peers.length} ज़िलों में, सबसे तेज़ से सबसे धीमे के क्रम में ${d} का स्थान <b>${pos+1}</b> है। सबसे तेज़: ${fast}; सबसे धीमा: ${slow}।</p>`
+    :`<h3>How ${d} compares</h3><p class="prose">After 3 years, <b>${pc(me3)}</b> of these cases were still pending here, against <b>${pc(nat3)}</b> across India${cmp?` (${me3<nat3?"faster":"slower"} than the national figure)`:""}. Among ${peers.length} districts in ${s}, ${d} ranks <b>${pos+1}</b> from fastest to slowest. Fastest: ${fast}; slowest: ${slow}.</p>`;
+  $("rank").querySelectorAll("a[data-d]").forEach(a=>a.onclick=e=>{e.preventDefault();st.A=[s,a.dataset.d];render();window.scrollTo({top:0,behavior:"smooth"})});
 }
-st.onchange=fillDistricts;di.onchange=fillTypes;ty.onchange=render;
-st.value=D.states[q.get("s")]?q.get("s"):("Delhi" in D.states?"Delhi":st.options[0].value);
-di.innerHTML="";Object.keys(D.states[st.value]).forEach(d=>opt(di,d,d));
-if(q.get("d")&&D.states[st.value][q.get("d")])di.value=q.get("d");
-ty.innerHTML="";D.states[st.value][di.value].forEach(r=>opt(ty,r[0],label(r[0])));
-ty.value=[...ty.options].some(o=>o.value===q.get("t"))?q.get("t"):([...ty.options].some(o=>o.value==="civ_suit")?"civ_suit":ty.options[0].value);
 onResize(render);
 </script>
 </body>
