@@ -12,6 +12,8 @@ Features per district, from ddl_compact:
   log_filings         size: log of cases filed per year
   criminal_share      share of filings that are criminal (cube)
   judge_tenure_months median months a judge stays in one courtroom (judges.csv.gz)
+  records_complete_year  year the district's case records become complete (time_to_decision.digitisation_month);
+                      a control for data coverage, not a court characteristic
   disposal_ratio      cases decided / cases filed per year, 2014-2017 (throughput: nearly the outcome itself)
 Models: OLS of each outcome on the standardised structural features (all but disposal_ratio), and on all five,, with a 95% interval from 2,000 bootstrap resamples of
 districts. Also: Spearman correlation of each feature with the outcome alone.
@@ -31,8 +33,9 @@ from scipy.stats import spearmanr
 HERE: Final = Path(__file__).resolve().parent
 DDL: Final = HERE / "ddl_compact"
 OUT: Final = HERE / "results" / "district_drivers"
-FEATURES: Final = ["log_filings_per_court", "log_filings", "criminal_share", "judge_tenure_months", "disposal_ratio"]
-STRUCTURAL: Final = FEATURES[:4]  # disposal_ratio is close to a restatement of the outcome, so it gets its own model
+FEATURES: Final = ["log_filings_per_court", "log_filings", "criminal_share", "judge_tenure_months",
+                    "records_complete_year", "disposal_ratio"]
+STRUCTURAL: Final = FEATURES[:5]  # disposal_ratio is close to a restatement of the outcome, so it gets its own model
 MIN_CASES: Final = 2000
 
 
@@ -60,6 +63,10 @@ def features() -> pd.DataFrame:
     f["criminal_share"] = crim[1] / crim.sum(axis=1)
     f["judge_tenure_months"] = tenure
     f["disposal_ratio"] = flows["disposed"] / flows["filed"]
+    # data control: districts whose records start late have shorter observed judge postings and (before the
+    # left-truncation fix) looked slower, which could manufacture a tenure-speed link
+    dig = pd.read_csv(HERE / "results" / "time_to_decision" / "digitisation.csv").set_index("district_id")
+    f["records_complete_year"] = dig["first_complete_year"]
     return f
 
 

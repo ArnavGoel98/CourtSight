@@ -107,6 +107,11 @@ def site_data() -> dict[str, object]:
                       for r in dd.sort_values(["pending_after_3y_civil", "state_name", "district_name"], kind="mergesort").itertuples()],
         "drivers": {"coef": [{k: (_num(v, 4) if isinstance(v, float) else v) for k, v in r.items()}
                              for r in co.to_dict("records")], "summary": dsum},
+        "audit": {**{k: v for k, v in json.loads((RES / "audit" / "summary.json").read_text()).items()},
+                  "cohort": pd.read_csv(RES / "audit" / "cohort_speed.csv").replace({np.nan: None}).to_dict("list"),
+                  "by_type": pd.read_csv(RES / "audit" / "correction_by_type.csv").set_index("case_type")
+                  .loc[["civ_suit", "crim_magisterial", "crim_ni138", "crim_sessions", "civ_family"]]
+                  .round(3).reset_index().to_dict("records")},
         "district_keys": sorted({(r.state_name, r.district_name) for r in pd.read_csv(
             RES / "time_to_decision" / "by_district_case_type.csv").dropna(subset=["state_name", "district_name"]).itertuples()}),
         "model": {"skill_vs_best_naive": [_num(med["skill_vs_best_naive"].min(), 2), _num(med["skill_vs_best_naive"].max(), 2)]},
@@ -132,17 +137,25 @@ def calc_data() -> dict[str, object]:
     t = pd.read_csv(RES / "time_to_decision" / "by_district_case_type.csv").dropna(subset=["state_name", "district_name"])
     cv = pd.read_csv(RES / "time_to_decision" / "curves_by_district_case_type.csv.gz")
     t = t.merge(cv, on=["district_id", "case_type"], how="left")
+    t = t.merge(pd.read_csv(RES / "audit" / "rank_intervals.csv"), on=["district_id", "case_type"], how="left")
+    dig = pd.read_csv(RES / "time_to_decision" / "digitisation.csv").set_index("district_id")["first_complete_year"]
+    special = set(json.loads((RES / "audit" / "summary.json").read_text())["units_that_are_court_complexes"])
     nat = pd.read_csv(RES / "time_to_decision" / "national_case_type.csv").merge(
         pd.read_csv(RES / "time_to_decision" / "curves_national_case_type.csv"), on="case_type")
+    rank_cols = ["rank", "rank_lo", "rank_hi", "of"]
 
     def row(r: object) -> list[object]:
-        return [r.case_type] + [_num(getattr(r, c)) for c in STATS] + [_delta(_curve(r.curve_q))]
+        ranks = [int(getattr(r, c)) if hasattr(r, "rank") and pd.notna(getattr(r, "rank")) else None for c in rank_cols]
+        return [r.case_type] + [_num(getattr(r, c)) for c in STATS] + ranks + [_delta(_curve(r.curve_q))]
 
     states: dict[str, dict[str, list[list[object]]]] = {}
+    meta: dict[str, dict[str, list[object]]] = {}
     for (s, d), g in t.sort_values(["state_name", "district_name"]).groupby(["state_name", "district_name"], sort=False):
         states.setdefault(s, {})[d] = [row(r) for r in g.itertuples()]
-    return {"labels": LABELS, "short": SHORT, "cols": ["type"] + STATS + ["curve"], "national": [row(r) for r in nat.itertuples()],
-            "states": states}
+        y = dig.get(int(g["district_id"].iloc[0]))
+        meta.setdefault(s, {})[d] = [None if y is None or pd.isna(y) else int(y), int(d in special)]
+    return {"labels": LABELS, "short": SHORT, "cols": ["type"] + STATS + rank_cols + ["curve"],
+            "national": [row(r) for r in nat.itertuples()], "states": states, "meta": meta}
 
 
 def paper_vars(d: dict) -> dict[str, str]:
@@ -161,7 +174,7 @@ def paper_vars(d: dict) -> dict[str, str]:
     J = d["judge"]["means"]
     return {
         "date": "October 2026", "first": yrs[0], "last": yrs[-1], "pending_first": cr(P[yrs[0]]), "pending_last": cr(P[yrs[-1]]),
-        "cases_m": f"{W['cases_filed'] / 1e6:.1f}", "districts_ttd": "626",
+        "cases_m": f"{W['cases_filed'] / 1e6:.1f}", "districts_ttd": "619",
         "coll_first": "December 2018", "coll_last": "July 2020",
         "civ_med": f"{ttd['civ_suit']['median_months']:.0f}", "civ_5y": f"{ttd['civ_suit']['pending_after_5y'] * 100:.0f}",
         "fam_med": f"{ttd['civ_family']['median_months']:.0f}",
@@ -186,6 +199,26 @@ def paper_vars(d: dict) -> dict[str, str]:
         "skill_lo": f"{d['model']['skill_vs_best_naive'][0] * 100:.0f}", "skill_hi": f"{d['model']['skill_vs_best_naive'][1] * 100:.0f}",
         "f50": cr(F["q50"]), "f10": cr(F["q10"]), "f90": cr(F["q90"]), "locked_on": F["locked_on"], "commit": F["commit"],
         "sha": F["sha"]["forecast_states_2026.csv"],
+        **audit_vars(d["audit"]),
+    }
+
+
+def audit_vars(a: dict) -> dict[str, str]:
+    t = {r["case_type"]: r for r in a["by_type"]}["civ_suit"]
+    pct = lambda v: f"{v * 100:.0f}"
+    return {
+        "au_f10": f"{a['recorded_filings_2010'] / 1e6:.1f}", "au_f18": f"{a['recorded_filings_2018'] / 1e6:.1f}",
+        "au_b10": pct(a["cohort"]["before"][0]), "au_a10": pct(a["cohort"]["after_records_complete"][0]),
+        "au_a17": pct(a["cohort"]["after_records_complete"][7]),
+        "au_share": pct(a["share_of_cases_filed_before_records_complete"]),
+        "au_civ_med_naive": f"{t['median_months__uncorrected']:.0f}", "au_civ_med": f"{t['median_months__corrected_50']:.0f}",
+        "au_med30": f"{t['median_months__corrected_30']:.0f}", "au_med70": f"{t['median_months__corrected_70']:.0f}",
+        "au_medc10": f"{t['median_months__collection_10']:.0f}", "au_medc40": f"{t['median_months__collection_40']:.0f}",
+        "au_rows5": f"{a['rows_shift_over_5pp']:,}", "au_rows": f"{a['rows_compared']:,}",
+        "au_rshift": str(a["civil_suit_median_rank_shift"]), "au_rmax": str(a["civil_suit_max_rank_shift"]),
+        "au_rwidth": str(a["civil_suit_median_rank_interval_width"]),
+        "au_rwide": pct(a["civil_suit_share_rank_interval_over_50"]),
+        "au_ncourts": str(len(a["units_that_are_court_complexes"])),
     }
 
 

@@ -1,0 +1,34 @@
+{
+  "recorded_filings_2010": 4269735,
+  "recorded_filings_2018": 13709367,
+  "share_of_cases_filed_before_records_complete": 0.1397,
+  "districts_complete_from": {
+    "2010": 102,
+    "2011": 89,
+    "2012": 109,
+    "2013": 107,
+    "2014": 135,
+    "2015": 52,
+    "2016": 34,
+    "2017": 1
+  },
+  "districts_never_complete": 3,
+  "rows_compared": 4678,
+  "rows_shift_over_5pp": 834,
+  "rows_shift_over_10pp": 206,
+  "median_shift_pp": -0.87,
+  "civil_suit_rank_spearman_naive_vs_corrected": 0.976,
+  "civil_suit_median_rank_shift": 20,
+  "civil_suit_max_rank_shift": 203,
+  "civil_suit_districts_ranked": 592,
+  "civil_suit_median_rank_interval_width": 18,
+  "civil_suit_share_rank_interval_over_50": 0.125,
+  "units_that_are_court_complexes": [
+    "Mumbai CMM Courts",
+    "Mumbai City Civil Court",
+    "Mumbai Small Causes Court",
+    "Mumbai Motor Accident Claims T",
+    "Maharashtra-Family Courts",
+    "Maharashtra-School Tribunals"
+  ]
+}

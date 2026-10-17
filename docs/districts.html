@@ -150,7 +150,7 @@ details.card[open]>summary{margin-bottom:12px}
 <nav><div class="wrap"><b>CourtSight</b><a href="calculator.html">Calculator</a><a href="districts.html" aria-current="page">Rankings</a><a href="index.html">Findings</a><a href="paper.html">Paper</a></div></nav>
 <main class="wrap">
 <header class="hero" style="padding:36px 0 8px">
-  <div class="kicker">626 districts · 10 case types · 2010–2018</div>
+  <div class="kicker">619 districts + 6 special courts · 10 case types · 2010–2018</div>
   <h1>Which district courts are fastest and slowest?</h1>
   <p class="lede">Every district, ranked by how long cases took. Pick a type of case, filter by state, sort any column, and download what you see.</p>
 </header>
@@ -166,7 +166,7 @@ details.card[open]>summary{margin-bottom:12px}
   <button class="btn ghost" id="csv" type="button">Download this table (CSV)</button>
 </div>
 <div class="tablewrap"><table class="rank" id="tbl"></table></div>
-<p class="caption">Kaplan–Meier estimates: cases still pending when the data was collected count as undecided up to that date. "Median" is blank where over half were still pending when the data ends. Districts with fewer than 200 cases of a type are left out. Rank 1 = smallest share still pending after 3 years. Click a district for its full curve. Descriptive only: a slow district is not necessarily a badly run one (case mix, vacancies and local practice all differ).</p>
+<p class="caption">Kaplan–Meier estimates: cases still pending when the data was collected count as undecided up to that date. "Median" is blank where over half were still pending when the data ends. Districts with fewer than 200 cases of a type are left out. Rank 1 = smallest share still pending after 3 years, among all districts in India for this case type; the small range under it is where the rank lies 90% of the time once sampling noise is allowed for, so districts whose ranges overlap are not clearly different. Where a district's records only become complete in a later year, earlier cases are counted only from then (a correction for eCourts digitisation; see the <a href="index.html#audit">audit</a>). Units marked "court, not district" are special courts listed separately in the source data. Click a district for its full curve. Descriptive only: a slow district is not necessarily a badly run one (case mix, vacancies and local practice all differ).</p>
 </main>
 <footer><div class="wrap">CourtSight by Arnav Goel · <a href="https://github.com/ArnavGoel98/CourtSight">Code and method</a> · Data: Development Data Lab eCourts records 2010–2018 (CC BY-NC-SA 4.0). You may reuse this table with attribution under the same licence.</div></footer>
 <script>
@@ -426,7 +426,7 @@ const fmtPP = v => (v > 0 ? "+" : "") + (v * 100).toFixed(Math.abs(v) < 0.1 ? 1 
 const $=id=>document.getElementById(id);
 const ORDER=["civ_suit","civ_family","crim_ni138","civ_mact","crim_bail","crim_sessions","crim_magisterial","civ_execution","civ_misc","other"];
 const COLS=[
-  {k:"rank",l:"#",num:true},
+  {k:"rank",l:"Rank (90% range)",num:true},
   {k:"district",l:"District"},
   {k:"cases",l:"Cases",num:true,cls:"hide-sm",f:v=>v.toLocaleString("en-IN")},
   {k:"median_months",l:"Median time",num:true,f:v=>v==null?"over half pending":v<24?`${v} mo`:`${(v/12).toFixed(1)} yrs`},
@@ -459,10 +459,9 @@ function build(){   // rows for this case type (and state), ranked by share pend
   ROWS=[];
   for(const [s,ds] of Object.entries(D.states)){ if(st.s&&s!==st.s)continue;
     for(const [d,l] of Object.entries(ds)){const r=l.find(x=>x[0]===st.t);if(!r)continue;
-      ROWS.push({district:d,state:s,cases:r[C.cases],median_months:r[C.median_months],p90_months:r[C.p90_months],
+      const m=D.meta[s][d];
+      ROWS.push({district:d,state:s,rank:r[C.rank],rank_lo:r[C.rank_lo],rank_hi:r[C.rank_hi],of:r[C.of],from:m[0],special:m[1],cases:r[C.cases],median_months:r[C.median_months],p90_months:r[C.p90_months],
         d1:r[C.pending_after_1y]==null?null:1-r[C.pending_after_1y],pending_after_3y:r[C.pending_after_3y],pending_after_5y:r[C.pending_after_5y]})}}
-  const ranked=ROWS.filter(r=>r.pending_after_3y!=null).sort((a,b)=>a.pending_after_3y-b.pending_after_3y);
-  ranked.forEach((r,i)=>r.rank=i+1);
   draw();
 }
 function cmp(a,b){const k=st.sort,x=a[k],y=b[k];
@@ -476,8 +475,8 @@ function draw(){
   const max=Math.max(...ROWS.map(r=>r.pending_after_3y||0),.01);
   const head=`<tr>${COLS.map(c=>`<th class="${c.cls||""}" ${c.k===st.sort?`aria-sort="${st.dir>0?"ascending":"descending"}"`:`aria-sort="none"`}><button data-k="${c.k}">${c.l}</button></th>`).join("")}</tr>`;
   const cell=(c,r)=>{const v=r[c.k];
-    if(c.k==="district")return `<td><a href="calculator.html#s=${encodeURIComponent(r.state)}&d=${encodeURIComponent(r.district)}&t=${st.t}">${r.district}</a><div class="st" style="color:var(--ink-3);font-size:.8rem;font-weight:400">${r.state}</div></td>`;
-    if(c.k==="rank")return `<td class="n">${v??"–"}</td>`;
+    if(c.k==="district")return `<td><a href="calculator.html#s=${encodeURIComponent(r.state)}&d=${encodeURIComponent(r.district)}&t=${st.t}">${r.district}</a>${r.special?' <span class="badge" title="A special court or court complex, not a whole district">court, not district</span>':""}<div class="st" style="color:var(--ink-3);font-size:.8rem;font-weight:400">${r.state}${r.from>2010?` · records complete from ${r.from}`:""}</div></td>`;
+    if(c.k==="rank")return `<td class="n" title="90% range of this rank, given sampling uncertainty">${v??"–"}${v!=null?`<div style="font-size:.75rem">${r.rank_lo}–${r.rank_hi}</div>`:""}</td>`;
     const txt=c.f?c.f(v):v;
     if(c.k==="pending_after_3y"&&v!=null)return `<td>${txt}<span class="meter"><i style="width:${Math.round(v/max*100)}%"></i></span></td>`;
     return `<td class="${c.cls||""}">${txt}</td>`};
@@ -489,8 +488,8 @@ function draw(){
 }
 function csv(){
   const esc=v=>v==null?"":/[",\n]/.test(String(v))?`"${String(v).replace(/"/g,'""')}"`:String(v);
-  const hdr=["rank","district","state","case_type","cases","median_months","decided_within_1y","pending_after_3y","pending_after_5y","p90_months"];
-  const lines=[hdr.join(","),...VIEW.map(r=>[r.rank,r.district,r.state,st.t,r.cases,r.median_months,r.d1==null?"":r.d1.toFixed(3),r.pending_after_3y,r.pending_after_5y,r.p90_months].map(esc).join(","))];
+  const hdr=["rank_in_india","rank_lo_90","rank_hi_90","district","state","records_complete_from","special_court","case_type","cases","median_months","decided_within_1y","pending_after_3y","pending_after_5y","p90_months"];
+  const lines=[hdr.join(","),...VIEW.map(r=>[r.rank,r.rank_lo,r.rank_hi,r.district,r.state,r.from,r.special,st.t,r.cases,r.median_months,r.d1==null?"":r.d1.toFixed(3),r.pending_after_3y,r.pending_after_5y,r.p90_months].map(esc).join(","))];
   const blob=new Blob(["# CourtSight district rankings. Source: Development Data Lab eCourts 2010-2018, CC BY-NC-SA 4.0. https://arnavgoel98.github.io/CourtSight/\n"+lines.join("\n")+"\n"],{type:"text/csv"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`courtsight_${st.t}${st.s?"_"+st.s.replace(/\W+/g,"_"):""}.csv`;a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),1000);
