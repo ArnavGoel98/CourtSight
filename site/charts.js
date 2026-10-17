@@ -6,6 +6,11 @@ function el(tag, attrs = {}, parent) {
   if (parent) parent.appendChild(e);
   return e;
 }
+// accessible name for a chart: its own label, else the heading or caption of the card or figure holding it
+function chartLabel(host, opts) {
+  const box = host.closest(".card,figure"), h = box && box.querySelector("h3,figcaption");
+  return opts.label || (h ? h.textContent.trim() : "Chart");
+}
 function niceTicks(lo, hi, n = 5) {
   const span = hi - lo, step0 = span / n, mag = 10 ** Math.floor(Math.log10(step0));
   const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => span / s <= n) || 10 * mag;
@@ -32,7 +37,7 @@ function lineChart(host, opts) {
   host.classList.add("chart");
   const W = Math.max(host.clientWidth, 300), H = opts.height || Math.round(Math.min(380, Math.max(240, W * 0.5)));
   const m = {t: 16, r: opts.right ?? 24, b: 30, l: opts.left ?? 52};
-  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": opts.label || ""}, host);
+  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": chartLabel(host, opts)}, host);
   const xs = opts.x, n = xs.length;
   const all = opts.series.flatMap(s => [...s.values, ...(s.band ? [...s.band.lo, ...s.band.hi] : [])]).filter(v => v != null);
   const ymin = opts.ymin ?? Math.min(...all), ymax = opts.ymax ?? Math.max(...all);
@@ -112,7 +117,7 @@ function divergingBars(host, rows, opts = {}) {
   host.classList.add("chart");
   const W = Math.max(host.clientWidth, 300), rh = 22, m = {t: 8, r: 56, b: 26, l: Math.min(150, W * 0.34)};
   const H = m.t + m.b + rows.length * rh;
-  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": opts.label || ""}, host);
+  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": chartLabel(host, opts)}, host);
   const vals = rows.map(r => r.value), lo = Math.min(0, ...vals), hi = Math.max(0, ...vals);
   const X = v => m.l + (v - lo) / (hi - lo) * (W - m.l - m.r);
   const g = el("g", {class: "grid"}, svg), ax = el("g", {class: "axis"}, svg);
@@ -152,7 +157,7 @@ function columnChart(host, cats, stacks, opts = {}) {
   host.classList.add("chart");
   const W = Math.max(host.clientWidth, 300), H = opts.height || Math.round(Math.min(320, Math.max(220, W * 0.42)));
   const m = {t: 12, r: 12, b: 30, l: opts.left ?? 52};
-  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": opts.label || ""}, host);
+  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": chartLabel(host, opts)}, host);
   const tot = cats.map((_, i) => stacks.reduce((a, s) => a + s.values[i], 0)), ymax = Math.max(...tot);
   const bw = (W - m.l - m.r) / cats.length, Y = v => H - m.b - v / ymax * (H - m.t - m.b);
   const g = el("g", {class: "grid"}, svg), ax = el("g", {class: "axis"}, svg);
@@ -189,7 +194,7 @@ function scatter(host, pts, opts = {}) {
   host.classList.add("chart");
   const W = Math.max(host.clientWidth, 300), H = opts.height || Math.round(Math.min(380, Math.max(260, W * 0.55)));
   const m = {t: 12, r: 16, b: 44, l: 56};
-  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": opts.label || ""}, host);
+  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": chartLabel(host, opts)}, host);
   const xv = pts.map(p => p.x), yv = pts.map(p => p.y);
   const x0 = opts.xmin ?? Math.min(...xv), x1 = opts.xmax ?? Math.max(...xv), y0 = opts.ymin ?? Math.min(...yv), y1 = opts.ymax ?? Math.max(...yv);
   const X = v => m.l + (v - x0) / (x1 - x0) * (W - m.l - m.r), Y = v => H - m.b - (v - y0) / (y1 - y0) * (H - m.t - m.b);
@@ -233,7 +238,7 @@ function dotWhisker(host, rows, opts = {}) {
   host.classList.add("chart");
   const W = Math.max(host.clientWidth, 300), rh = 30, m = {t: 8, r: 20, b: 28, l: Math.min(190, W * 0.42)};
   const H = m.t + m.b + rows.length * rh;
-  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": opts.label || ""}, host);
+  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": chartLabel(host, opts)}, host);
   const lo = Math.min(0, ...rows.map(r => r.lo)), hi = Math.max(0, ...rows.map(r => r.hi));
   const X = v => m.l + (v - lo) / (hi - lo) * (W - m.l - m.r);
   const g = el("g", {class: "grid"}, svg), ax = el("g", {class: "axis"}, svg);

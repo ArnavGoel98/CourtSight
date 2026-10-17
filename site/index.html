@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CourtSight</title>
 <meta name="description" content="India's district-court backlog, measured: 80.9 million case records, official series to 2025, a locked forecast for 2026, and how long cases really take.">
+<link rel="canonical" href="https://arnavgoel98.github.io/CourtSight/">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%227%22 fill=%22%231f5f8b%22/%3E%3Cpath d=%22M7 23h18M9 23V13m5 10V9m5 14v-7m5 7V11%22 stroke=%22white%22 stroke-width=%222.6%22 stroke-linecap=%22round%22/%3E%3C/svg%3E">
 <meta property="og:type" content="website">
 <meta property="og:title" content="CourtSight: India's court backlog, measured">
@@ -14,10 +15,20 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://arnavgoel98.github.io/CourtSight/og.png">
 <link rel="prefetch" href="calc-data.json">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Dataset",
+"name":"CourtSight: time to decision in India's district courts, by district and case type (2010-2018 filings)",
+"description":"Kaplan-Meier estimates of how long cases took in every Indian district court, for ten case types, from 80.9 million eCourts case records filed 2010-2018 (Development Data Lab), corrected for uneven digitisation, with 90% rank intervals; plus official state-wise pending cases 2014-2025, a COVID excess-backlog estimate and a locked forecast for 31 December 2026. Aggregates only.",
+"url":"https://arnavgoel98.github.io/CourtSight/","sameAs":"https://github.com/ArnavGoel98/CourtSight",
+"creator":{"@type":"Person","name":"Arnav Goel"},"license":"https://creativecommons.org/licenses/by-nc-sa/4.0/",
+"isBasedOn":["https://www.devdatalab.org/judicial-data","https://sansad.in/"],
+"keywords":["India","courts","judicial backlog","pendency","eCourts","survival analysis","district courts"],
+"spatialCoverage":{"@type":"Place","name":"India"},"temporalCoverage":"2010-01/2025-12",
+"distribution":[{"@type":"DataDownload","encodingFormat":"text/csv","contentUrl":"https://raw.githubusercontent.com/ArnavGoel98/CourtSight/main/results/time_to_decision/by_district_case_type.csv"},
+{"@type":"DataDownload","encodingFormat":"application/json","contentUrl":"https://arnavgoel98.github.io/CourtSight/calc-data.json"}]}</script>
 <style>/*CSS*/</style>
 </head>
 <body>
-<nav><div class="wrap"><b>CourtSight</b><a href="calculator.html">Calculator</a><a href="districts.html">Rankings</a><a href="#backlog">Findings</a><a href="paper.html">Paper</a><a href="#data">Data</a><a href="calculator-hi.html" lang="hi">हिन्दी</a></div></nav>
+<nav><div class="wrap"><b>CourtSight</b><a href="calculator.html">Calculator</a><a href="districts.html">Rankings</a><a href="map.html">Map</a><a href="#backlog">Findings</a><a href="paper.html">Paper</a><a href="#data">Data</a><a href="calculator-hi.html" lang="hi">हिन्दी</a></div></nav>
 <main class="wrap">
 <header class="hero">
   <div class="kicker">India · district &amp; subordinate courts · 2010–2026</div>
@@ -25,7 +36,7 @@
   <p class="lede">What 80.9 million court records and the government's own figures say about how long justice takes, district by district.</p>
   <form class="finder" id="finder">
     <h2>How long do cases take in your district?</h2>
-    <p>Type a district to see how long cases like yours took there, by case type. English and हिन्दी. Or <a href="districts.html">rank all 619 districts</a>.</p>
+    <p>Type a district to see how long cases like yours took there, by case type. English and हिन्दी. Or <a href="districts.html">rank all {{n_dist}} districts</a>, or see them <a href="map.html">on a map</a>.</p>
     <div class="row search"><input id="fq" list="fdl" autocomplete="off" spellcheck="false" placeholder="Start typing, e.g. Pune" aria-label="District"><button class="btn" type="submit">Show me</button></div>
     <datalist id="fdl"></datalist>
     <div class="hint" id="fhint"></div>
@@ -86,6 +97,11 @@
   <div class="num">05</div>
   <h2>What do slow districts have in common? <span class="badge">correlation, not cause</span></h2>
   <p class="prose" id="drv-text"></p>
+  <a class="card" href="map.html" style="display:block;text-decoration:none;color:inherit">
+    <h3>Where civil suits wait longest</h3>
+    <img src="map-civil-suits.svg" alt="Map of India's districts shaded by the share of civil suits still pending three years after filing; the slowest fifth is concentrated in Bihar, eastern Uttar Pradesh, Odisha, West Bengal and parts of Maharashtra." loading="lazy" style="display:block;width:100%;max-width:560px;margin:8px auto 0;border-radius:8px">
+    <div class="caption">The slowest fifth of districts clusters in the east: <span id="slow5"></span> <span style="color:var(--link)">Open the interactive map, with every case type and the data-coverage layer →</span></div>
+  </a>
   <div class="grid2">
   <div class="card">
     <h3>Civil cases pending after 3 years, by district</h3>
@@ -125,6 +141,14 @@
     <div class="legend"><span><i style="background:var(--s1)"></i>Filed after the district's records became complete</span><span><i style="background:var(--s2)"></i>Filed before (seen only if still pending then)</span></div>
     <div id="c-audit"></div>
     <div class="caption">If early records were complete, the two lines would match. The gap is the survivor bias that the correction removes. Source: <code>data_audit.py</code>, <code>results/audit/</code>.</div>
+  </div>
+  <div class="card">
+    <h3>How much of the court system do the records cover?</h3>
+    <p class="prose" id="cov-text" style="margin:0 0 12px"></p>
+    <h3 style="margin-top:8px">Share decided within a year, by year filed: records that were already complete</h3>
+    <div class="legend"><span><i style="background:var(--s1)"></i>States whose coverage was steady in 2015–18</span><span><i style="background:var(--s2)"></i>States whose coverage was still growing</span></div>
+    <div id="c-speed"></div>
+    <div class="caption">If courts everywhere had sped up, both lines would rise alike. Most of the rise is in states whose records were still filling in. Coverage is eCourts records ÷ the filings implied by the official figures (pending at year end and disposals, Ministry of Law &amp; Justice). See it by state on the <a href="map.html#m=cov">map</a>. Source: <code>coverage_audit.py</code>.</div>
   </div>
   <div class="card" style="overflow-x:auto"><table id="t-audit"></table></div>
 </section>
@@ -300,11 +324,18 @@ const thead=`<tr><th>District</th><th>Pending at 3 yrs</th><th>Median</th></tr>`
 document.getElementById("t-fast").innerHTML=thead+DS.slice(0,10).map(trow).join("");
 document.getElementById("t-slow").innerHTML=thead+DS.slice(-10).reverse().map(trow).join("");
 
+document.getElementById("slow5").textContent=`${D.slow5.n} of ${D.slow5.state}'s ${D.slow5.of} districts are in it.`;
 // audit
 const AU=D.audit, AC=AU.cohort;
 const nat=AU.by_type.find(r=>r.case_type==="civ_suit");
 document.getElementById("audit-text").innerHTML=`Every number here comes from records that were never designed for research. We went looking for ways the data could mislead, and found one that mattered. <b>eCourts reached districts at different times, and when a district went online, cases it had already decided were mostly never entered.</b> Recorded filings rise from ${(AU.recorded_filings_2010/1e6).toFixed(1)} million in 2010 to ${(AU.recorded_filings_2018/1e6).toFixed(1)} million in 2018, far faster than real filings grew, so the early records over-represent slow cases. All estimates on this site now correct for it: each district's cases filed before its records become complete are counted only from that date (a standard left-truncation correction). Nationally the change is modest (ordinary civil suits: median ${nat["median_months__uncorrected"]} → ${nat["median_months__corrected_50"]} months), but ${AU.rows_shift_over_5pp.toLocaleString("en-IN")} of ${AU.rows_compared.toLocaleString("en-IN")} district results moved by more than 5 points, and one district moved ${AU.civil_suit_max_rank_shift} places in the civil-suit ranking.`;
+const CV=AU.coverage, SP=AU.speedup, SN=Object.fromEntries(AU.sens.map(r=>[r.case_type,r]));
+const p100=v=>Math.round(v*100)+"%";
+document.getElementById("cov-text").innerHTML=`Not all of it. For 2015–2018, the eCourts records hold <b>${p100(CV.coverage_2015_18)} of the cases the official figures say were filed</b>, rising from ${p100(CV.coverage_by_year["2015"])} in 2015 to ${p100(CV.coverage_by_year["2018"])} in 2018. Coverage ranges from ${p100(Object.values(CV.lowest_coverage)[0])} in ${Object.keys(CV.lowest_coverage)[0]} to roughly all cases in ${Object.keys(CV.highest_coverage).filter(k=>CV.highest_coverage[k]>=.95).join(" and ")}, and ${CV.official_units_with_no_records.join(", ").replace(/, ([^,]*)$/," and $1")} have no records at all. So the figures here describe the courts that eCourts recorded, not every court. Does that bias the headline numbers? Weighting each state by its official filings instead moves the civil-suit median from ${SN.civ_suit.median_months__as_published} to ${SN.civ_suit.median_months__weighted_to_official_filings} months, and counting every record only from 2014, when coverage had largely settled, gives ${SN.civ_suit.median_months__records_from_2014}.`;
 function drawAudit(){
+  lineChart(document.getElementById("c-speed"),{x:SP.filing_year,ymin:0,ymax:.7,yfmt:p100,tipfmt:p100,right:20,
+    tipx:v=>`Cases filed in ${v}`,series:[{name:"Steady coverage",values:SP.stable_coverage_states,color:"var(--s1)",width:2.5},
+      {name:"Growing coverage",values:SP.growing_coverage_states,color:"var(--s2)",width:2.25}]});
   lineChart(document.getElementById("c-audit"),{x:AC.year,ymin:0,ymax:.6,yfmt:v=>Math.round(v*100)+"%",tipfmt:v=>Math.round(v*100)+"%",right:20,
     tipx:v=>`Cases filed in ${v}`,series:[{name:"Before records complete",values:AC.before,color:"var(--s2)",width:2.25},
       {name:"After records complete",values:AC.after_records_complete,color:"var(--s1)",width:2.5}]});
@@ -314,7 +345,9 @@ const AUD=[
  ["Where each state's data ends","Each state was collected on a different date, found from where monthly decisions collapse (below 20% of normal).","Rule moved to 10% and 40%: civil-suit median "+nat["median_months__collection_40"]+"–"+nat["median_months__collection_10"]+" months. Conclusions unchanged.","tested"],
  ["Rankings look more precise than they are","A district's figure has sampling noise; small differences in rank mean little.","Every rank now shows its 90% range. Median range width for civil suits: "+AU.civil_suit_median_rank_interval_width+" places; "+Math.round(AU.civil_suit_share_rank_interval_over_50*100)+"% span over 50.","fixed"],
  ["Some \"districts\" are not districts",AU.units_that_are_court_complexes.length+" units are special courts or court complexes ("+AU.units_that_are_court_complexes.slice(0,3).join(", ")+"…).","Labelled \"court, not district\" in the calculator and rankings.","fixed"],
- ["Did courts speed up, or is some bias left?","Even in complete records, the share decided within a year rises from "+Math.round(AC.after_records_complete[0]*100)+"% (2010 filings) to "+Math.round(AC.after_records_complete[7]*100)+"% (2017).","Not resolved. It may be a real speed-up, or digitisation that was still incomplete. Figures pool 2010–2018 filings, so they describe that period, not today.","open"],
+ ["The records miss part of the system","eCourts records hold "+p100(CV.coverage_2015_18)+" of officially implied filings in 2015–18, from "+p100(Object.values(CV.lowest_coverage)[0])+" ("+Object.keys(CV.lowest_coverage)[0]+") to about all (Bihar); "+CV.official_units_with_no_records.length+" states and UTs have none.","Headline figures reweighted to official filings: civil-suit median "+SN.civ_suit.median_months__weighted_to_official_filings+" months (published: "+SN.civ_suit.median_months__as_published+"). Coverage shown by state on the map. Who the missing cases are cannot be checked.","tested"],
+ ["Did courts speed up, or is some bias left?","Within complete records, the share decided within a year rises from "+p100(SP.all_complete_records[0])+" (2010 filings) to "+p100(SP.all_complete_records[7])+" (2017). Case mix explains little of it ("+p100(SP.fixed_case_mix[0])+" → "+p100(SP.fixed_case_mix[7])+" at a fixed mix).","Split by coverage: states with steady records rose "+p100(SP.stable_coverage_states[0])+" → "+p100(SP.stable_coverage_states[7])+", states still filling in "+p100(SP.growing_coverage_states[0])+" → "+p100(SP.growing_coverage_states[7])+". So most of the rise is records, some may be real. Counting all records only from 2014 changes the civil-suit median by "+Math.abs(SN.civ_suit.median_months__records_from_2014-SN.civ_suit.median_months__as_published)+" month.","partly explained"],
+ ["Are \"pending\" cases really pending?","A decision never entered would leave a case looking pending. Nationally "+p100(1-CV.pending_not_listed_in_12m)+" of pending records had a hearing listed in the year before collection (Bihar "+p100(1-CV.pending_not_listed_in_12m_bihar)+"). Exceptions: "+Object.entries(CV.pending_not_listed_in_12m_worst).map(([k,v])=>k+" "+p100(v)+" not listed").join(", ")+".","Most pending records are live cases. West Bengal and Odisha delays may be overstated; flagged on the map.","tested"],
  ["\"Decided\" is not \"judged\"","Disposal includes dismissal, withdrawal, settlement and transfer to another court.","The compact data has no disposal type, so this cannot be separated. Stated on every page.","open"],
  ["Cases filed before 2010 are missing","The oldest part of the backlog is not in the data.","Ages and case-years of waiting are lower bounds, and say so.","stated"],
  ["Slow-district correlates could be data artefacts","Late-digitised districts have shorter observed judge postings and looked slower before the fix.","Rerun on corrected outcomes with records-complete year as a control: the judge-tenure link holds.","tested"],

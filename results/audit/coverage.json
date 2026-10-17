@@ -1,0 +1,83 @@
+{
+  "coverage_2015_18": 0.606,
+  "coverage_by_year": {
+    "2015": 0.549,
+    "2016": 0.559,
+    "2017": 0.642,
+    "2018": 0.668
+  },
+  "official_units_with_no_records": [
+    "Andaman & Nicobar",
+    "Arunachal Pradesh",
+    "Lakshadweep",
+    "Nagaland",
+    "Puducherry"
+  ],
+  "lowest_coverage": {
+    "Tripura": 0.08,
+    "Chandigarh": 0.23,
+    "Jammu & Kashmir + Ladakh": 0.34,
+    "West Bengal": 0.39
+  },
+  "highest_coverage": {
+    "Jharkhand": 1.22,
+    "Bihar": 0.97,
+    "Chhattisgarh": 0.92,
+    "Karnataka": 0.9
+  },
+  "states_stable": [
+    "Andhra Pradesh + Telangana",
+    "Assam",
+    "Bihar",
+    "Gujarat",
+    "Haryana",
+    "Karnataka",
+    "Madhya Pradesh",
+    "Punjab"
+  ],
+  "states_growing": [
+    "Chhattisgarh",
+    "Delhi",
+    "Himachal Pradesh",
+    "Jammu & Kashmir + Ladakh",
+    "Jharkhand",
+    "Kerala",
+    "Odisha",
+    "Rajasthan",
+    "Tamil Nadu",
+    "Uttar Pradesh",
+    "West Bengal"
+  ],
+  "decided_within_12m": {
+    "all_complete_records": {
+      "2010": 0.387,
+      "2014": 0.497,
+      "2017": 0.557
+    },
+    "fixed_case_mix": {
+      "2010": 0.395,
+      "2014": 0.493,
+      "2017": 0.533
+    },
+    "stable_coverage_states": {
+      "2010": 0.451,
+      "2014": 0.554,
+      "2017": 0.581
+    },
+    "growing_coverage_states": {
+      "2010": 0.231,
+      "2014": 0.429,
+      "2017": 0.556
+    }
+  },
+  "pending_not_listed_in_12m": 0.049,
+  "pending_not_listed_in_24m": 0.004,
+  "pending_not_listed_in_12m_worst": {
+    "West Bengal": 0.53,
+    "Orissa": 0.29,
+    "Mizoram": 0.22
+  },
+  "pending_not_listed_in_12m_bihar": 0.012,
+  "spearman_state_coverage_vs_civil_suit_pending_3y": -0.2,
+  "states_in_spearman": 22
+}

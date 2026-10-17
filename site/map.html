@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>District Court Map</title>
+<meta name="description" content="A map of how long cases took in every Indian district court, by type of case, from 80.9 million cases filed 2010-2018, with where the records are thin.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%227%22 fill=%22%231f5f8b%22/%3E%3Cpath d=%22M7 23h18M9 23V13m5 10V9m5 14v-7m5 7V11%22 stroke=%22white%22 stroke-width=%222.6%22 stroke-linecap=%22round%22/%3E%3C/svg%3E">
+<link rel="canonical" href="https://arnavgoel98.github.io/CourtSight/map.html">
+<meta property="og:title" content="Where do court cases in India take longest?">
+<meta property="og:description" content="Every district court on one map: the share of cases still pending after 3 years, by type of case.">
+<meta property="og:url" content="https://arnavgoel98.github.io/CourtSight/map.html">
+<meta property="og:image" content="https://arnavgoel98.github.io/CourtSight/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<style>/*CSS*/
+:root{--m1:#86b6ef;--m2:#5598e7;--m3:#2a78d6;--m4:#1c5cab;--m5:#0d366b;--nodata:#e9e7e1;--edge:#fcfcfb}
+@media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])){--m1:#184f95;--m2:#3987e5;--m3:#6da7ec;--m4:#9ec5f4;--m5:#cde2fb;--nodata:#2a2a28;--edge:#1a1a19}}
+:root[data-theme="dark"]{--m1:#184f95;--m2:#3987e5;--m3:#6da7ec;--m4:#9ec5f4;--m5:#cde2fb;--nodata:#2a2a28;--edge:#1a1a19}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0 4px}
+@media (max-width:640px){.controls{grid-template-columns:1fr}}
+.controls select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit}
+.mapcard{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;margin:14px 0}
+#map{display:block;width:100%;height:auto;max-height:82vh;touch-action:manipulation}
+#map path{stroke:var(--edge);stroke-width:1.2;vector-effect:non-scaling-stroke;stroke-linejoin:round;cursor:pointer}
+#map path.nd{fill:url(#hatch);cursor:default}
+#map path:hover,#map path.on{stroke:var(--ink);stroke-width:2}
+#map path:focus{outline:none;stroke:var(--ink);stroke-width:2.5}
+.scale{display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;font-size:.84rem;color:var(--ink-2);margin:4px 0 10px}
+.scale span{display:inline-flex;align-items:center;gap:6px}
+.scale i{display:inline-block;width:18px;height:12px;border-radius:3px}
+.side{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:640px){.side{grid-template-columns:1fr}}
+.side ol{margin:6px 0 0;padding-left:22px;font-size:.9rem;color:var(--ink-2)}
+.side li b{color:var(--ink);font-variant-numeric:tabular-nums}
+.side a{color:var(--ink);text-decoration:none}.side a:hover{color:var(--link);text-decoration:underline}
+.back{display:none;margin:0 0 8px}
+#detail{min-height:3.2em}
+#detail .units a{font-weight:600}
+</style>
+</head>
+<body>
+<nav><div class="wrap"><b>CourtSight</b><a href="calculator.html">Calculator</a><a href="districts.html">Rankings</a><a href="map.html" aria-current="page">Map</a><a href="index.html">Findings</a><a href="paper.html">Paper</a></div></nav>
+<main class="wrap">
+<header class="hero" style="padding:36px 0 8px">
+  <div class="kicker">80.9 million cases · filed 2010–2018 · 2011 Census districts</div>
+  <h1>Where do court cases take longest?</h1>
+  <p class="lede">Every district court in India on one map: the more a district stands out from the background, the slower its courts. Pick a type of case and a measure, or switch to the data-coverage layer to see where the records themselves are thin.</p>
+</header>
+
+<label>Type of case</label>
+<div class="chips" id="types" role="group" aria-label="Type of case"></div>
+<div class="controls">
+  <div><label for="metric">Show</label><select id="metric">
+    <option value="p3">Share still pending after 3 years</option>
+    <option value="p1">Share still pending after 1 year</option>
+    <option value="p5">Share still pending after 5 years</option>
+    <option value="med">Median time to decision</option>
+    <option value="cov">How complete the records are (by state)</option>
+  </select></div>
+  <div><label for="state">Zoom to a state</label><select id="state"><option value="">All of India</option></select></div>
+</div>
+
+<div class="mapcard">
+  <button class="btn ghost back" id="back" type="button">← All of India</button>
+  <div class="scale" id="scale" aria-live="polite"></div>
+  <svg id="map" role="group" aria-labelledby="maptitle"><title id="maptitle">Map of India's districts</title>
+    <defs><pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="8" height="8" style="fill:var(--nodata)"/><line x1="0" y1="0" x2="0" y2="8" style="stroke:var(--line)" stroke-width="3"/></pattern></defs>
+    <g id="shapes"></g></svg>
+  <div class="tip" id="tip"></div>
+  <div id="detail" class="caption" aria-live="polite">Hover over or tap a district for its figures. Tap again to open it in the calculator.</div>
+</div>
+
+<div class="side">
+  <div class="card" style="margin:0"><h2 class="h3" id="slowh">Slowest</h2><ol id="slow"></ol></div>
+  <div class="card" style="margin:0"><h2 class="h3" id="fasth">Fastest</h2><ol id="fast"></ol></div>
+</div>
+
+<details class="card"><summary><b>How to read this map, and what it cannot show</b></summary><div class="prose" style="margin-top:10px">
+<p><b>Shapes are 2011 Census districts.</b> Court districts have changed since. Districts carved out after 2011 are shown inside their 2011 parent, with both courts' cases pooled. Cities whose courts are recorded as several units (Jaipur, Jodhpur) or as city-wide courts (Mumbai) are pooled the same way. The tooltip lists every court unit behind a shape, and the crosswalk is published (<a href="https://github.com/ArnavGoel98/CourtSight/blob/main/sources/map_crosswalk.csv">sources/map_crosswalk.csv</a>).</p>
+<p><b>Hatched areas have no court records in this data:</b> most of Arunachal Pradesh, Nagaland, Mizoram, Andaman &amp; Nicobar, Puducherry and Lakshadweep. That is a gap in the eCourts records for 2010–2018, not a fast or a slow court.</p>
+<p><b>Colours are fifths.</b> Each colour holds about a fifth of the shapes, so the map shows rank, not size. Check the legend: for some case types the slowest fifth and the fastest fifth differ by only a few points. Small districts have wide uncertainty. Where two districts' rank ranges overlap on the <a href="districts.html">rankings page</a>, they are not clearly different.</p>
+<p><b>The records are incomplete.</b> For 2015–2018, the eCourts records hold about 61% of the cases the official figures say were filed, from 8% in Tripura to all of them in Bihar. The coverage layer shows this by state; states with under 2 lakh official filings in those years (Goa, Sikkim, Manipur, Mizoram, Meghalaya and the smallest union territories) are left blank there, because their official figures move too much from year to year to compare. Thinly covered states may be represented by unusual courts. See the <a href="index.html#audit">audit</a>.</p>
+<p><b>Pending records are mostly live cases.</b> Nationally, 95% of cases pending at collection had a hearing listed in the year before, so a slow district is not just one that failed to record its decisions. The exceptions are West Bengal and Odisha, where 53% and 29% had not been listed for over a year; their delays may be overstated.</p>
+<p><b>Descriptive only.</b> A slow district is not necessarily a badly run one: case mix, vacancies, local practice and how cases are recorded all differ.</p>
+<p>Boundaries: Census of India 2011 via <a href="https://github.com/datameet/maps">DataMeet</a> (CC BY 4.0), simplified. Court data: Development Data Lab eCourts records (CC BY-NC-SA 4.0).</p>
+</div></details>
+</main>
+<footer><div class="wrap">CourtSight by Arnav Goel · <a href="https://github.com/ArnavGoel98/CourtSight">Code and method</a> · <a href="districts.html">The same figures as a table</a></div></footer>
+<script>
+/*CHARTS*/
+const $=id=>document.getElementById(id);
+const ORDER=["civ_suit","civ_family","crim_ni138","civ_mact","crim_bail","crim_sessions","crim_magisterial","civ_execution","civ_misc","other"];
+const q=new URLSearchParams(location.hash.slice(1));
+const st={t:q.get("t")||"civ_suit",m:q.get("m")||"p3",s:q.get("s")||""};
+const BINS=["--m1","--m2","--m3","--m4","--m5"];
+const SLOW=1e6;   // median not reached: over half still pending when the data ends
+const pct=v=>Math.round(v*100)+"%", mo=v=>v==null||v>=SLOW?"over half still pending":v<24?`${Math.round(v)} months`:`${(v/12).toFixed(1)} years`;
+const FMT={p1:pct,p3:pct,p5:pct,med:mo,cov:v=>v>=1?"100%+":pct(v)};
+let D,G,C,VAL={},sel=null;
+Promise.all(["calc-data.json","map-data.json"].map(u=>fetch(u).then(r=>{if(!r.ok)throw r.status;return r.json()})))
+  .then(([d,g])=>{D=d;G=g;C=Object.fromEntries(D.cols.map((c,i)=>[c,i]));init()})
+  .catch(()=>{$("detail").textContent="Could not load the map. Please refresh the page."});
+
+function curve(r){let v=1000;return r[C.curve].map(d=>d==null?null:(v-=d)/1000)}
+function init(){
+  const svg=$("map");svg.setAttribute("viewBox",`0 0 ${G.w} ${G.h}`);
+  const box=$("shapes"), states=new Set();
+  for(const [code,d] of Object.entries(G.paths)){
+    const p=document.createElementNS(NS,"path");p.setAttribute("d",d);p.dataset.code=code;box.appendChild(p);
+    if(G.units[code]){p.setAttribute("tabindex","0");p.setAttribute("role","link");states.add(G.names[code][1])}else p.setAttribute("aria-hidden","true");
+  }
+  for(const s of [...states].sort()){const o=document.createElement("option");o.value=s;o.textContent=s;$("state").appendChild(o)}
+  $("metric").value=st.m;$("state").value=states.has(st.s)?st.s:"";st.s=$("state").value;
+  $("metric").onchange=e=>{st.m=e.target.value;draw()};
+  $("state").onchange=e=>{st.s=e.target.value;zoom();draw()};
+  $("back").onclick=()=>{st.s="";$("state").value="";zoom();draw()};
+  const tip=$("tip"),host=document.querySelector(".mapcard");
+  const show=(p,ev)=>{const code=p.dataset.code;document.querySelectorAll("#map path.on").forEach(x=>x.classList.remove("on"));p.classList.add("on");
+    tip.innerHTML=tipHtml(code);tip.style.opacity=1;
+    const r=host.getBoundingClientRect(),b=p.getBoundingClientRect();
+    const x=ev&&ev.clientX?ev.clientX-r.left:b.left+b.width/2-r.left, y=ev&&ev.clientY?ev.clientY-r.top:b.top-r.top;
+    tip.style.left=Math.min(Math.max(x+14,0),r.width-tip.offsetWidth-4)+"px";tip.style.top=Math.max(y-tip.offsetHeight-10,4)+"px";
+    $("detail").innerHTML=detailHtml(code)};
+  box.addEventListener("pointermove",e=>{if(e.target.tagName==="path"&&e.pointerType==="mouse")show(e.target,e)});
+  box.addEventListener("pointerleave",()=>{tip.style.opacity=0});
+  box.addEventListener("focusin",e=>show(e.target));
+  box.addEventListener("click",e=>{const p=e.target;if(p.tagName!=="path"||!G.units[p.dataset.code])return;
+    if(e.pointerType==="mouse"||sel===p.dataset.code)open(p.dataset.code);else{sel=p.dataset.code;show(p,e)}});
+  box.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.dataset.code)open(e.target.dataset.code)});
+  zoom();draw();
+}
+function open(code){const u=G.units[code];if(!u)return;
+  location.href=`calculator.html#s=${encodeURIComponent(u[0][0])}&d=${encodeURIComponent(u[0][1])}&t=${st.t}`}
+function rowsFor(code){return (G.units[code]||[]).map(([s,d,rel])=>({s,d,rel,r:(D.states[s]&&D.states[s][d]||[]).find(x=>x[0]===st.t)})).filter(x=>x.r)}
+function value(code){
+  const u=G.units[code];if(!u)return null;
+  if(st.m==="cov"){const v=G.coverage[u[0][0]];return v==null?null:Math.min(v,1)}
+  const rows=rowsFor(code);if(!rows.length)return null;
+  const key={p1:"pending_after_1y",p3:"pending_after_3y",p5:"pending_after_5y",med:"median_months"}[st.m];
+  if(rows.length===1){const v=rows[0].r[C[key]];return v==null&&st.m==="med"?SLOW:v}
+  // several court units in one shape: pool their survival curves, weighting by cases (quarterly points)
+  const n=rows.map(x=>x.r[C.cases]),cs=rows.map(x=>curve(x.r)),N=n.reduce((a,b)=>a+b,0),L=Math.max(...cs.map(c=>c.length));
+  const pooled=[];for(let i=0;i<L;i++){let s=0,ok=true;cs.forEach((c,j)=>{if(c[i]==null)ok=false;else s+=c[i]*n[j]});pooled.push(ok?s/N:null)}
+  if(st.m==="med"){const i=pooled.findIndex(v=>v!=null&&v<=.5);return i<0?SLOW:i*3}
+  return pooled[{p1:4,p3:12,p5:20}[st.m]]??null;
+}
+function draw(){
+  history.replaceState(null,"",`#t=${st.t}&m=${st.m}`+(st.s?`&s=${encodeURIComponent(st.s)}`:""));
+  const box=$("types");box.innerHTML="";
+  for(const t of ORDER){const b=document.createElement("button");b.type="button";b.className="chip";b.textContent=D.short[t];b.title=D.labels[t];
+    b.setAttribute("aria-pressed",t===st.t);b.disabled=st.m==="cov";b.onclick=()=>{st.t=t;draw()};box.appendChild(b)}
+  VAL={};for(const code of Object.keys(G.paths))VAL[code]=value(code);
+  const inView=c=>!st.s||G.names[c][1]===st.s;
+  const vals=Object.entries(VAL).filter(([c,v])=>v!=null&&inView(c)).map(([,v])=>v).sort((a,b)=>a-b);
+  let cuts;
+  if(st.m==="cov")cuts=[.4,.6,.8,.95];
+  else cuts=[.2,.4,.6,.8].map(p=>vals[Math.min(vals.length-1,Math.floor(p*vals.length))]);
+  const bin=v=>cuts.findIndex(c=>v<c)<0?4:cuts.findIndex(c=>v<c);
+  document.querySelectorAll("#map path").forEach(p=>{const v=VAL[p.dataset.code];
+    p.classList.toggle("nd",v==null);p.style.fill=v==null?"":`var(${BINS[bin(v)]})`;
+    p.style.opacity=inView(p.dataset.code)?1:.25;
+    p.setAttribute("aria-label",`${G.names[p.dataset.code][0]}, ${G.names[p.dataset.code][1]}: ${v==null?"no data":FMT[st.m](v)}`)});
+  const f=FMT[st.m], lo=vals[0], hi=vals[vals.length-1];
+  const edges=[lo,...cuts,hi];
+  const lab=st.m==="cov"?["under 40%","40–60%","60–80%","80–95%","95% or more"]:edges.slice(0,5).map((e,i)=>`${f(e)} – ${f(edges[i+1])}`);
+  const title={p1:"Still pending after 1 year",p3:"Still pending after 3 years",p5:"Still pending after 5 years",med:"Median time to decision",cov:"Records held, as a share of official filings 2015–18"}[st.m];
+  $("scale").innerHTML=`<b style="color:var(--ink)">${title}${st.m==="cov"?"":" · "+D.labels[st.t]}</b>`+
+    lab.map((l,i)=>`<span><i style="background:var(${BINS[i]})"></i>${l}</span>`).join("")+
+    `<span><i style="background:repeating-linear-gradient(45deg,var(--nodata) 0 3px,var(--line) 3px 5px)"></i>no records</span>`;
+  lists(f);
+  $("back").style.display=st.s?"inline-block":"none";
+}
+function lists(f){
+  const seen=new Set(),items=[];
+  for(const [code,v] of Object.entries(VAL)){if(v==null||(st.s&&G.names[code][1]!==st.s))continue;
+    const u=G.units[code],k=st.m==="cov"?u[0][0]:u.map(x=>x[1]).join("+");if(seen.has(k))continue;seen.add(k);
+    items.push({code,v:st.m==="cov"?G.coverage[u[0][0]]:v,name:st.m==="cov"?u[0][0]:shapeName(code)})}
+  items.sort((a,b)=>a.v-b.v);
+  const li=x=>`<li><a href="#" data-code="${x.code}">${x.name}</a> <b>${f(x.v)}</b></li>`;
+  const k=Math.min(8,Math.floor(items.length/2));
+  $("slowh").textContent=st.m==="cov"?"Fullest records":"Slowest";$("fasth").textContent=st.m==="cov"?"Thinnest records":"Fastest";
+  $("slow").innerHTML=items.slice(-k).reverse().map(li).join("");$("fast").innerHTML=items.slice(0,k).map(li).join("");
+  document.querySelectorAll(".side a[data-code]").forEach(a=>a.onclick=e=>{e.preventDefault();
+    const p=document.querySelector(`#map path[data-code="${a.dataset.code}"]`);p.focus({preventScroll:false})});
+}
+function shapeName(code){const u=G.units[code]||[],n=G.names[code];
+  return u.length===1?u[0][1]:n[0]+(st.s?"":`, ${n[1]}`)}
+function tipHtml(code){const v=VAL[code],n=G.names[code],u=G.units[code];
+  if(!u)return `<b>${n[0]==="Data Not Available"?"No district data":n[0]}</b><div class="k">${n[1]} · no court records in this data</div>`;
+  return `<b>${shapeName(code)}</b><div class="k">${u[0][0]}</div><div>${v==null?(rowsFor(code).length?"The data ends before this point":"Too few cases of this type"):`<b>${FMT[st.m](v)}</b> <span class="k">${st.m==="cov"?"records coverage (state)":D.short[st.t].toLowerCase()}</span>`}</div>`}
+function detailHtml(code){const u=G.units[code],n=G.names[code];if(!u)return tipHtml(code);
+  const rel={carved_from:"carved out after 2011, pooled here",renamed:"",city_courts:"city-wide court",split_court:"one of several court units here","":""};
+  const rows=rowsFor(code);
+  const parts=u.map(([s,d,r])=>{const x=rows.find(y=>y.d===d);const cases=x?` (${x.r[C.cases].toLocaleString("en-IN")} cases)`:"";
+    return `<a href="calculator.html#s=${encodeURIComponent(s)}&d=${encodeURIComponent(d)}&t=${st.t}">${d}</a>${cases}${rel[r]?` <span class="k">· ${rel[r]}</span>`:""}`});
+  return `<b style="color:var(--ink)">2011 district: ${n[0]}, ${n[1]}.</b> <span class="units">Court units: ${parts.join("; ")}.</span>`}
+function zoom(){
+  const svg=$("map");
+  if(!st.s){svg.setAttribute("viewBox",`0 0 ${G.w} ${G.h}`);return}
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  document.querySelectorAll("#map path").forEach(p=>{if(G.names[p.dataset.code][1]!==st.s)return;const b=p.getBBox();
+    x0=Math.min(x0,b.x);y0=Math.min(y0,b.y);x1=Math.max(x1,b.x+b.width);y1=Math.max(y1,b.y+b.height)});
+  const pad=Math.max(x1-x0,y1-y0)*.06;svg.setAttribute("viewBox",`${x0-pad} ${y0-pad} ${x1-x0+2*pad} ${y1-y0+2*pad}`);
+}
+</script>
+</body>
+</html>

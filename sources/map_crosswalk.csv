@@ -1,0 +1,93 @@
+district_id,census_2011_code,relation,ddl_name,census_2011_name
+1023,519,city_courts,Mumbai CMM Courts,Mumbai
+1023,518,city_courts,Mumbai CMM Courts,Mumbai Suburban
+1037,519,city_courts,Mumbai City Civil Court,Mumbai
+1037,518,city_courts,Mumbai City Civil Court,Mumbai Suburban
+2007,551,renamed,Kadapa,Y.s.r.
+2015,550,renamed,Nellore,Sri Potti Sriramulu Nellore
+3001,555,renamed,BELAGAVI,Belgaum
+3003,557,renamed,VIJAYAPURA,Bijapur
+3004,579,renamed,KALABURAGI,Gulbarga
+4013,587,renamed,Lakshadweep,Lakshadweep
+7004,368,renamed,West Singhbhum at Chaibasa,Pashchimi Singhbhum
+7011,357,renamed,East Singhbhum at Jamshedpur,Purbi Singhbhum
+7015,369,renamed,Seraikella,Saraikela-kharsawan
+7017,358,renamed,Daltonganj,Palamu
+8004,219,renamed,Saran at Chapra,Saran (chhapra)
+8010,204,renamed,Motihari,Purba Champaran
+8013,234,renamed,Rohtas Sasaram,Rohtas
+8028,203,renamed,Bettiah,Pashchim Champaran
+9004,110,split_court,Jaipur Metro I,Jaipur
+9040,110,split_court,Jaipur Metro II,Jaipur
+9038,110,split_court,Jaipur District,Jaipur
+9028,113,split_court,Jodhpur Metro,Jodhpur
+9039,113,split_court,Jodhpur District,Jodhpur
+9008,112,renamed,Merta (Nagaur),Nagaur
+9027,115,renamed,Balotra Barmer,Barmer
+10028,635,renamed,Puducherry,Puducherry
+11005,377,renamed,Balasore,Baleshwar
+11013,375,renamed,Keonjhar,Kendujhar
+11020,392,renamed,Sonepur,Subarnapur
+12016,3,renamed,Leh,Leh (ladakh)
+13010,153,renamed,Lakhimpur,Kheri
+13022,198,renamed,Bhadohi SR Nagar,Sant Ravi Das Nagar(bhadohi)
+13065,144,renamed,Hathras,Mahamaya Nagar
+13073,140,carved_from,Hapur,Ghaziabad
+13074,135,carved_from,Sambhal at Chandausi,Moradabad
+13076,133,carved_from,Shamli,Muzaffarnagar
+14006,86,renamed,Gurugram,Gurgaon
+14011,84,renamed,Narnaul,Mahendragarh
+14019,87,renamed,Nuh,Mewat
+15002,61,renamed,Pauri Garhwal,Garhwal
+16003,342,renamed,Calcutta,Kolkata
+16006,329,renamed,Coochbehar,Koch Bihar
+16013,331,renamed,South Dinajpur,Dakshin Dinajpur
+16021,330,renamed,North Dinajpur,Uttar Dinajpur
+16018,335,carved_from,Purba Bardhaman,Barddhaman
+16024,335,carved_from,Paschim Bardhaman,Barddhaman
+16023,327,carved_from,kalimpong,Darjiling
+16025,344,carved_from,Jhargram,Pashchim Medinipur
+17019,469,renamed,Banaskanth at Palanpur,Banas Kantha
+17025,483,renamed,Kheda at Nadiad,Kheda
+17026,468,renamed,kachchh at Bhuj,Kachchh
+17027,484,renamed,Panchmahal at Godhra,Panch Mahals
+17029,472,renamed,Sabarkantha at Himmatnagar,Sabar Kantha
+17037,479,carved_from,Gir Somnath at Veraval,Junagadh
+17038,472,carved_from,Aravalli at Modasa,Sabar Kantha
+17039,476,carved_from,MORBI,Rajkot
+17040,477,carved_from,Devbhumi Dwarka at Khambhaliya,Jamnagar
+17041,486,carved_from,Chhota Udepur,Vadodara
+17042,484,carved_from,Mahisagar at Lunawada,Panch Mahals
+17043,481,carved_from,BOTAD,Bhavnagar
+18009,407,renamed,Kawardha,Kabeerdham
+18013,413,renamed,Kanker,Uttar Bastar Kanker
+18017,416,renamed,Dantewada,Dakshin Bastar Dantewada
+18018,405,renamed,Janjgir,Janjgir-champa
+18019,409,carved_from,Balod,Durg
+18020,409,carved_from,Bemetara,Durg
+18021,401,carved_from,Surajpur,Surguja
+18022,414,carved_from,Kondagaon,Bastar
+18023,410,carved_from,Balodabazar,Raipur
+18024,406,carved_from,Mungeli,Bilaspur
+18025,401,carved_from,Balrampur Ramanujganj,Surguja
+20005,292,carved_from,Unakoti  Tripura,North Tripura
+20006,290,carved_from,Gomati District,South Tripura
+20009,289,carved_from,Sepahijala Tripura,West Tripura
+20010,289,carved_from,Khowai Tripura,West Tripura
+20011,291,renamed,Dhalai Tripura,Dhalai
+21003,299,carved_from,West Jaintia Hills,Jaintia Hills
+22006,43,renamed,Ferozepur,Firozpur
+22014,44,renamed,Sri Muktsar Sahib,Muktsar
+22015,39,renamed,SBS Nagar,Shahid Bhagat Singh Nagar
+22024,52,renamed,Mohali,Sahibzada Ajit Singh Nagar
+22021,35,carved_from,Pathankot,Gurdaspur
+22026,43,carved_from,Fazilka,Firozpur
+23002,452,renamed,Narsinghpur,Narsimhapur
+23010,466,renamed,Khandwa,East Nimar
+23016,440,renamed,Mandleshwar,West Nimar
+24001,243,renamed,Namchi,South
+24002,241,renamed,Mangan,North
+24003,242,renamed,Gyalshing,West
+24004,244,renamed,Gangtok,East
+26002,93,carved_from,Shahdara,East
+32001,496,renamed,Silvassa,Dadra & Nagar Haveli

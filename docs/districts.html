@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>District Court Rankings</title>
 <meta name="description" content="Every Indian district court ranked by how long cases took, by case type: sort, filter and download. 80.9 million cases filed 2010-2018.">
+<link rel="canonical" href="https://arnavgoel98.github.io/CourtSight/districts.html">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%227%22 fill=%22%231f5f8b%22/%3E%3Cpath d=%22M7 23h18M9 23V13m5 10V9m5 14v-7m5 7V11%22 stroke=%22white%22 stroke-width=%222.6%22 stroke-linecap=%22round%22/%3E%3C/svg%3E">
 <meta property="og:title" content="Which district courts are fastest and slowest?">
 <meta property="og:description" content="Every Indian district court ranked by how long cases took, by case type.">
@@ -13,27 +14,27 @@
 <meta name="twitter:card" content="summary_large_image">
 <style>:root{
   color-scheme:light;
-  --bg:#f7f6f2;--surface:#fcfcfb;--ink:#0b0b0b;--ink-2:#52514e;--ink-3:#7a7873;--line:#e4e1d9;--grid:#ecebe6;
+  --bg:#f7f6f2;--surface:#fcfcfb;--ink:#0b0b0b;--ink-2:#52514e;--ink-3:#6b6964;--line:#e4e1d9;--grid:#ecebe6;
   --s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--band:rgba(42,120,214,.14);--band-2:rgba(235,104,52,.14);
-  --neg:#c4462a;--pos:#2a78d6;--neutral:#b9b6ae;--hl:#fff3c9;
+  --neg:#c4462a;--pos:#2a78d6;--neutral:#b9b6ae;--hl:#fff3c9;--link:#1f6bc4;
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
 }
 @media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])){
   color-scheme:dark;
   --bg:#121211;--surface:#1a1a19;--ink:#ffffff;--ink-2:#c3c2b7;--ink-3:#8f8d86;--line:#2e2d2a;--grid:#262624;
   --s1:#3987e5;--s2:#d95926;--s3:#199e70;--band:rgba(57,135,229,.22);--band-2:rgba(217,89,38,.22);
-  --neg:#e0704f;--pos:#3987e5;--neutral:#5c5a55;--hl:#3a3420;
+  --neg:#e0704f;--pos:#3987e5;--neutral:#5c5a55;--hl:#3a3420;--link:#5598e7;
 }}
 :root[data-theme="dark"]{
   color-scheme:dark;
   --bg:#121211;--surface:#1a1a19;--ink:#ffffff;--ink-2:#c3c2b7;--ink-3:#8f8d86;--line:#2e2d2a;--grid:#262624;
   --s1:#3987e5;--s2:#d95926;--s3:#199e70;--band:rgba(57,135,229,.22);--band-2:rgba(217,89,38,.22);
-  --neg:#e0704f;--pos:#3987e5;--neutral:#5c5a55;--hl:#3a3420;
+  --neg:#e0704f;--pos:#3987e5;--neutral:#5c5a55;--hl:#3a3420;--link:#5598e7;
 }
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-a{color:var(--s1);text-underline-offset:2px}
+a{color:var(--link);text-underline-offset:2px}
 code{font-family:var(--mono);font-size:.88em}
 .wrap{max-width:980px;margin:0 auto;padding:0 16px}
 nav{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
@@ -122,6 +123,7 @@ details.card[open]>summary{margin-bottom:12px}
 .hint .chip{font-size:.85rem;padding:5px 12px}
 .hint .err{color:var(--neg)}
 @media (max-width:480px){nav .wrap{gap:12px}nav a{font-size:.85rem}}
+.h3{font-size:1.05rem;margin:0 0 6px}
 
 .controls{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0 4px}
 @media (max-width:640px){.controls{grid-template-columns:1fr}}
@@ -135,7 +137,7 @@ details.card[open]>summary{margin-bottom:12px}
 .rank th[aria-sort="ascending"] button::after{content:" ↑";opacity:1}
 .rank th[aria-sort="descending"] button::after{content:" ↓";opacity:1}
 .rank td a{color:var(--ink);text-decoration:none;font-weight:600}
-.rank td a:hover{color:var(--s1);text-decoration:underline}
+.rank td a:hover{color:var(--link);text-decoration:underline}
 .rank td.st{color:var(--ink-3);font-size:.82rem;text-align:left}
 .rank tr.nat td{background:var(--hl);font-weight:600}
 .rank td.n{color:var(--ink-3)}
@@ -147,10 +149,10 @@ details.card[open]>summary{margin-bottom:12px}
 </style>
 </head>
 <body>
-<nav><div class="wrap"><b>CourtSight</b><a href="calculator.html">Calculator</a><a href="districts.html" aria-current="page">Rankings</a><a href="index.html">Findings</a><a href="paper.html">Paper</a></div></nav>
+<nav><div class="wrap"><b>CourtSight</b><a href="calculator.html">Calculator</a><a href="districts.html" aria-current="page">Rankings</a><a href="map.html">Map</a><a href="index.html">Findings</a><a href="paper.html">Paper</a></div></nav>
 <main class="wrap">
 <header class="hero" style="padding:36px 0 8px">
-  <div class="kicker">619 districts + 6 special courts · 10 case types · 2010–2018</div>
+  <div class="kicker">617 districts + 8 special courts · 10 case types · 2010–2018</div>
   <h1>Which district courts are fastest and slowest?</h1>
   <p class="lede">Every district, ranked by how long cases took. Pick a type of case, filter by state, sort any column, and download what you see.</p>
 </header>
@@ -178,6 +180,11 @@ function el(tag, attrs = {}, parent) {
   if (parent) parent.appendChild(e);
   return e;
 }
+// accessible name for a chart: its own label, else the heading or caption of the card or figure holding it
+function chartLabel(host, opts) {
+  const box = host.closest(".card,figure"), h = box && box.querySelector("h3,figcaption");
+  return opts.label || (h ? h.textContent.trim() : "Chart");
+}
 function niceTicks(lo, hi, n = 5) {
   const span = hi - lo, step0 = span / n, mag = 10 ** Math.floor(Math.log10(step0));
   const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => span / s <= n) || 10 * mag;
@@ -204,7 +211,7 @@ function lineChart(host, opts) {
   host.classList.add("chart");
   const W = Math.max(host.clientWidth, 300), H = opts.height || Math.round(Math.min(380, Math.max(240, W * 0.5)));
   const m = {t: 16, r: opts.right ?? 24, b: 30, l: opts.left ?? 52};
-  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": opts.label || ""}, host);
+  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": chartLabel(host, opts)}, host);
   const xs = opts.x, n = xs.length;
   const all = opts.series.flatMap(s => [...s.values, ...(s.band ? [...s.band.lo, ...s.band.hi] : [])]).filter(v => v != null);
   const ymin = opts.ymin ?? Math.min(...all), ymax = opts.ymax ?? Math.max(...all);
@@ -284,7 +291,7 @@ function divergingBars(host, rows, opts = {}) {
   host.classList.add("chart");
   const W = Math.max(host.clientWidth, 300), rh = 22, m = {t: 8, r: 56, b: 26, l: Math.min(150, W * 0.34)};
   const H = m.t + m.b + rows.length * rh;
-  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": opts.label || ""}, host);
+  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": chartLabel(host, opts)}, host);
   const vals = rows.map(r => r.value), lo = Math.min(0, ...vals), hi = Math.max(0, ...vals);
   const X = v => m.l + (v - lo) / (hi - lo) * (W - m.l - m.r);
   const g = el("g", {class: "grid"}, svg), ax = el("g", {class: "axis"}, svg);
@@ -324,7 +331,7 @@ function columnChart(host, cats, stacks, opts = {}) {
   host.classList.add("chart");
   const W = Math.max(host.clientWidth, 300), H = opts.height || Math.round(Math.min(320, Math.max(220, W * 0.42)));
   const m = {t: 12, r: 12, b: 30, l: opts.left ?? 52};
-  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": opts.label || ""}, host);
+  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": chartLabel(host, opts)}, host);
   const tot = cats.map((_, i) => stacks.reduce((a, s) => a + s.values[i], 0)), ymax = Math.max(...tot);
   const bw = (W - m.l - m.r) / cats.length, Y = v => H - m.b - v / ymax * (H - m.t - m.b);
   const g = el("g", {class: "grid"}, svg), ax = el("g", {class: "axis"}, svg);
@@ -361,7 +368,7 @@ function scatter(host, pts, opts = {}) {
   host.classList.add("chart");
   const W = Math.max(host.clientWidth, 300), H = opts.height || Math.round(Math.min(380, Math.max(260, W * 0.55)));
   const m = {t: 12, r: 16, b: 44, l: 56};
-  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": opts.label || ""}, host);
+  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": chartLabel(host, opts)}, host);
   const xv = pts.map(p => p.x), yv = pts.map(p => p.y);
   const x0 = opts.xmin ?? Math.min(...xv), x1 = opts.xmax ?? Math.max(...xv), y0 = opts.ymin ?? Math.min(...yv), y1 = opts.ymax ?? Math.max(...yv);
   const X = v => m.l + (v - x0) / (x1 - x0) * (W - m.l - m.r), Y = v => H - m.b - (v - y0) / (y1 - y0) * (H - m.t - m.b);
@@ -405,7 +412,7 @@ function dotWhisker(host, rows, opts = {}) {
   host.classList.add("chart");
   const W = Math.max(host.clientWidth, 300), rh = 30, m = {t: 8, r: 20, b: 28, l: Math.min(190, W * 0.42)};
   const H = m.t + m.b + rows.length * rh;
-  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": opts.label || ""}, host);
+  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": chartLabel(host, opts)}, host);
   const lo = Math.min(0, ...rows.map(r => r.lo)), hi = Math.max(0, ...rows.map(r => r.hi));
   const X = v => m.l + (v - lo) / (hi - lo) * (W - m.l - m.r);
   const g = el("g", {class: "grid"}, svg), ax = el("g", {class: "axis"}, svg);

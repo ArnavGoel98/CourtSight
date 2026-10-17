@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>District Court Rankings</title>
 <meta name="description" content="Every Indian district court ranked by how long cases took, by case type: sort, filter and download. 80.9 million cases filed 2010-2018.">
+<link rel="canonical" href="https://arnavgoel98.github.io/CourtSight/districts.html">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%227%22 fill=%22%231f5f8b%22/%3E%3Cpath d=%22M7 23h18M9 23V13m5 10V9m5 14v-7m5 7V11%22 stroke=%22white%22 stroke-width=%222.6%22 stroke-linecap=%22round%22/%3E%3C/svg%3E">
 <meta property="og:title" content="Which district courts are fastest and slowest?">
 <meta property="og:description" content="Every Indian district court ranked by how long cases took, by case type.">
@@ -24,7 +25,7 @@
 .rank th[aria-sort="ascending"] button::after{content:" ↑";opacity:1}
 .rank th[aria-sort="descending"] button::after{content:" ↓";opacity:1}
 .rank td a{color:var(--ink);text-decoration:none;font-weight:600}
-.rank td a:hover{color:var(--s1);text-decoration:underline}
+.rank td a:hover{color:var(--link);text-decoration:underline}
 .rank td.st{color:var(--ink-3);font-size:.82rem;text-align:left}
 .rank tr.nat td{background:var(--hl);font-weight:600}
 .rank td.n{color:var(--ink-3)}
@@ -36,10 +37,10 @@
 </style>
 </head>
 <body>
-<nav><div class="wrap"><b>CourtSight</b><a href="calculator.html">Calculator</a><a href="districts.html" aria-current="page">Rankings</a><a href="index.html">Findings</a><a href="paper.html">Paper</a></div></nav>
+<nav><div class="wrap"><b>CourtSight</b><a href="calculator.html">Calculator</a><a href="districts.html" aria-current="page">Rankings</a><a href="map.html">Map</a><a href="index.html">Findings</a><a href="paper.html">Paper</a></div></nav>
 <main class="wrap">
 <header class="hero" style="padding:36px 0 8px">
-  <div class="kicker">619 districts + 6 special courts · 10 case types · 2010–2018</div>
+  <div class="kicker">{{n_dist}} districts + {{n_special}} special courts · 10 case types · 2010–2018</div>
   <h1>Which district courts are fastest and slowest?</h1>
   <p class="lede">Every district, ranked by how long cases took. Pick a type of case, filter by state, sort any column, and download what you see.</p>
 </header>

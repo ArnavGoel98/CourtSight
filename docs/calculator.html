@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Case Time Calculator</title>
 <meta name="description" content="How long cases took in every Indian district court, by case type: survival curves from 80.9 million cases filed 2010-2018.">
+<link rel="canonical" href="https://arnavgoel98.github.io/CourtSight/calculator.html">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%227%22 fill=%22%231f5f8b%22/%3E%3Cpath d=%22M7 23h18M9 23V13m5 10V9m5 14v-7m5 7V11%22 stroke=%22white%22 stroke-width=%222.6%22 stroke-linecap=%22round%22/%3E%3C/svg%3E">
 <meta property="og:type" content="website">
 <meta property="og:title" content="How long will my case take?">
@@ -15,27 +16,27 @@
 <meta name="twitter:image" content="https://arnavgoel98.github.io/CourtSight/og.png">
 <style>:root{
   color-scheme:light;
-  --bg:#f7f6f2;--surface:#fcfcfb;--ink:#0b0b0b;--ink-2:#52514e;--ink-3:#7a7873;--line:#e4e1d9;--grid:#ecebe6;
+  --bg:#f7f6f2;--surface:#fcfcfb;--ink:#0b0b0b;--ink-2:#52514e;--ink-3:#6b6964;--line:#e4e1d9;--grid:#ecebe6;
   --s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--band:rgba(42,120,214,.14);--band-2:rgba(235,104,52,.14);
-  --neg:#c4462a;--pos:#2a78d6;--neutral:#b9b6ae;--hl:#fff3c9;
+  --neg:#c4462a;--pos:#2a78d6;--neutral:#b9b6ae;--hl:#fff3c9;--link:#1f6bc4;
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
 }
 @media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])){
   color-scheme:dark;
   --bg:#121211;--surface:#1a1a19;--ink:#ffffff;--ink-2:#c3c2b7;--ink-3:#8f8d86;--line:#2e2d2a;--grid:#262624;
   --s1:#3987e5;--s2:#d95926;--s3:#199e70;--band:rgba(57,135,229,.22);--band-2:rgba(217,89,38,.22);
-  --neg:#e0704f;--pos:#3987e5;--neutral:#5c5a55;--hl:#3a3420;
+  --neg:#e0704f;--pos:#3987e5;--neutral:#5c5a55;--hl:#3a3420;--link:#5598e7;
 }}
 :root[data-theme="dark"]{
   color-scheme:dark;
   --bg:#121211;--surface:#1a1a19;--ink:#ffffff;--ink-2:#c3c2b7;--ink-3:#8f8d86;--line:#2e2d2a;--grid:#262624;
   --s1:#3987e5;--s2:#d95926;--s3:#199e70;--band:rgba(57,135,229,.22);--band-2:rgba(217,89,38,.22);
-  --neg:#e0704f;--pos:#3987e5;--neutral:#5c5a55;--hl:#3a3420;
+  --neg:#e0704f;--pos:#3987e5;--neutral:#5c5a55;--hl:#3a3420;--link:#5598e7;
 }
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-a{color:var(--s1);text-underline-offset:2px}
+a{color:var(--link);text-underline-offset:2px}
 code{font-family:var(--mono);font-size:.88em}
 .wrap{max-width:980px;margin:0 auto;padding:0 16px}
 nav{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
@@ -124,6 +125,7 @@ details.card[open]>summary{margin-bottom:12px}
 .hint .chip{font-size:.85rem;padding:5px 12px}
 .hint .err{color:var(--neg)}
 @media (max-width:480px){nav .wrap{gap:12px}nav a{font-size:.85rem}}
+.h3{font-size:1.05rem;margin:0 0 6px}
 
 .big{font-size:clamp(2.4rem,7vw,3.4rem);font-weight:800;letter-spacing:-.025em;line-height:1.05;font-variant-numeric:tabular-nums}
 .facts{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px}
@@ -138,10 +140,10 @@ html[lang=hi] .kicker{font-family:inherit;letter-spacing:0;font-size:.85rem}
 </style>
 </head>
 <body>
-<nav><div class="wrap"><b>CourtSight</b><a href="calculator.html" aria-current="page" data-i="nav2">Calculator</a><a href="districts.html" data-i="nav4">Rankings</a><a href="index.html" data-i="nav1">Findings</a><a href="paper.html" data-i="nav3">Paper</a><a id="lang" href="calculator-hi.html" lang="hi">हिन्दी</a></div></nav>
+<nav><div class="wrap"><b>CourtSight</b><a href="calculator.html" aria-current="page" data-i="nav2">Calculator</a><a href="districts.html" data-i="nav4">Rankings</a><a href="map.html" data-i="nav5">Map</a><a href="index.html" data-i="nav1">Findings</a><a href="paper.html" data-i="nav3">Paper</a><a id="lang" href="calculator-hi.html" lang="hi">हिन्दी</a></div></nav>
 <main class="wrap">
 <header class="hero" style="padding:36px 0 8px">
-  <div class="kicker" data-i="kicker">80.9 million cases · 619 districts · 10 case types</div>
+  <div class="kicker" data-i="kicker">80.9 million cases · 617 districts · 10 case types</div>
   <h1 data-i="h1">How long will my case take?</h1>
   <p class="lede" data-i="lede">How long cases like yours took in your district court, based on every case filed there in 2010–2018.</p>
 </header>
@@ -174,7 +176,7 @@ html[lang=hi] .kicker{font-family:inherit;letter-spacing:0;font-size:.85rem}
 </div>
 
 <div class="card">
-  <h3 data-i="ch">Share of cases still waiting, month by month</h3>
+  <h2 class="h3" data-i="ch">Share of cases still waiting, month by month</h2>
   <div class="legend"><span><i style="background:var(--s1)"></i><span id="lg-here">This district</span></span><span id="lg-b" hidden><i style="background:var(--s3)"></i><span id="lg-b-name"></span></span><span><i style="background:var(--s2)"></i><span data-i="lg2">All of India, same type</span></span><span><i style="background:var(--neutral)"></i><span data-i="lg3">Other districts in the state</span></span></div>
   <div id="c-curve"></div>
   <div class="caption" data-i="cap">Kaplan–Meier estimate. Cases still pending when the data was collected count as undecided up to that date. Hover to read any month.</div>
@@ -199,6 +201,11 @@ function el(tag, attrs = {}, parent) {
   for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
   if (parent) parent.appendChild(e);
   return e;
+}
+// accessible name for a chart: its own label, else the heading or caption of the card or figure holding it
+function chartLabel(host, opts) {
+  const box = host.closest(".card,figure"), h = box && box.querySelector("h3,figcaption");
+  return opts.label || (h ? h.textContent.trim() : "Chart");
 }
 function niceTicks(lo, hi, n = 5) {
   const span = hi - lo, step0 = span / n, mag = 10 ** Math.floor(Math.log10(step0));
@@ -226,7 +233,7 @@ function lineChart(host, opts) {
   host.classList.add("chart");
   const W = Math.max(host.clientWidth, 300), H = opts.height || Math.round(Math.min(380, Math.max(240, W * 0.5)));
   const m = {t: 16, r: opts.right ?? 24, b: 30, l: opts.left ?? 52};
-  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": opts.label || ""}, host);
+  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": chartLabel(host, opts)}, host);
   const xs = opts.x, n = xs.length;
   const all = opts.series.flatMap(s => [...s.values, ...(s.band ? [...s.band.lo, ...s.band.hi] : [])]).filter(v => v != null);
   const ymin = opts.ymin ?? Math.min(...all), ymax = opts.ymax ?? Math.max(...all);
@@ -306,7 +313,7 @@ function divergingBars(host, rows, opts = {}) {
   host.classList.add("chart");
   const W = Math.max(host.clientWidth, 300), rh = 22, m = {t: 8, r: 56, b: 26, l: Math.min(150, W * 0.34)};
   const H = m.t + m.b + rows.length * rh;
-  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": opts.label || ""}, host);
+  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": chartLabel(host, opts)}, host);
   const vals = rows.map(r => r.value), lo = Math.min(0, ...vals), hi = Math.max(0, ...vals);
   const X = v => m.l + (v - lo) / (hi - lo) * (W - m.l - m.r);
   const g = el("g", {class: "grid"}, svg), ax = el("g", {class: "axis"}, svg);
@@ -346,7 +353,7 @@ function columnChart(host, cats, stacks, opts = {}) {
   host.classList.add("chart");
   const W = Math.max(host.clientWidth, 300), H = opts.height || Math.round(Math.min(320, Math.max(220, W * 0.42)));
   const m = {t: 12, r: 12, b: 30, l: opts.left ?? 52};
-  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": opts.label || ""}, host);
+  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": chartLabel(host, opts)}, host);
   const tot = cats.map((_, i) => stacks.reduce((a, s) => a + s.values[i], 0)), ymax = Math.max(...tot);
   const bw = (W - m.l - m.r) / cats.length, Y = v => H - m.b - v / ymax * (H - m.t - m.b);
   const g = el("g", {class: "grid"}, svg), ax = el("g", {class: "axis"}, svg);
@@ -383,7 +390,7 @@ function scatter(host, pts, opts = {}) {
   host.classList.add("chart");
   const W = Math.max(host.clientWidth, 300), H = opts.height || Math.round(Math.min(380, Math.max(260, W * 0.55)));
   const m = {t: 12, r: 16, b: 44, l: 56};
-  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": opts.label || ""}, host);
+  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": chartLabel(host, opts)}, host);
   const xv = pts.map(p => p.x), yv = pts.map(p => p.y);
   const x0 = opts.xmin ?? Math.min(...xv), x1 = opts.xmax ?? Math.max(...xv), y0 = opts.ymin ?? Math.min(...yv), y1 = opts.ymax ?? Math.max(...yv);
   const X = v => m.l + (v - x0) / (x1 - x0) * (W - m.l - m.r), Y = v => H - m.b - (v - y0) / (y1 - y0) * (H - m.t - m.b);
@@ -427,7 +434,7 @@ function dotWhisker(host, rows, opts = {}) {
   host.classList.add("chart");
   const W = Math.max(host.clientWidth, 300), rh = 30, m = {t: 8, r: 20, b: 28, l: Math.min(190, W * 0.42)};
   const H = m.t + m.b + rows.length * rh;
-  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": opts.label || ""}, host);
+  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": chartLabel(host, opts)}, host);
   const lo = Math.min(0, ...rows.map(r => r.lo)), hi = Math.max(0, ...rows.map(r => r.hi));
   const X = v => m.l + (v - lo) / (hi - lo) * (W - m.l - m.r);
   const g = el("g", {class: "grid"}, svg), ax = el("g", {class: "axis"}, svg);
@@ -448,7 +455,7 @@ const fmtPP = v => (v > 0 ? "+" : "") + (v * 100).toFixed(Math.abs(v) < 0.1 ? 1 
 function decodeCurves(j){const f=r=>{let v=1000;r[r.length-1]=r[r.length-1].map(d=>d==null?null:(v-=d)/1000)};
   j.national.forEach(f);Object.values(j.states).forEach(s=>Object.values(s).forEach(l=>l.forEach(f)));return j}
 const LANG="en", HI=LANG==="hi";
-const HIS={nav1:"निष्कर्ष",nav2:"कैलकुलेटर",kicker:"8.09 करोड़ मुक़दमे · 619 ज़िले · 10 तरह के मामले",
+const HIS={nav1:"निष्कर्ष",nav2:"कैलकुलेटर",kicker:"8.09 करोड़ मुक़दमे · 617 ज़िले · 10 तरह के मामले",
  h1:"मेरे मुक़दमे में कितना समय लगेगा?",lede:"आपके ज़िला न्यायालय में आप जैसे मामलों में कितना समय लगा: 2010 से 2018 के बीच वहाँ दर्ज हर मुक़दमे के आधार पर।",
  st:"राज्य",di:"ज़िला",ty:"मामले का प्रकार",ch:"हर महीने, कितने मामले अब भी लंबित थे",lg2:"पूरा भारत, इसी प्रकार के मामले",lg3:"राज्य के अन्य ज़िले",
  cap:"कैपलान–मायर अनुमान। डेटा इकट्ठा होने के समय जो मामले लंबित थे, उन्हें उस तारीख़ तक अनिर्णीत गिना गया है। किसी भी महीने का आँकड़ा देखने के लिए चार्ट पर कर्सर ले जाएँ।",
@@ -458,7 +465,7 @@ const HIS={nav1:"निष्कर्ष",nav2:"कैलकुलेटर",ki
 <li>यह अतीत का विवरण है, किसी एक मुक़दमे की भविष्यवाणी नहीं: 2018 के बाद अदालतें बदली हैं, और हर मुक़दमा अपने तथ्यों और तारीख़ों पर निर्भर करता है।</li>
 <li>मामलों के प्रकार अदालतों द्वारा इस्तेमाल किए गए नामों से समूहित किए गए हैं; जो समूहित नहीं हो सके वे "अन्य" में हैं। जिन ज़िलों में किसी प्रकार के 200 से कम मामले हैं, वे नहीं दिखाए गए। उच्च न्यायालय और सर्वोच्च न्यायालय शामिल नहीं हैं। राज्यों और ज़िलों के नाम मूल डेटा की तरह अंग्रेज़ी में हैं।</li>`,
  foot:`CourtSight: अर्णव गोयल · <a href="https://github.com/ArnavGoel98/CourtSight">कोड और विधि</a> · डेटा: डेवलपमेंट डेटा लैब, ई-कोर्ट्स रिकॉर्ड 2010–2018 (CC BY-NC-SA 4.0)।`};
-Object.assign(HIS,{nav3:"शोध-पत्र",nav4:"रैंकिंग",q:"1. आपका ज़िला",tl:"2. मामले का प्रकार",share:"इस नतीजे का लिंक कॉपी करें",cmp:"+ किसी दूसरे ज़िले से तुलना करें",q2:"इससे तुलना करें"});
+Object.assign(HIS,{nav3:"शोध-पत्र",nav4:"रैंकिंग",nav5:"नक़्शा",q:"1. आपका ज़िला",tl:"2. मामले का प्रकार",share:"इस नतीजे का लिंक कॉपी करें",cmp:"+ किसी दूसरे ज़िले से तुलना करें",q2:"इससे तुलना करें"});
 const HIL={civ_suit:"दीवानी वाद (संपत्ति, अनुबंध, पैसा)",civ_execution:"निष्पादन (डिक्री लागू कराना)",civ_family:"तलाक़ / पारिवारिक",
  civ_mact:"मोटर दुर्घटना दावा",civ_misc:"अन्य दीवानी आवेदन",crim_bail:"ज़मानत आवेदन",crim_magisterial:"मजिस्ट्रेट के समक्ष आपराधिक मामला",
  crim_sessions:"सत्र विचारण (गंभीर अपराध)",crim_ni138:"चेक बाउंस (एनआई एक्ट धारा 138)",other:"अन्य / अवर्गीकृत"};

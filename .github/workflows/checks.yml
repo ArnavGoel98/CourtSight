@@ -20,6 +20,8 @@ jobs:
           python tests/test_time_to_decision.py
           python tests/test_backlog_clock.py
           python tests/test_waiting_years.py
+      - name: District map links every district to a shape
+        run: python tests/test_map.py
       - name: Project site is up to date with the results
         run: |
           python build_site.py
@@ -42,6 +44,7 @@ jobs:
           python time_to_decision.py > /dev/null
           python time_to_decision.py --level civil_criminal > /dev/null
           python data_audit.py > /dev/null
+          python coverage_audit.py > /dev/null
           python waiting_years.py > /dev/null
           python district_drivers.py > /dev/null
           python tests/compare_outputs.py /tmp/committed/covid results/covid_excess
