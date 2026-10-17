@@ -1,26 +1,26 @@
 :root{
   color-scheme:light;
-  --bg:#f7f6f2;--surface:#fcfcfb;--ink:#0b0b0b;--ink-2:#52514e;--ink-3:#7a7873;--line:#e4e1d9;--grid:#ecebe6;
+  --bg:#f7f6f2;--surface:#fcfcfb;--ink:#0b0b0b;--ink-2:#52514e;--ink-3:#6b6964;--line:#e4e1d9;--grid:#ecebe6;
   --s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--band:rgba(42,120,214,.14);--band-2:rgba(235,104,52,.14);
-  --neg:#c4462a;--pos:#2a78d6;--neutral:#b9b6ae;--hl:#fff3c9;
+  --neg:#c4462a;--pos:#2a78d6;--neutral:#b9b6ae;--hl:#fff3c9;--link:#1f6bc4;
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
 }
 @media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])){
   color-scheme:dark;
   --bg:#121211;--surface:#1a1a19;--ink:#ffffff;--ink-2:#c3c2b7;--ink-3:#8f8d86;--line:#2e2d2a;--grid:#262624;
   --s1:#3987e5;--s2:#d95926;--s3:#199e70;--band:rgba(57,135,229,.22);--band-2:rgba(217,89,38,.22);
-  --neg:#e0704f;--pos:#3987e5;--neutral:#5c5a55;--hl:#3a3420;
+  --neg:#e0704f;--pos:#3987e5;--neutral:#5c5a55;--hl:#3a3420;--link:#5598e7;
 }}
 :root[data-theme="dark"]{
   color-scheme:dark;
   --bg:#121211;--surface:#1a1a19;--ink:#ffffff;--ink-2:#c3c2b7;--ink-3:#8f8d86;--line:#2e2d2a;--grid:#262624;
   --s1:#3987e5;--s2:#d95926;--s3:#199e70;--band:rgba(57,135,229,.22);--band-2:rgba(217,89,38,.22);
-  --neg:#e0704f;--pos:#3987e5;--neutral:#5c5a55;--hl:#3a3420;
+  --neg:#e0704f;--pos:#3987e5;--neutral:#5c5a55;--hl:#3a3420;--link:#5598e7;
 }
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-a{color:var(--s1);text-underline-offset:2px}
+a{color:var(--link);text-underline-offset:2px}
 code{font-family:var(--mono);font-size:.88em}
 .wrap{max-width:980px;margin:0 auto;padding:0 16px}
 nav{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
@@ -109,3 +109,4 @@ details.card[open]>summary{margin-bottom:12px}
 .hint .chip{font-size:.85rem;padding:5px 12px}
 .hint .err{color:var(--neg)}
 @media (max-width:480px){nav .wrap{gap:12px}nav a{font-size:.85rem}}
+.h3{font-size:1.05rem;margin:0 0 6px}

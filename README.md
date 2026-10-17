@@ -11,6 +11,7 @@ and the weaker results are reported alongside the strong ones.
 **[Case time calculator](https://arnavgoel98.github.io/CourtSight/calculator.html)**
 ([हिन्दी में](https://arnavgoel98.github.io/CourtSight/calculator-hi.html)) ·
 **[District rankings](https://arnavgoel98.github.io/CourtSight/districts.html)** (sort, filter, download CSV) ·
+**[District map](https://arnavgoel98.github.io/CourtSight/map.html)** ·
 **[Working paper](https://arnavgoel98.github.io/CourtSight/paper.html)** ([PDF](docs/courtsight-paper.pdf))
 
 ## Results
@@ -53,13 +54,21 @@ only from that date (see [the audit](#auditing-our-own-results)). A civil case f
 years**. Across districts the median ranges from under a month to over 8 years. By case type: bail applications are
 decided almost at once (median **0 months**), divorce and family cases take a median **13 months**, motor-accident
 claims **19 months**, sessions trials **20 months**, cheque-bounce (NI Act s.138) cases **21 months**, and **ordinary
-civil suits 30 months, with 27% still pending after 5 years**. Results for 619 districts and 6 special courts × 10
+civil suits 30 months, with 27% still pending after 5 years**. Results for 617 districts and 8 special courts × 10
 case types, with names and 90% rank ranges:
 [`results/time_to_decision/by_district_case_type.csv`](results/time_to_decision/by_district_case_type.csv),
 [`results/audit/rank_intervals.csv`](results/audit/rank_intervals.csv).
 
 **Try it:** [`docs/calculator.html`](docs/calculator.html), a "how long will my case take?" page with the full
 survival curve for every district and case type, next to the national curve and the state's other districts.
+
+![Civil suits still pending after 3 years, by district](docs/map-civil-suits.svg)
+
+The slowest fifth of districts for civil suits clusters in the east: 30 of Bihar's 37 districts are in it. The
+[interactive map](https://arnavgoel98.github.io/CourtSight/map.html) covers every case type and measure, and has a
+layer showing where the records themselves are thin. Shapes are 2011 Census districts (DataMeet, CC BY 4.0); districts
+created later are pooled with their parent, and the hand-checked crosswalk is in
+[`sources/map_crosswalk.csv`](sources/map_crosswalk.csv) (`make_map.py`).
 
 ### 5. 13.3 crore case-years of waiting
 The 80.8 million cases filed in 2010–2018 spent a combined **13.3 crore case-years** undecided, counting up to each
@@ -108,13 +117,26 @@ We looked for ways the data could mislead (`data_audit.py`, [`results/audit/`](r
   district results moved by more than 5 points and one district moved 203 places in the civil-suit ranking.
   Completeness threshold 30–70%: civil-suit median 29–32 months.
 - **Collection date (tested).** Moving the collection-month rule from 20% to 10% or 40%: civil-suit median 30–33 months.
+- **Coverage of the court system (tested).** Compared with the filings implied by the official figures, the eCourts
+  records hold **61% of cases filed in 2015–2018** (55% in 2015, 67% in 2018), from 8% in Tripura to roughly all in
+  Bihar; Andaman & Nicobar, Arunachal Pradesh, Lakshadweep, Nagaland and Puducherry have none. The results describe
+  the courts eCourts recorded. Weighting each state by its official filings moves the civil-suit median from 30 to
+  31 months, and counting every record only from 2014 gives 29 (`coverage_audit.py`).
+- **Are "pending" cases really pending? (tested).** A decision never entered would make a court look slow. Of cases
+  pending at collection, 95% had a hearing listed in the year before (Bihar 99%), so most are live. Exceptions: West
+  Bengal (53% not listed for over a year) and Odisha (29%), whose delays may be overstated.
+- **The "speed-up" (mostly explained).** Within complete records, the share decided within a year rises from 39%
+  (2010 filings) to 56% (2017). Case mix explains little. In states whose coverage was steady in 2015–18 it rose
+  45% → 58%; in states whose records were still filling in, 23% → 56%. Most of the rise is records being completed
+  court by court, below the district-level correction; some may be real.
 - **Rank precision (fixed).** Every published rank carries a 90% range; for civil suits the median range spans 18 places.
-- **Units that are not districts (fixed).** 6 units are special courts or court complexes and are labelled as such.
+- **Units that are not districts (fixed).** 8 units are special courts, tribunals or court complexes (two of them,
+  Maharashtra's Industrial and Labour Courts and Cooperative Appellate Court, were missed by the first pass and
+  caught by the map's tests) and are labelled as such.
 - **Slow-district correlates (tested).** With corrected outcomes and the records-complete year as a control, the
   judge-tenure association holds.
-- **Open.** Even within complete records, the share decided within a year rises from 39% (2010 filings) to 56% (2017):
-  a real speed-up or residual incompleteness. "Decided" includes transfers and dismissals, which the compact data
-  cannot separate. The Hindi translation has not been reviewed by a professional legal translator.
+- **Open.** "Decided" includes transfers and dismissals, which the compact data cannot separate. Whether the cases
+  missing from eCourts differ from the recorded ones cannot be checked. The Hindi translation has not been reviewed by a professional legal translator.
 
 ## What the project does not claim
 - **No "judges needed" numbers.** The data cannot separate the effect of adding judges from where judges are posted.
@@ -135,12 +157,13 @@ We looked for ways the data could mislead (`data_audit.py`, [`results/audit/`](r
 | `grade_state_2019.py`, `naive_benchmarks.py` | 2019 grading and the strict benchmarks |
 | `build_site.py`, `site/`, `docs/` | Project site and calculator (built from `results/`, served from `docs/`); `site/card.html` is the link-preview image (`docs/og.png`) |
 | `backlog_clock.py`, `time_to_decision.py`, `judge_transfer.py` | Clearance clock, time to decision, judge handover study |
-| `data_audit.py` | Checks for digitisation bias, cut-off rules, rank precision and special courts |
+| `data_audit.py`, `coverage_audit.py` | Checks for digitisation bias, cut-off rules, rank precision, special courts, coverage against official filings and the apparent speed-up |
+| `make_map.py`, `sources/india_districts_2011.json`, `sources/map_crosswalk.csv` | District map geometry (Census 2011 via DataMeet) and the DDL-to-2011 district crosswalk |
 | `waiting_years.py`, `district_drivers.py` | Case-years of waiting; what slow districts have in common |
 | `site/paper.html`, `make_paper_pdf.py` | Working paper (numbers filled in from `results/` at build time) and its PDF |
 | `results/ddl_2010_2018/` | Model outputs, metrics, charts and `RESULTS.md` |
 | `sources/` | The official documents used, with URLs and SHA-256 fingerprints |
-| `tests/` | Transcription checks against printed totals, locked-forecast integrity, grading arithmetic |
+| `tests/` | Transcription checks against printed totals, locked-forecast integrity, grading and survival arithmetic, the map crosswalk |
 
 ## Run it
 ```
@@ -149,9 +172,10 @@ python3 covid_excess.py                     # COVID estimate (official data is b
 python3 forecast_2026.py                    # rebuilds the 2026 forecast and its backtest
 python3 pendency_forecast.py --ddl-compact ddl_compact --ddl-only --out outputs/   # district model (~5 min)
 python3 make_charts.py                      # charts
+python3 time_to_decision.py && python3 data_audit.py && python3 coverage_audit.py   # needs ddl_compact/
 python3 waiting_years.py && python3 district_drivers.py   # needs ddl_compact/
 python3 build_site.py && python3 make_paper_pdf.py         # site, paper and PDF (PDF needs playwright)
-python3 tests/test_official_series.py && python3 tests/test_locked_forecast.py && python3 tests/test_grade_2019.py
+for t in tests/test_*.py; do python3 "$t"; done           # every test CI runs
 ```
 
 ## Data quality notes
@@ -165,5 +189,7 @@ python3 tests/test_official_series.py && python3 tests/test_locked_forecast.py &
 Code: MIT (`LICENSE`). To cite, see `CITATION.cff`.
 - **Case records:** Development Data Lab, Indian judicial data (eCourts, 2010–2018), CC BY-NC-SA 4.0. Derived files
   here carry the same licence; see [`DATA_LICENSE.md`](DATA_LICENSE.md).
+- **District boundaries:** Census of India 2011 districts from [DataMeet](https://github.com/datameet/maps)
+  (CC BY 4.0), simplified (`sources/india_districts_2011.json`).
 - **Official pendency:** Lok Sabha Unstarred Questions 1838 (16.12.2022) and 2362 (13.02.2026), Ministry of Law &
   Justice; figures from NJDG and the Supreme Court of India.

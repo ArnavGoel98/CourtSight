@@ -28,7 +28,7 @@ import time_to_decision as T
 HERE: Final = Path(__file__).resolve().parent
 OUT: Final = HERE / "results" / "audit"
 COLS: Final = ["median_months", "pending_after_1y", "pending_after_3y", "pending_after_5y"]
-NOT_DISTRICT: Final = re.compile(r"court|tribunal|cmm|claims|family|city civil|small causes", re.I)
+NOT_DISTRICT: Final = re.compile(r"court|tribunal|cmm|claims|family|city civil|small causes|industrial|cooperative", re.I)
 
 
 def cohort_speed(c: pd.DataFrame, entry: pd.Series) -> pd.DataFrame:
