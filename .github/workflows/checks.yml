@@ -28,7 +28,7 @@ jobs:
             git diff -U0 docs/ | grep '^[-+][^-+]' | cut -c1-300 | head -6 | sed 's/^/::error::/'
             exit 1
           fi
-      - name: COVID estimate and 2019 grading reproduce
+      - name: All analyses reproduce from the committed data
         run: |
           mkdir -p /tmp/committed/grading
           cp -r results/covid_excess /tmp/committed/covid
@@ -37,9 +37,16 @@ jobs:
           python grade_state_2019.py > /dev/null
           cp -r results/waiting_years /tmp/committed/waiting
           cp -r results/district_drivers /tmp/committed/drivers
+          cp -r results/time_to_decision /tmp/committed/ttd
+          cp -r results/audit /tmp/committed/audit
+          python time_to_decision.py > /dev/null
+          python time_to_decision.py --level civil_criminal > /dev/null
+          python data_audit.py > /dev/null
           python waiting_years.py > /dev/null
           python district_drivers.py > /dev/null
           python tests/compare_outputs.py /tmp/committed/covid results/covid_excess
           python tests/compare_outputs.py /tmp/committed/grading results/ddl_2010_2018/grading_2019_state
           python tests/compare_outputs.py /tmp/committed/waiting results/waiting_years
           python tests/compare_outputs.py /tmp/committed/drivers results/district_drivers
+          python tests/compare_outputs.py /tmp/committed/ttd results/time_to_decision
+          python tests/compare_outputs.py /tmp/committed/audit results/audit

@@ -141,7 +141,7 @@ html[lang=hi] .kicker{font-family:inherit;letter-spacing:0;font-size:.85rem}
 <nav><div class="wrap"><b>CourtSight</b><a href="calculator.html" aria-current="page" data-i="nav2">Calculator</a><a href="districts.html" data-i="nav4">Rankings</a><a href="index.html" data-i="nav1">Findings</a><a href="paper.html" data-i="nav3">Paper</a><a id="lang" href="calculator-hi.html" lang="hi">हिन्दी</a></div></nav>
 <main class="wrap">
 <header class="hero" style="padding:36px 0 8px">
-  <div class="kicker" data-i="kicker">80.9 million cases · 620 districts · 10 case types</div>
+  <div class="kicker" data-i="kicker">80.9 million cases · 619 districts · 10 case types</div>
   <h1 data-i="h1">How long will my case take?</h1>
   <p class="lede" data-i="lede">How long cases like yours took in your district court, based on every case filed there in 2010–2018.</p>
 </header>
@@ -448,7 +448,7 @@ const fmtPP = v => (v > 0 ? "+" : "") + (v * 100).toFixed(Math.abs(v) < 0.1 ? 1 
 function decodeCurves(j){const f=r=>{let v=1000;r[r.length-1]=r[r.length-1].map(d=>d==null?null:(v-=d)/1000)};
   j.national.forEach(f);Object.values(j.states).forEach(s=>Object.values(s).forEach(l=>l.forEach(f)));return j}
 const LANG="hi", HI=LANG==="hi";
-const HIS={nav1:"निष्कर्ष",nav2:"कैलकुलेटर",kicker:"8.09 करोड़ मुक़दमे · 620 ज़िले · 10 तरह के मामले",
+const HIS={nav1:"निष्कर्ष",nav2:"कैलकुलेटर",kicker:"8.09 करोड़ मुक़दमे · 619 ज़िले · 10 तरह के मामले",
  h1:"मेरे मुक़दमे में कितना समय लगेगा?",lede:"आपके ज़िला न्यायालय में आप जैसे मामलों में कितना समय लगा: 2010 से 2018 के बीच वहाँ दर्ज हर मुक़दमे के आधार पर।",
  st:"राज्य",di:"ज़िला",ty:"मामले का प्रकार",ch:"हर महीने, कितने मामले अब भी लंबित थे",lg2:"पूरा भारत, इसी प्रकार के मामले",lg3:"राज्य के अन्य ज़िले",
  cap:"कैपलान–मायर अनुमान। डेटा इकट्ठा होने के समय जो मामले लंबित थे, उन्हें उस तारीख़ तक अनिर्णीत गिना गया है। किसी भी महीने का आँकड़ा देखने के लिए चार्ट पर कर्सर ले जाएँ।",
@@ -535,6 +535,10 @@ function chips(list){
     if(!r)b.title=HI?"इस ज़िले में पर्याप्त मामले नहीं":"Too few cases of this type in this district";
     b.onclick=()=>{st.t=t;render()};box.appendChild(b)}
 }
+function dataNote(s,d){const m=D.meta[s][d];let t="";
+  if(m[1])t+=HI?" यह पूरा ज़िला नहीं, बल्कि एक विशेष अदालत या कोर्ट परिसर है।":" This is a special court or court complex, not a whole district.";
+  if(m[0]>2010)t+=HI?` इस ज़िले के रिकॉर्ड ${m[0]} से पूरे हैं; पहले दर्ज मामलों को उसी समय से गिना गया है।`:` Records here are complete from ${m[0]}; cases filed earlier are counted only from then.`;
+  return t}
 function tenOf(r){
   const n1=Math.round(10*(1-r[C.pending_after_1y])), n3=r[C.pending_after_3y]==null?null:Math.round(10*(1-r[C.pending_after_3y]));
   const p5=r[C.pending_after_5y], s5=p5==null?null:Math.round(10*p5);
@@ -561,7 +565,7 @@ function render(){
     `<div><b>${r[C[k]]==null?"–":pc(1-r[C[k]])}</b><span>${HI?`${y} साल के भीतर फ़ैसला`:`decided within ${y} year${y>1?"s":""}`}</span>${bv(k,x=>x[C[k]]==null?"–":pc(1-x[C[k]]))}</div>`).join("")+
     `<div><b>${p90==null?(HI?"10+ साल":"10+ yrs"):fmtM(p90)}</b><span>${HI?"सबसे धीमे 10 में से 1 मामले में":"for the slowest 1 in 10"}</span>${bv("p90",x=>x[C.p90_months]==null?(HI?"10+ साल":"10+ yrs"):fmtM(x[C.p90_months]))}</div>`;
   $("based").textContent=(HI?`${s} के ${d} में दर्ज ${N} मामलों पर आधारित (2010–2018)।`:`Based on ${N} cases filed in ${d}, ${s}, 2010–2018.`)+
-    (st.B&&!B?(HI?` ${st.B[1]} में इस प्रकार के पर्याप्त मामले नहीं हैं।`:` ${st.B[1]} has too few cases of this type to compare.`):"");
+    dataNote(s,d)+(st.B&&!B?(HI?` ${st.B[1]} में इस प्रकार के पर्याप्त मामले नहीं हैं।`:` ${st.B[1]} has too few cases of this type to compare.`):"");
   $("lg-here").textContent=d; $("lg-b").hidden=!B; if(B)$("lg-b-name").textContent=st.B[1];
   const xs=[...Array(41).keys()].map(i=>i*3);
   const others=Object.entries(D.states[s]).filter(([k])=>k!==d).map(([,l])=>row(l,st.t)).filter(Boolean)
@@ -578,8 +582,8 @@ function render(){
   const link=k=>`<a href="#s=${encodeURIComponent(s)}&d=${encodeURIComponent(k)}&t=${st.t}" data-d="${k}">${k}</a>`;
   const fast=peers.length?`${link(peers[0][0])} (${pc(peers[0][1][C.pending_after_3y])})`:"", slow=peers.length?`${link(peers[peers.length-1][0])} (${pc(peers[peers.length-1][1][C.pending_after_3y])})`:"";
   $("rank").innerHTML=pos<0?"":HI
-    ?`<h3>${d} की तुलना</h3><p class="prose">दर्ज होने के 3 साल बाद, यहाँ ऐसे <b>${pc(me3)}</b> मामले अब भी लंबित थे, जबकि पूरे भारत में <b>${pc(nat3)}</b>${cmp?` (राष्ट्रीय आँकड़े से ${me3<nat3?"तेज़":"धीमा"})`:""}। ${s} के ${peers.length} ज़िलों में, सबसे तेज़ से सबसे धीमे के क्रम में ${d} का स्थान <b>${pos+1}</b> है। सबसे तेज़: ${fast}; सबसे धीमा: ${slow}। <a href="districts.html#t=${st.t}&s=${encodeURIComponent(s)}">सभी ${peers.length} ज़िलों की रैंकिंग (अंग्रेज़ी में) →</a></p>`
-    :`<h3>How ${d} compares</h3><p class="prose">After 3 years, <b>${pc(me3)}</b> of these cases were still pending here, against <b>${pc(nat3)}</b> across India${cmp?` (${me3<nat3?"faster":"slower"} than the national figure)`:""}. Among ${peers.length} districts in ${s}, ${d} ranks <b>${pos+1}</b> from fastest to slowest. Fastest: ${fast}; slowest: ${slow}. <a href="districts.html#t=${st.t}&s=${encodeURIComponent(s)}">See all ${peers.length} ranked →</a></p>`;
+    ?`<h3>${d} की तुलना</h3><p class="prose">दर्ज होने के 3 साल बाद, यहाँ ऐसे <b>${pc(me3)}</b> मामले अब भी लंबित थे, जबकि पूरे भारत में <b>${pc(nat3)}</b>${cmp?` (राष्ट्रीय आँकड़े से ${me3<nat3?"तेज़":"धीमा"})`:""}। ${s} के ${peers.length} ज़िलों में, सबसे तेज़ से सबसे धीमे के क्रम में ${d} का स्थान <b>${pos+1}</b> है। सबसे तेज़: ${fast}; सबसे धीमा: ${slow}।${r[C.rank]!=null?` पूरे भारत में ${d} का स्थान ${r[C.of]} में <b>${r[C.rank]}</b> है (90% दायरा ${r[C.rank_lo]}–${r[C.rank_hi]})।`:""} <a href="districts.html#t=${st.t}&s=${encodeURIComponent(s)}">सभी ${peers.length} ज़िलों की रैंकिंग (अंग्रेज़ी में) →</a></p>`
+    :`<h3>How ${d} compares</h3><p class="prose">After 3 years, <b>${pc(me3)}</b> of these cases were still pending here, against <b>${pc(nat3)}</b> across India${cmp?` (${me3<nat3?"faster":"slower"} than the national figure)`:""}. Among ${peers.length} districts in ${s}, ${d} ranks <b>${pos+1}</b> from fastest to slowest. Fastest: ${fast}; slowest: ${slow}.${r[C.rank]!=null?` Across India, ${d} ranks <b>${r[C.rank]}</b> of ${r[C.of]} for this type (90% range ${r[C.rank_lo]}–${r[C.rank_hi]}; districts with overlapping ranges are not clearly different).`:""} <a href="districts.html#t=${st.t}&s=${encodeURIComponent(s)}">See all ${peers.length} ranked →</a></p>`;
   $("rank").querySelectorAll("a[data-d]").forEach(a=>a.onclick=e=>{e.preventDefault();st.A=[s,a.dataset.d];render();window.scrollTo({top:0,behavior:"smooth"})});
 }
 onResize(render);

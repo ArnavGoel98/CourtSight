@@ -46,14 +46,17 @@ the backlog is falling, would clear it in about 33 years. Code: [`backlog_clock.
 [`results/backlog_clock/states.csv`](results/backlog_clock/states.csv).
 
 ### 4. How long a case takes, in every district
-Survival analysis on all 80.9 million cases (cases still pending when the data was collected count as undecided,
-using each state's own collection date). A civil case filed in 2010–2018 took a median **21 months** to decide and a
-criminal case **10 months**, but about **1 in 5 of either was still pending after 5 years**. Across districts the
-median ranges from under a month to almost 9 years. By case type: bail applications are decided almost at once (median **0 months**, under 1% pending after
-a year), divorce and family cases take a median **13 months**, motor-accident claims and sessions trials about
-**21–22 months**, cheque-bounce (NI Act s.138) cases **23 months**, and **ordinary civil suits 32 months, with
-29% still pending after 5 years**. Results for 626 districts × 10 case types, with district names:
-[`results/time_to_decision/by_district_case_type.csv`](results/time_to_decision/by_district_case_type.csv).
+Survival analysis on all 80.9 million cases. Cases still pending when the data was collected count as undecided up to
+each state's own collection date, and cases filed before a district's eCourts records became complete are counted
+only from that date (see [the audit](#auditing-our-own-results)). A civil case filed in 2010–2018 took a median
+**19 months** to decide and a criminal case **8 months**, but about **1 in 6 of either was still pending after 5
+years**. Across districts the median ranges from under a month to over 8 years. By case type: bail applications are
+decided almost at once (median **0 months**), divorce and family cases take a median **13 months**, motor-accident
+claims **19 months**, sessions trials **20 months**, cheque-bounce (NI Act s.138) cases **21 months**, and **ordinary
+civil suits 30 months, with 27% still pending after 5 years**. Results for 619 districts and 6 special courts × 10
+case types, with names and 90% rank ranges:
+[`results/time_to_decision/by_district_case_type.csv`](results/time_to_decision/by_district_case_type.csv),
+[`results/audit/rank_intervals.csv`](results/audit/rank_intervals.csv).
 
 **Try it:** [`docs/calculator.html`](docs/calculator.html), a "how long will my case take?" page with the full
 survival curve for every district and case type, next to the national curve and the state's other districts.
@@ -95,6 +98,24 @@ same court number, so courtroom matching is weak. We report this as no reliable 
 
 ![2019 graded](results/ddl_2010_2018/charts/graded_2019.png)
 
+## Auditing our own results
+We looked for ways the data could mislead (`data_audit.py`, [`results/audit/`](results/audit/)).
+- **Digitisation (fixed).** Recorded filings triple from 2010 to 2018, far faster than real filings, because eCourts
+  reached districts at different times and cases already decided by then were mostly never entered. Among 2010
+  filings, 16% of those filed before their district's records became complete were decided within a year, against
+  39% of those filed after: the early records are the slow survivors. Every estimate now uses delayed entry from each
+  district's completeness month. Nationally the effect is modest (civil suits 32 → 30 months), but 834 of 4,678
+  district results moved by more than 5 points and one district moved 203 places in the civil-suit ranking.
+  Completeness threshold 30–70%: civil-suit median 29–32 months.
+- **Collection date (tested).** Moving the collection-month rule from 20% to 10% or 40%: civil-suit median 30–33 months.
+- **Rank precision (fixed).** Every published rank carries a 90% range; for civil suits the median range spans 18 places.
+- **Units that are not districts (fixed).** 6 units are special courts or court complexes and are labelled as such.
+- **Slow-district correlates (tested).** With corrected outcomes and the records-complete year as a control, the
+  judge-tenure association holds.
+- **Open.** Even within complete records, the share decided within a year rises from 39% (2010 filings) to 56% (2017):
+  a real speed-up or residual incompleteness. "Decided" includes transfers and dismissals, which the compact data
+  cannot separate. The Hindi translation has not been reviewed by a professional legal translator.
+
 ## What the project does not claim
 - **No "judges needed" numbers.** The data cannot separate the effect of adding judges from where judges are posted.
   A recruitment-based instrument was tried and is too weak (first-stage F = 6.2), so those numbers are withheld.
@@ -114,6 +135,7 @@ same court number, so courtroom matching is weak. We report this as no reliable 
 | `grade_state_2019.py`, `naive_benchmarks.py` | 2019 grading and the strict benchmarks |
 | `build_site.py`, `site/`, `docs/` | Project site and calculator (built from `results/`, served from `docs/`); `site/card.html` is the link-preview image (`docs/og.png`) |
 | `backlog_clock.py`, `time_to_decision.py`, `judge_transfer.py` | Clearance clock, time to decision, judge handover study |
+| `data_audit.py` | Checks for digitisation bias, cut-off rules, rank precision and special courts |
 | `waiting_years.py`, `district_drivers.py` | Case-years of waiting; what slow districts have in common |
 | `site/paper.html`, `make_paper_pdf.py` | Working paper (numbers filled in from `results/` at build time) and its PDF |
 | `results/ddl_2010_2018/` | Model outputs, metrics, charts and `RESULTS.md` |
