@@ -151,7 +151,7 @@ details.card[open]>summary{margin-bottom:12px}
 </style>
 </head>
 <body>
-<nav><div class="wrap"><b>CourtSight</b><a href="calculator.html">Calculator</a><a href="districts.html">Rankings</a><a href="map.html" aria-current="page">Map</a><a href="index.html">Findings</a><a href="paper.html">Paper</a></div></nav>
+<nav><div class="wrap"><b>CourtSight</b><a href="calculator.html">Calculator</a><a href="districts.html">Rankings</a><a href="map.html" aria-current="page">Map</a><a href="d/index.html">Districts</a><a href="index.html">Findings</a><a href="paper.html">Paper</a></div></nav>
 <main class="wrap">
 <header class="hero" style="padding:36px 0 8px">
   <div class="kicker">80.9 million cases · filed 2010–2018 · 2011 Census districts</div>
@@ -190,7 +190,8 @@ details.card[open]>summary{margin-bottom:12px}
 
 <details class="card"><summary><b>How to read this map, and what it cannot show</b></summary><div class="prose" style="margin-top:10px">
 <p><b>Shapes are 2011 Census districts.</b> Court districts have changed since. Districts carved out after 2011 are shown inside their 2011 parent, with both courts' cases pooled. Cities whose courts are recorded as several units (Jaipur, Jodhpur) or as city-wide courts (Mumbai) are pooled the same way. The tooltip lists every court unit behind a shape, and the crosswalk is published (<a href="https://github.com/ArnavGoel98/CourtSight/blob/main/sources/map_crosswalk.csv">sources/map_crosswalk.csv</a>).</p>
-<p><b>Hatched areas have no court records in this data:</b> most of Arunachal Pradesh, Nagaland, Mizoram, Andaman &amp; Nicobar, Puducherry and Lakshadweep. That is a gap in the eCourts records for 2010–2018, not a fast or a slow court.</p>
+<p><b>Some districts are withheld.</b> In <span id="nheld">several</span> court units, including Gaya, Muzaffarpur, Bhojpur and Vaishali in Bihar and Chandauli in Uttar Pradesh, the records hold almost no decisions before 2018. Every case there would look stuck, so these units would have topped the "slowest" list. They are hatched instead, and the tooltip says why.</p>
+<p><b>Other hatched areas have no court records in this data:</b> most of Arunachal Pradesh, Nagaland, Mizoram, Andaman &amp; Nicobar, Puducherry and Lakshadweep. That is a gap in the eCourts records for 2010–2018, not a fast or a slow court.</p>
 <p><b>Colours are fifths.</b> Each colour holds about a fifth of the shapes, so the map shows rank, not size. Check the legend: for some case types the slowest fifth and the fastest fifth differ by only a few points. Small districts have wide uncertainty. Where two districts' rank ranges overlap on the <a href="districts.html">rankings page</a>, they are not clearly different.</p>
 <p><b>The records are incomplete.</b> For 2015–2018, the eCourts records hold about 61% of the cases the official figures say were filed, from 8% in Tripura to all of them in Bihar. The coverage layer shows this by state; states with under 2 lakh official filings in those years (Goa, Sikkim, Manipur, Mizoram, Meghalaya and the smallest union territories) are left blank there, because their official figures move too much from year to year to compare. Thinly covered states may be represented by unusual courts. See the <a href="index.html#audit">audit</a>.</p>
 <p><b>Pending records are mostly live cases.</b> Nationally, 95% of cases pending at collection had a hearing listed in the year before, so a slow district is not just one that failed to record its decisions. The exceptions are West Bengal and Odisha, where 53% and 29% had not been listed for over a year; their delays may be overstated.</p>
@@ -468,9 +469,10 @@ const pct=v=>Math.round(v*100)+"%", mo=v=>v==null||v>=SLOW?"over half still pend
 const FMT={p1:pct,p3:pct,p5:pct,med:mo,cov:v=>v>=1?"100%+":pct(v)};
 let D,G,C,VAL={},sel=null;
 Promise.all(["calc-data.json","map-data.json"].map(u=>fetch(u).then(r=>{if(!r.ok)throw r.status;return r.json()})))
-  .then(([d,g])=>{D=d;G=g;C=Object.fromEntries(D.cols.map((c,i)=>[c,i]));init()})
+  .then(([d,g])=>{D=d;G=g;C=Object.fromEntries(D.cols.map((c,i)=>[c,i]));heldCount();init()})
   .catch(()=>{$("detail").textContent="Could not load the map. Please refresh the page."});
 
+function heldCount(){const n=new Set(Object.values(G.withheld).flat()).size;document.getElementById("nheld").textContent=n}
 function curve(r){let v=1000;return r[C.curve].map(d=>d==null?null:(v-=d)/1000)}
 function init(){
   const svg=$("map");svg.setAttribute("viewBox",`0 0 ${G.w} ${G.h}`);
@@ -536,7 +538,7 @@ function draw(){
   const title={p1:"Still pending after 1 year",p3:"Still pending after 3 years",p5:"Still pending after 5 years",med:"Median time to decision",cov:"Records held, as a share of official filings 2015–18"}[st.m];
   $("scale").innerHTML=`<b style="color:var(--ink)">${title}${st.m==="cov"?"":" · "+D.labels[st.t]}</b>`+
     lab.map((l,i)=>`<span><i style="background:var(${BINS[i]})"></i>${l}</span>`).join("")+
-    `<span><i style="background:repeating-linear-gradient(45deg,var(--nodata) 0 3px,var(--line) 3px 5px)"></i>no records</span>`;
+    `<span><i style="background:repeating-linear-gradient(45deg,var(--nodata) 0 3px,var(--line) 3px 5px)"></i>no records, or withheld</span>`;
   lists(f);
   $("back").style.display=st.s?"inline-block":"none";
 }
@@ -556,6 +558,7 @@ function lists(f){
 function shapeName(code){const u=G.units[code]||[],n=G.names[code];
   return u.length===1?u[0][1]:n[0]+(st.s?"":`, ${n[1]}`)}
 function tipHtml(code){const v=VAL[code],n=G.names[code],u=G.units[code];
+  if(!u&&G.withheld[code])return `<b>${n[0]}</b><div class="k">${n[1]} · withheld: the records hold almost no decisions before 2018, so every case would look stuck</div>`;
   if(!u)return `<b>${n[0]==="Data Not Available"?"No district data":n[0]}</b><div class="k">${n[1]} · no court records in this data</div>`;
   return `<b>${shapeName(code)}</b><div class="k">${u[0][0]}</div><div>${v==null?(rowsFor(code).length?"The data ends before this point":"Too few cases of this type"):`<b>${FMT[st.m](v)}</b> <span class="k">${st.m==="cov"?"records coverage (state)":D.short[st.t].toLowerCase()}</span>`}</div>`}
 function detailHtml(code){const u=G.units[code],n=G.names[code];if(!u)return tipHtml(code);

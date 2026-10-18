@@ -1,28 +1,28 @@
 {
   "recorded_filings_2010": 4269735,
   "recorded_filings_2018": 13709367,
-  "share_of_cases_filed_before_records_complete": 0.1397,
+  "share_of_cases_filed_before_records_complete": 0.1548,
   "districts_complete_from": {
-    "2010": 102,
-    "2011": 89,
-    "2012": 109,
-    "2013": 107,
-    "2014": 135,
-    "2015": 52,
-    "2016": 34,
-    "2017": 1
+    "2010": 83,
+    "2011": 72,
+    "2012": 98,
+    "2013": 116,
+    "2014": 142,
+    "2015": 54,
+    "2016": 37,
+    "2017": 11
   },
-  "districts_never_complete": 3,
-  "rows_compared": 4678,
-  "rows_shift_over_5pp": 834,
-  "rows_shift_over_10pp": 206,
-  "median_shift_pp": -0.87,
-  "civil_suit_rank_spearman_naive_vs_corrected": 0.976,
-  "civil_suit_median_rank_shift": 20,
-  "civil_suit_max_rank_shift": 203,
-  "civil_suit_districts_ranked": 592,
-  "civil_suit_median_rank_interval_width": 18,
-  "civil_suit_share_rank_interval_over_50": 0.125,
+  "districts_never_complete": 19,
+  "rows_compared": 4596,
+  "rows_shift_over_5pp": 1031,
+  "rows_shift_over_10pp": 294,
+  "median_shift_pp": -1.25,
+  "civil_suit_rank_spearman_naive_vs_corrected": 0.965,
+  "civil_suit_median_rank_shift": 23,
+  "civil_suit_max_rank_shift": 278,
+  "civil_suit_districts_ranked": 582,
+  "civil_suit_median_rank_interval_width": 19,
+  "civil_suit_share_rank_interval_over_50": 0.146,
   "units_that_are_court_complexes": [
     "Mumbai CMM Courts",
     "Mumbai City Civil Court",
@@ -32,5 +32,107 @@
     "Mah State Cooperative Appellat",
     "Maharashtra-Family Courts",
     "Maharashtra-School Tribunals"
-  ]
+  ],
+  "units_withheld_records_never_complete": [
+    "Baksa",
+    "Bhagalpur",
+    "Bhojpur",
+    "Chandauli",
+    "East Garo Hills",
+    "Gaya",
+    "Jehanabad",
+    "KHUNTI",
+    "Karbi Anglong",
+    "Muzaffarpur",
+    "RAMGARH",
+    "Sheohar",
+    "Vaishali",
+    "kalimpong"
+  ],
+  "withheld_detail": {
+    "Karbi Anglong": {
+      "state": "Assam",
+      "filed_2010_2017": 2857,
+      "decided_2010_2017": 30,
+      "decided_2018": 2629
+    },
+    "Baksa": {
+      "state": "Assam",
+      "filed_2010_2017": 32,
+      "decided_2010_2017": 0,
+      "decided_2018": 572
+    },
+    "RAMGARH": {
+      "state": "Jharkhand",
+      "filed_2010_2017": 3367,
+      "decided_2010_2017": 22,
+      "decided_2018": 4998
+    },
+    "KHUNTI": {
+      "state": "Jharkhand",
+      "filed_2010_2017": 1844,
+      "decided_2010_2017": 40,
+      "decided_2018": 2035
+    },
+    "Bhojpur": {
+      "state": "Bihar",
+      "filed_2010_2017": 42140,
+      "decided_2010_2017": 177,
+      "decided_2018": 3800
+    },
+    "Bhagalpur": {
+      "state": "Bihar",
+      "filed_2010_2017": 54836,
+      "decided_2010_2017": 3899,
+      "decided_2018": 6967
+    },
+    "Gaya": {
+      "state": "Bihar",
+      "filed_2010_2017": 53049,
+      "decided_2010_2017": 33,
+      "decided_2018": 7969
+    },
+    "Jehanabad": {
+      "state": "Bihar",
+      "filed_2010_2017": 22261,
+      "decided_2010_2017": 0,
+      "decided_2018": 2721
+    },
+    "Sheohar": {
+      "state": "Bihar",
+      "filed_2010_2017": 4499,
+      "decided_2010_2017": 15,
+      "decided_2018": 332
+    },
+    "Muzaffarpur": {
+      "state": "Bihar",
+      "filed_2010_2017": 74036,
+      "decided_2010_2017": 15,
+      "decided_2018": 5966
+    },
+    "Vaishali": {
+      "state": "Bihar",
+      "filed_2010_2017": 35672,
+      "decided_2010_2017": 0,
+      "decided_2018": 2322
+    },
+    "Chandauli": {
+      "state": "Uttar Pradesh",
+      "filed_2010_2017": 6691,
+      "decided_2010_2017": 3,
+      "decided_2018": 1342
+    },
+    "kalimpong": {
+      "state": "West Bengal",
+      "filed_2010_2017": 2771,
+      "decided_2010_2017": 2308,
+      "decided_2018": 985
+    },
+    "East Garo Hills": {
+      "state": "Meghalaya",
+      "filed_2010_2017": 1205,
+      "decided_2010_2017": 1018,
+      "decided_2018": 261
+    }
+  }
 }

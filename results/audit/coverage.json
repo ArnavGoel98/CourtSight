@@ -50,23 +50,23 @@
   ],
   "decided_within_12m": {
     "all_complete_records": {
-      "2010": 0.387,
-      "2014": 0.497,
-      "2017": 0.557
+      "2010": 0.423,
+      "2014": 0.505,
+      "2017": 0.56
     },
     "fixed_case_mix": {
-      "2010": 0.395,
-      "2014": 0.493,
-      "2017": 0.533
+      "2010": 0.435,
+      "2014": 0.501,
+      "2017": 0.535
     },
     "stable_coverage_states": {
-      "2010": 0.451,
-      "2014": 0.554,
-      "2017": 0.581
+      "2010": 0.471,
+      "2014": 0.563,
+      "2017": 0.588
     },
     "growing_coverage_states": {
-      "2010": 0.231,
-      "2014": 0.429,
+      "2010": 0.526,
+      "2014": 0.438,
       "2017": 0.556
     }
   },
@@ -78,6 +78,6 @@
     "Mizoram": 0.22
   },
   "pending_not_listed_in_12m_bihar": 0.012,
-  "spearman_state_coverage_vs_civil_suit_pending_3y": -0.2,
+  "spearman_state_coverage_vs_civil_suit_pending_3y": -0.086,
   "states_in_spearman": 22
 }

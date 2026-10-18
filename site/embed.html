@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CourtSight District Card</title>
+<meta name="robots" content="noindex">
+<style>
+:root{color-scheme:light;--bg:#fcfcfb;--ink:#0b0b0b;--ink-2:#52514e;--ink-3:#6b6964;--line:#e4e1d9;--grid:#ecebe6;--s1:#2a78d6;--link:#1f6bc4}
+@media (prefers-color-scheme:dark){:root{color-scheme:dark;--bg:#1a1a19;--ink:#fff;--ink-2:#c3c2b7;--ink-3:#8f8d86;--line:#2e2d2a;--grid:#262624;--s1:#3987e5;--link:#5598e7}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.card{border:1px solid var(--line);border-radius:12px;padding:14px 16px;max-width:520px;margin:0 auto}
+.k{font:600 11px ui-monospace,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+h1{font-size:18px;margin:6px 0 2px;letter-spacing:-.01em}
+.big{font-size:30px;font-weight:750;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin:6px 0 0}
+p{margin:4px 0;color:var(--ink-2)}
+select{font:inherit;font-size:13px;padding:3px 6px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);max-width:100%}
+svg{display:block;width:100%;height:auto;margin-top:8px}
+svg text{fill:var(--ink-3);font-size:10px}
+.f{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--ink-3);margin-top:8px;border-top:1px solid var(--line);padding-top:8px}
+a{color:var(--link)}
+</style>
+</head>
+<body>
+<main class="card" id="card" aria-live="polite"><p>Loading…</p></main>
+<script>
+const q=new URLSearchParams(location.hash.slice(1));
+const slug=s=>s.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")||"x";
+const S=q.get("s")||"", Dn=q.get("d")||"";
+const BASE=location.href.replace(/embed\.html.*$/,"");
+const fm=v=>v==null?"over half still pending":v<24?`${Math.round(v)} month${Math.round(v)===1?"":"s"}`:`${(v/12).toFixed(1)} years`;
+const esc=v=>String(v).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]);
+const pc=v=>v==null?"–":Math.round(v*100)+"%";
+fetch(`api/v1/${slug(S)}/${slug(Dn)}.json`).then(r=>{if(!r.ok)throw r.status;return r.json()}).then(draw)
+  .catch(()=>{document.getElementById("card").innerHTML=`<p>District not found. <a href="${BASE}d/index.html" target="_top">Find it on CourtSight</a>.</p>`});
+function draw(J,t){
+  const types=Object.keys(J.case_types);
+  t=t||(types.includes(q.get("t"))?q.get("t"):types.includes("civ_suit")?"civ_suit":types[0]);
+  const x=J.case_types[t];
+  const W=480,H=120,l=30,r=24,top=6,b=18,X=i=>l+i*3/120*(W-l-r),Y=v=>top+(1-v)*(H-top-b);
+  const path=c=>"M"+c.map((v,i)=>v==null?null:`${X(i).toFixed(1)} ${Y(v).toFixed(1)}`).filter(Boolean).join(" L");
+  const grid=[0,.5,1].map(v=>`<line x1="${l}" x2="${W-r}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--grid)"/><text x="${l-4}" y="${Y(v)+3}" text-anchor="end">${v*100}%</text>`).join("");
+  const xt=[0,2,4,6,8,10].map(y=>`<text x="${X(y*4)}" y="${H-4}" text-anchor="middle">${y}${y===10?" yrs":""}</text>`).join("");
+  const rank=x.rank!=null?` It ranks <b>${x.rank} of ${x.of}</b> in India (90% range ${x.rank_lo}–${x.rank_hi}; 1 = fewest pending).`:"";
+  document.getElementById("card").innerHTML=`
+    <div class="k">How long court cases take · ${esc(J.state)}</div>
+    <h1>${esc(J.district)}${J.special_court?" (special court)":""}</h1>
+    <select id="t" aria-label="Type of case">${types.map(k=>`<option value="${k}"${k===t?" selected":""}>${esc(J.case_types[k].label)}</option>`).join("")}</select>
+    <div class="big">${fm(x.median_months)}</div>
+    <p>median time to a decision, filed 2010–2018 (India: ${fm(x.india.median_months)}). <b>${pc(x.pending_after_3y)}</b> still pending after 3 years (India: ${pc(x.india.pending_after_3y)}).${rank}</p>
+    <svg viewBox="0 0 ${W} ${H}" role="img"><title>Share still pending by years since filing: ${esc(J.district)} (solid) and India (dashed)</title>${grid}${xt}
+      <path d="${path(x.india_curve_quarterly)}" fill="none" stroke="var(--ink-3)" stroke-width="1.5" stroke-dasharray="4 4"/>
+      <path d="${path(x.curve_quarterly)}" fill="none" stroke="var(--s1)" stroke-width="2.5"/></svg>
+    <div class="f"><span>Solid: ${esc(J.district)}. Dashed: India. Descriptive; read the caveats.</span><a href="${J.page}" target="_top">Full page on CourtSight →</a></div>`;
+  document.getElementById("t").onchange=e=>draw(J,e.target.value);
+}
+</script>
+</body>
+</html>

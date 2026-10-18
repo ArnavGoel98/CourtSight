@@ -5,8 +5,9 @@
    than real filings grew. Evidence that early records are the slow survivors: among cases filed in the same year,
    those filed before their district's records become complete were decided much less often within 12 months.
 2. Effect of the correction (delayed entry from the completeness month) on national figures and on every
-   district x case type, and how sensitive it is to the completeness threshold (30% / 50% / 70%) and to the
-   collection-month rule (10% / 40% instead of 20%).
+   district x case type, and how sensitive it is to the completeness threshold (30% / 50% / 70%), to the
+   decision-recording rule (decisions >= 10% / 35% of filings instead of 20%) and to the collection-month rule
+   (10% / 40% instead of 20%). Units whose records never look complete are withheld and listed.
 3. Rank uncertainty. Each district's share pending after 3 years has a sampling interval (Greenwood); ranks are
    simulated from it, giving a 90% range for each district's rank within its case type.
 4. Units that are not districts. Some DDL "districts" are court complexes (e.g. Mumbai City Civil Court).
@@ -72,6 +73,9 @@ def main() -> None:
         T.COLLECTION_FRAC = frac
         nat[f"collection_{int(frac * 100)}"] = T.km_table(c.assign(entry_m=c["district_id"].map(e50), district_id=0), 200)
     T.COLLECTION_FRAC = 0.2
+    for ds in (0.1, 0.35):   # the decision-recording rule (decisions >= 20% of filings per window) moved both ways
+        e = T.digitisation_month(c, decision_share=ds)
+        nat[f"decisions_{int(ds * 100)}"] = T.km_table(c.assign(entry_m=c["district_id"].map(e), district_id=0), 200)
     by_type = pd.concat([v.set_index("case_type")[COLS].add_suffix(f"__{k}") for k, v in nat.items()], axis=1)
     by_type.round(4).reset_index().to_csv(OUT / "correction_by_type.csv", index=False)
 
@@ -91,6 +95,18 @@ def main() -> None:
     courts = names.loc[names["district_name"].str.contains(NOT_DISTRICT), "district_name"].tolist()
 
     yearly = c.groupby(c["f"] // 100)["n"].sum()
+    key = pd.read_csv(HERE / "ddl_compact" / "district_key.csv").sort_values("year")
+    key = key.assign(district_id=key["state_code"] * 1000 + key["dist_code"]).groupby("district_id")["district_name"].last()
+    filed = c.groupby("district_id")["n"].sum()
+    never = [d for d in entry.index[entry.isna()] if filed.get(d, 0) >= 1000]   # ignore near-empty units
+    withheld = sorted(f"{key.get(d, d)}" for d in never)
+    st = pd.read_csv(HERE / "ddl_compact" / "district_key.csv").groupby("state_code")["state_name"].first()
+    yr_f, yr_d = c["f"] // 100, c["d"] // 100
+    held_detail = {key.get(d, str(d)): {
+        "state": st.get(d // 1000, ""),
+        "filed_2010_2017": int(c.loc[(c["district_id"] == d) & (yr_f <= 2017), "n"].sum()),
+        "decided_2010_2017": int(c.loc[(c["district_id"] == d) & (yr_d >= 2010) & (yr_d <= 2017), "n"].sum()),
+        "decided_2018": int(c.loc[(c["district_id"] == d) & (yr_d == 2018), "n"].sum())} for d in sorted(never)}
     summary = {
         "recorded_filings_2010": int(yearly.loc[2010]), "recorded_filings_2018": int(yearly.loc[2018]),
         "share_of_cases_filed_before_records_complete": round(float(
@@ -107,6 +123,8 @@ def main() -> None:
         "civil_suit_median_rank_interval_width": int(width.median()),
         "civil_suit_share_rank_interval_over_50": round(float((width > 50).mean()), 3),
         "units_that_are_court_complexes": courts,
+        "units_withheld_records_never_complete": withheld,
+        "withheld_detail": held_detail,
     }
     (OUT / "summary.json").write_text(json.dumps(summary, indent=2, ensure_ascii=False) + "\n")
     print(json.dumps(summary, indent=2, ensure_ascii=False))

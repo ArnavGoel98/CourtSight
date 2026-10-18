@@ -12,6 +12,8 @@ and the weaker results are reported alongside the strong ones.
 ([हिन्दी में](https://arnavgoel98.github.io/CourtSight/calculator-hi.html)) ·
 **[District rankings](https://arnavgoel98.github.io/CourtSight/districts.html)** (sort, filter, download CSV) ·
 **[District map](https://arnavgoel98.github.io/CourtSight/map.html)** ·
+**[A page for every district](https://arnavgoel98.github.io/CourtSight/d/index.html)** (and a [JSON API](https://arnavgoel98.github.io/CourtSight/api/v1/index.json)) ·
+**[Press kit](https://arnavgoel98.github.io/CourtSight/press.html)** ·
 **[Working paper](https://arnavgoel98.github.io/CourtSight/paper.html)** ([PDF](docs/courtsight-paper.pdf))
 
 ## Results
@@ -49,13 +51,13 @@ the backlog is falling, would clear it in about 33 years. Code: [`backlog_clock.
 ### 4. How long a case takes, in every district
 Survival analysis on all 80.9 million cases. Cases still pending when the data was collected count as undecided up to
 each state's own collection date, and cases filed before a district's eCourts records became complete are counted
-only from that date (see [the audit](#auditing-our-own-results)). A civil case filed in 2010–2018 took a median
-**19 months** to decide and a criminal case **8 months**, but about **1 in 6 of either was still pending after 5
-years**. Across districts the median ranges from under a month to over 8 years. By case type: bail applications are
-decided almost at once (median **0 months**), divorce and family cases take a median **13 months**, motor-accident
+only from that date, and districts whose records hold almost no decisions are withheld (see
+[the audit](#auditing-our-own-results)). A civil case filed in 2010–2018 took a median **18 months** to decide and a
+criminal case **7 months**, but about **1 in 6 of either was still pending after 5 years**. Across districts the median ranges from under a month to over 8 years. By case type: bail applications are
+decided almost at once (median **0 months**), divorce and family cases take a median **12 months**, motor-accident
 claims **19 months**, sessions trials **20 months**, cheque-bounce (NI Act s.138) cases **21 months**, and **ordinary
-civil suits 30 months, with 27% still pending after 5 years**. Results for 617 districts and 8 special courts × 10
-case types, with names and 90% rank ranges:
+civil suits 29 months, with 27% still pending after 5 years**. Results for 599 districts and 8 special courts × 10
+case types (14 more withheld), with names and 90% rank ranges:
 [`results/time_to_decision/by_district_case_type.csv`](results/time_to_decision/by_district_case_type.csv),
 [`results/audit/rank_intervals.csv`](results/audit/rank_intervals.csv).
 
@@ -64,11 +66,18 @@ survival curve for every district and case type, next to the national curve and 
 
 ![Civil suits still pending after 3 years, by district](docs/map-civil-suits.svg)
 
-The slowest fifth of districts for civil suits clusters in the east: 30 of Bihar's 37 districts are in it. The
+The slowest fifth of districts for civil suits clusters in the east: 23 of Bihar's 30 ranked districts are in it. The
 [interactive map](https://arnavgoel98.github.io/CourtSight/map.html) covers every case type and measure, and has a
 layer showing where the records themselves are thin. Shapes are 2011 Census districts (DataMeet, CC BY 4.0); districts
 created later are pooled with their parent, and the hand-checked crosswalk is in
 [`sources/map_crosswalk.csv`](sources/map_crosswalk.csv) (`make_map.py`).
+
+**Every district has its own page** ([`district_pages.py`](district_pages.py), e.g.
+[Pune](https://arnavgoel98.github.io/CourtSight/d/maharashtra/pune.html)): every case type against India, a
+survival chart, a locator map, and the caveats that apply to that district (when its records became complete, its
+state's coverage of official filings, stale pending records, rank uncertainty). Pages work without JavaScript, so
+search engines can read them. The same figures are a static JSON API (`docs/api/v1/`), and an embeddable card
+(`embed.html`) lets a news site show any district.
 
 ### 5. 13.3 crore case-years of waiting
 The 80.8 million cases filed in 2010–2018 spent a combined **13.3 crore case-years** undecided, counting up to each
@@ -78,10 +87,11 @@ that clock was still running: the typical pending case was **2.3 years** old, **
 (`waiting_years.py`, [`results/waiting_years/`](results/waiting_years/)).
 
 ### 6. Slow districts are not explained by caseload (correlation, not cause)
-The share of civil cases still pending after 3 years ranges from **20%** in the fastest tenth of districts to **54%**
-in the slowest. Across 583 districts, caseload per courtroom barely predicts it (−0.4 points per SD, 95% interval
-−2.1 to +1.2). Longer judge tenure goes with faster courts (−2.7 points per SD), and a heavier criminal docket with
-slower civil cases (+2.5). Together these explain only **8%** of the variation; most of what makes a district slow is
+The share of civil cases still pending after 3 years ranges from **17%** in the fastest tenth of districts to **48%**
+in the slowest. Across 571 districts, caseload per courtroom does not make districts slower: holding district size
+fixed, busier courtrooms are if anything slightly faster (−1.8 points per SD, 95% interval −3.1 to −0.3). Longer judge
+tenure goes with faster courts (−1.8 points per SD), and larger districts (+3.1) and a heavier criminal docket (+1.9)
+with slower civil cases. Together these explain only **10%** of the variation; most of what makes a district slow is
 not in this data (`district_drivers.py`, [`results/district_drivers/`](results/district_drivers/)).
 
 ### 7. What a change of judge costs a courtroom: no reliable estimate (a negative result)
@@ -112,24 +122,32 @@ We looked for ways the data could mislead (`data_audit.py`, [`results/audit/`](r
 - **Digitisation (fixed).** Recorded filings triple from 2010 to 2018, far faster than real filings, because eCourts
   reached districts at different times and cases already decided by then were mostly never entered. Among 2010
   filings, 16% of those filed before their district's records became complete were decided within a year, against
-  39% of those filed after: the early records are the slow survivors. Every estimate now uses delayed entry from each
-  district's completeness month. Nationally the effect is modest (civil suits 32 → 30 months), but 834 of 4,678
-  district results moved by more than 5 points and one district moved 203 places in the civil-suit ranking.
-  Completeness threshold 30–70%: civil-suit median 29–32 months.
-- **Collection date (tested).** Moving the collection-month rule from 20% to 10% or 40%: civil-suit median 30–33 months.
+  42% of those filed after: the early records are the slow survivors. Every estimate now uses delayed entry from each
+  district's completeness month. Nationally the effect is modest (civil suits 32 → 29 months), but 1,031 of 4,596
+  district results moved by more than 5 points and one district moved 278 places in the civil-suit ranking.
+  Completeness threshold 30–70%: civil-suit median 28–30 months.
+- **Districts that never recorded decisions (fixed).** Filings alone can look complete while decisions are missing.
+  In 14 court units, including Gaya, Muzaffarpur, Bhojpur and Vaishali in Bihar and Chandauli in Uttar Pradesh, the
+  records hold almost no decisions before 2018 (Gaya: 33 in 2010–2017, 7,969 in 2018), so every case looked stuck,
+  and **the previous version of the map listed them as the slowest districts in India**. Completeness now also
+  requires recorded decisions of at least 20% of filings in every six-month window; units that never pass are
+  withheld, and each has a page explaining why. Thresholds of 10% or 35%: civil-suit median 29–30 months. The
+  never-complete units had also been included uncorrected in the national figures; that bug is fixed and tested.
+- **Collection date (tested).** Moving the collection-month rule from 20% to 10% or 40%: civil-suit median 29–32 months.
 - **Coverage of the court system (tested).** Compared with the filings implied by the official figures, the eCourts
   records hold **61% of cases filed in 2015–2018** (55% in 2015, 67% in 2018), from 8% in Tripura to roughly all in
   Bihar; Andaman & Nicobar, Arunachal Pradesh, Lakshadweep, Nagaland and Puducherry have none. The results describe
-  the courts eCourts recorded. Weighting each state by its official filings moves the civil-suit median from 30 to
-  31 months, and counting every record only from 2014 gives 29 (`coverage_audit.py`).
+  the courts eCourts recorded. Weighting each state by its official filings gives a civil-suit median of 30 months,
+  and counting every record only from 2014 gives 29 (`coverage_audit.py`).
 - **Are "pending" cases really pending? (tested).** A decision never entered would make a court look slow. Of cases
   pending at collection, 95% had a hearing listed in the year before (Bihar 99%), so most are live. Exceptions: West
   Bengal (53% not listed for over a year) and Odisha (29%), whose delays may be overstated.
-- **The "speed-up" (mostly explained).** Within complete records, the share decided within a year rises from 39%
-  (2010 filings) to 56% (2017). Case mix explains little. In states whose coverage was steady in 2015–18 it rose
-  45% → 58%; in states whose records were still filling in, 23% → 56%. Most of the rise is records being completed
-  court by court, below the district-level correction; some may be real.
-- **Rank precision (fixed).** Every published rank carries a 90% range; for civil suits the median range spans 18 places.
+- **The "speed-up" (open).** Within complete records, the share decided within a year rises from 42% (2010 filings)
+  to 56% (2017); 44% → 54% at a fixed case mix. Before the missing-decisions fix, the rise sat mostly in states whose
+  records were still filling in, and the previous version said so. After it, states with steady coverage rose
+  47% → 59% and states still filling in 53% → 56%, so coverage no longer explains it. Part is case mix; the rest may be
+  a real speed-up, which this data cannot confirm.
+- **Rank precision (fixed).** Every published rank carries a 90% range; for civil suits the median range spans 19 places.
 - **Units that are not districts (fixed).** 8 units are special courts, tribunals or court complexes (two of them,
   Maharashtra's Industrial and Labour Courts and Cooperative Appellate Court, were missed by the first pass and
   caught by the map's tests) and are labelled as such.
@@ -156,6 +174,7 @@ We looked for ways the data could mislead (`data_audit.py`, [`results/audit/`](r
 | `compress_ddl.py`, `ddl_compact/` | Shrinks the 5 GB DDL download to aggregated counts on your own computer |
 | `grade_state_2019.py`, `naive_benchmarks.py` | 2019 grading and the strict benchmarks |
 | `build_site.py`, `site/`, `docs/` | Project site and calculator (built from `results/`, served from `docs/`); `site/card.html` is the link-preview image (`docs/og.png`) |
+| `district_pages.py`, `docs/d/`, `docs/api/v1/` | A static page and a JSON file for every district (written by `build_site.py`); `site/embed.html` is the embeddable card, `site/press.html` the press kit |
 | `backlog_clock.py`, `time_to_decision.py`, `judge_transfer.py` | Clearance clock, time to decision, judge handover study |
 | `data_audit.py`, `coverage_audit.py` | Checks for digitisation bias, cut-off rules, rank precision, special courts, coverage against official filings and the apparent speed-up |
 | `make_map.py`, `sources/india_districts_2011.json`, `sources/map_crosswalk.csv` | District map geometry (Census 2011 via DataMeet) and the DDL-to-2011 district crosswalk |

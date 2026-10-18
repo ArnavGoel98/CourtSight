@@ -6,6 +6,9 @@
   docs/calc-data.json   district x case type figures shared by the calculator (both languages) and the rankings page;
                         curves are stored as per-mille drops (see _delta)
   docs/districts.html   sortable, filterable rankings of every district, with CSV download
+  docs/press.html       key numbers with sources, downloads, embedding and citation
+  docs/embed.html       an embeddable district card (reads docs/api/v1/, written by district_pages.py)
+  docs/d/, docs/api/v1/ one static page and one JSON file per district (district_pages.py)
   docs/map.html, docs/map-data.json  the same figures on a map of India's 2011 Census districts (make_map.py);
                         docs/map-civil-suits.svg is a static version for the paper and README
   docs/calculator.html  "how long will my case take?": survival curves for every district x case type
@@ -31,7 +34,7 @@ HERE: Final = Path(__file__).resolve().parent
 RES: Final = HERE / "results"
 SITE: Final = HERE / "site"
 BASE: Final = "https://arnavgoel98.github.io/CourtSight/"
-PAGES: Final = ["", "calculator.html", "districts.html", "map.html", "paper.html", "calculator-hi.html",
+PAGES: Final = ["", "calculator.html", "districts.html", "map.html", "paper.html", "press.html", "calculator-hi.html",
                 "courtsight-paper.pdf"]
 LABELS: Final = {
     "civ_suit": "Civil suit (property, contract, money)",
@@ -189,9 +192,13 @@ def map_data() -> dict[str, object]:
     cw = pd.read_csv(HERE / "sources" / "map_crosswalk.csv")
     links += [(int(r.district_id), int(r.census_2011_code), r.relation) for r in cw.itertuples()]
     units: dict[str, list[list[str]]] = {}
+    withheld: dict[str, list[str]] = {}       # shapes whose court records never look complete (see data_audit)
+    held = set(json.loads((RES / "audit" / "summary.json").read_text())["units_withheld_records_never_complete"])
     for d, code, rel in sorted(links):
         if d in names.index:
             units.setdefault(str(code), []).append([*names.loc[d], rel])
+        elif key.loc[d, "district_name"] in held:
+            withheld.setdefault(str(code), []).append(key.loc[d, "district_name"])
     cov = pd.read_csv(RES / "audit" / "coverage_by_state.csv").set_index("state")
     cov = cov.loc[cov["group"] != "too small to classify", "coverage_2015_18"]   # official figures too noisy
     from coverage_audit import state_units
@@ -199,7 +206,7 @@ def map_data() -> dict[str, object]:
     ddl_states = key.groupby("state_code")["state_name"].first()
     coverage = {ddl_states[k]: _num(cov.get(v), 2) for k, v in su.items() if v in cov.index}
     return {"w": geo["w"], "h": geo["h"], "source": geo["source"], "names": geo["names"], "paths": geo["paths"],
-            "units": units, "coverage": coverage}
+            "units": units, "withheld": withheld, "coverage": coverage}
 
 
 def map_svg(m: dict[str, object], case_type: str = "civ_suit") -> str:
@@ -277,6 +284,9 @@ def paper_vars(d: dict) -> dict[str, str]:
         "j_events": f"{d['judge']['events']:,}", "j_districts": str(d["judge"]["districts"]),
         "j_true": f"{-J['true_date'] * 100:.0f}", "j_p18": f"{-J['18_months_earlier'] * 100:.0f}",
         "j_p30": f"{-J['30_months_earlier'] * 100:.0f}", "j_link": f"{d['judge']['link'] * 100:.0f}",
+        "load_phrase": ("goes with slightly faster courts once district size is held fixed, not slower ones"
+                        if c("log_filings_per_court")["hi"] < 0 else "goes with slower courts"
+                        if c("log_filings_per_court")["lo"] > 0 else "barely predicts slowness"),
         "skill_lo": f"{d['model']['skill_vs_best_naive'][0] * 100:.0f}", "skill_hi": f"{d['model']['skill_vs_best_naive'][1] * 100:.0f}",
         "f50": cr(F["q50"]), "f10": cr(F["q10"]), "f90": cr(F["q90"]), "locked_on": F["locked_on"], "commit": F["commit"],
         "sha": F["sha"]["forecast_states_2026.csv"],
@@ -300,8 +310,24 @@ def audit_vars(a: dict) -> dict[str, str]:
         "au_rwidth": str(a["civil_suit_median_rank_interval_width"]),
         "au_rwide": pct(a["civil_suit_share_rank_interval_over_50"]),
         "au_ncourts": str(len(a["units_that_are_court_complexes"])),
+        "wh_n": str(len(a["units_withheld_records_never_complete"])),
+        "wh_gaya_d": f"{a['withheld_detail']['Gaya']['decided_2010_2017']:,}",
+        "wh_gaya_18": f"{a['withheld_detail']['Gaya']['decided_2018']:,}",
+        "au_medd": "–".join(f"{v:.0f}" for v in sorted({t["median_months__decisions_10"], t["median_months__decisions_35"]})),
         **coverage_vars(a),
     }
+
+
+def speedup_verdict(sp: dict) -> str:
+    """What the split by coverage says about the rise in early decisions (worded from the numbers, not by hand)."""
+    rs = sp["stable_coverage_states"][7] - sp["stable_coverage_states"][0]
+    rg = sp["growing_coverage_states"][7] - sp["growing_coverage_states"][0]
+    mix = (sp["all_complete_records"][7] - sp["all_complete_records"][0]) - (sp["fixed_case_mix"][7] - sp["fixed_case_mix"][0])
+    if rg > rs + 0.1:
+        return ("Most of the rise is therefore records being completed below the district level; some may be a real "
+                "speed-up.")
+    return (f"The rise is no larger where records were still filling in, so coverage does not explain it. About "
+            f"{mix * 100:.0f} points of it is case mix; the rest may be a real speed-up, which this data cannot confirm.")
 
 
 def coverage_vars(a: dict) -> dict[str, str]:
@@ -319,6 +345,7 @@ def coverage_vars(a: dict) -> dict[str, str]:
         "pa_bihar": f"{cv['pending_not_listed_in_12m_bihar'] * 100:.1f}",
         "pa_wb": pct(cv["pending_not_listed_in_12m_worst"]["West Bengal"]),
         "pa_od": pct(cv["pending_not_listed_in_12m_worst"]["Orissa"]),
+        "sp_verdict": speedup_verdict(sp),
         "sp_m10": pct(sp["fixed_case_mix"][0]), "sp_m17": pct(sp["fixed_case_mix"][7]),
         "sp_s10": pct(sp["stable_coverage_states"][0]), "sp_s17": pct(sp["stable_coverage_states"][7]),
         "sp_g10": pct(sp["growing_coverage_states"][0]), "sp_g17": pct(sp["growing_coverage_states"][7]),
@@ -357,9 +384,14 @@ def main() -> None:
     (HERE / "docs" / "map-civil-suits.svg").write_text(map_svg(md))
     print(f"wrote docs/map-data.json ({(HERE / 'docs' / 'map-data.json').stat().st_size / 1e3:.0f} kB)")
     render("map.html", {}, HERE / "docs" / "map.html", fill=n)
+    render("embed.html", {}, HERE / "docs" / "embed.html", fill=n)
+    render("press.html", {}, HERE / "docs" / "press.html", fill=paper_vars(sd) | n)
+    import district_pages
+    pages = list(PAGES)
+    print(f"wrote {district_pages.build(pages)} district pages in docs/d/")
     (HERE / "docs" / "sitemap.xml").write_text('<?xml version="1.0" encoding="UTF-8"?>\n'
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-        + "".join(f"  <url><loc>{BASE}{p}</loc></url>\n" for p in PAGES) + "</urlset>\n")
+        + "".join(f"  <url><loc>{BASE}{p}</loc></url>\n" for p in pages) + "</urlset>\n")
 
 
 if __name__ == "__main__":
