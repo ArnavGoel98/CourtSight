@@ -54,23 +54,37 @@ def collection_month(c: pd.DataFrame) -> pd.Series:
     return months(per.loc[per["n"] >= COLLECTION_FRAC * per["base"]].groupby("state")["d"].max())
 
 
-def digitisation_month(c: pd.DataFrame, share: float = 0.5) -> pd.Series:
+def digitisation_month(c: pd.DataFrame, share: float = 0.5, decision_share: float = 0.2) -> pd.Series:
     """Per district: the month from which its case records look complete.
 
     eCourts reached districts at different times, and when a district went online its already-decided cases were
     mostly never entered: recorded 2010 filings are under half the 2016-17 level in 85% of districts. So for each
     district this is the first month from which every 6-month window up to Dec 2017 holds at least `share` of the
     district's 2016-17 average filings. Cases filed earlier were seen only if still pending then (left truncation).
+
+    Filings alone can look complete while decisions are missing: some districts entered their pending cases but
+    recorded almost no decisions for years (Gaya: 33 decisions in 2010-2017, then 7,969 in 2018), which makes every
+    case look stuck. So every window from July 2010 must also record decisions of at least `decision_share` of
+    that window's filings (nationally the ratio is about 0.65; the first half of 2010 is exempt because few cases in
+    the data could have been decided yet). A genuinely slow district that fails this only loses early data: entering
+    later is still unbiased.
     """
-    f = c.groupby(["district_id", "f"])["n"].sum().reset_index()
-    f["m"] = months(f["f"])
     lo, hi = months(pd.Series([201001])).iloc[0], months(pd.Series([201712])).iloc[0]
-    f = f.loc[(f["m"] >= lo) & (f["m"] <= hi)]
-    wide = f.pivot_table(index="district_id", columns="m", values="n", aggfunc="sum").reindex(
-        columns=range(lo, hi + 1)).fillna(0)
-    base = wide.loc[:, months(pd.Series([201601])).iloc[0]:].mean(axis=1)
-    win = wide.T.rolling(6).sum().shift(-5).T.loc[:, :hi - 5]      # filings in [m, m+5]
-    ok = win.ge(6 * share * base, axis=0)
+
+    def monthly(col: str) -> pd.DataFrame:
+        x = c.loc[c[col] > 0].groupby(["district_id", col])["n"].sum().reset_index()
+        x["m"] = months(x[col])
+        x = x.loc[(x["m"] >= lo) & (x["m"] <= hi)]
+        return x.pivot_table(index="district_id", columns="m", values="n", aggfunc="sum").reindex(
+            columns=range(lo, hi + 1)).fillna(0)
+
+    fil = monthly("f")
+    dec = monthly("d").reindex(fil.index).fillna(0)
+    base = fil.loc[:, months(pd.Series([201601])).iloc[0]:].mean(axis=1)
+    window = lambda w: w.T.rolling(6).sum().shift(-5).T.loc[:, :hi - 5]      # counts in [m, m+5]
+    fw, dw = window(fil), window(dec)
+    ok = fw.ge(6 * share * base, axis=0)
+    ok &= dw.ge(decision_share * fw) | (fw.columns < months(pd.Series([201007])).iloc[0])
     good_after = ok.loc[:, ::-1].cummin(axis=1).loc[:, ::-1]        # True from m onwards only if every later window is ok
     first = good_after.idxmax(axis=1).where(good_after.any(axis=1))
     return first.rename("digitised_m")
@@ -89,7 +103,9 @@ def km_table(c: pd.DataFrame, min_cases: int, entry: pd.Series | None = None) ->
     ent = np.zeros(len(c), dtype=np.int64)
     if entry is not None or "entry_m" in c:   # entry_m: per-row entry month, for pooled (e.g. national) tables
         e = (c["entry_m"] if "entry_m" in c else c["district_id"].map(entry)).to_numpy(dtype=float)
-        ent = np.nan_to_num(e - c["fm"].to_numpy(), nan=0.0).clip(0, H).astype(np.int64)
+        never = ~np.isfinite(e)            # records never look complete: no case from there can be used
+        ent = np.nan_to_num(e - c["fm"].to_numpy(), nan=0.0, posinf=0.0).clip(0, H).astype(np.int64)
+        dur = np.where(never, -1, dur)
     keep = dur >= ent
     g = pd.DataFrame({"district_id": c["district_id"].to_numpy(), "case_type": c["case_type"].to_numpy(),
                       "dur": dur, "event": event.astype(np.int64), "ent": ent, "n": c["n"].to_numpy()})[keep]

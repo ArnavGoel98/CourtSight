@@ -40,7 +40,26 @@ def test_delayed_entry() -> None:
     assert np.isclose(curve[10], 0.375)                       # month 30
 
 
+def test_missing_decisions() -> None:
+    """Two districts file 100 cases every month of 2010-2017. District 1001 decides half of each month's filings six
+    months later; district 1002 records no decision at all until 2018 (like Gaya). Filings look complete in both,
+    but only 1001's records are: 1002 must never count as complete, and its cases must not reach the estimates."""
+    ym = [y * 100 + m for y in range(2010, 2018) for m in range(1, 13)]
+    later = lambda v, k: (v // 100 + (v % 100 + k - 1) // 12) * 100 + (v % 100 + k - 1) % 12 + 1
+    rows = []
+    for f in ym:
+        rows += [(1001, f, later(f, 6), "civil", 50), (1001, f, 0, "civil", 50), (1002, f, 0, "civil", 100)]
+    rows += [(1002, 201601, 201800 + m, "civil", 1) for m in range(1, 13)]
+    c = pd.DataFrame(rows, columns=["district_id", "f", "d", "case_type", "n"])
+    e = ttd.digitisation_month(c)
+    assert e[1001] == ttd.months(pd.Series([201001])).iloc[0]
+    assert np.isnan(e[1002])
+    t = ttd.km_table(c, min_cases=50, entry=e)
+    assert set(t["district_id"]) == {1001}
+
+
 if __name__ == "__main__":
     test_km_simple()
     test_delayed_entry()
+    test_missing_decisions()
     print("time-to-decision tests passed")

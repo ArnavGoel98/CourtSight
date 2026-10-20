@@ -140,10 +140,10 @@ html[lang=hi] .kicker{font-family:inherit;letter-spacing:0;font-size:.85rem}
 </style>
 </head>
 <body>
-<nav><div class="wrap"><b>CourtSight</b><a href="calculator.html" aria-current="page" data-i="nav2">Calculator</a><a href="districts.html" data-i="nav4">Rankings</a><a href="map.html" data-i="nav5">Map</a><a href="index.html" data-i="nav1">Findings</a><a href="paper.html" data-i="nav3">Paper</a><a id="lang" href="calculator-hi.html" lang="hi">हिन्दी</a></div></nav>
+<nav><div class="wrap"><b>CourtSight</b><a href="calculator.html" aria-current="page" data-i="nav2">Calculator</a><a href="districts.html" data-i="nav4">Rankings</a><a href="map.html" data-i="nav5">Map</a><a href="d/index.html" data-i="nav6">Districts</a><a href="index.html" data-i="nav1">Findings</a><a href="paper.html" data-i="nav3">Paper</a><a id="lang" href="calculator-hi.html" lang="hi">हिन्दी</a></div></nav>
 <main class="wrap">
 <header class="hero" style="padding:36px 0 8px">
-  <div class="kicker" data-i="kicker">80.9 million cases · 617 districts · 10 case types</div>
+  <div class="kicker" data-i="kicker">80.9 million cases · 599 districts · 10 case types</div>
   <h1 data-i="h1">How long will my case take?</h1>
   <p class="lede" data-i="lede">How long cases like yours took in your district court, based on every case filed there in 2010–2018.</p>
 </header>
@@ -166,6 +166,8 @@ html[lang=hi] .kicker{font-family:inherit;letter-spacing:0;font-size:.85rem}
   <div class="actions">
     <button class="btn" id="share" type="button" data-i="share">Copy link to this result</button>
     <button class="btn ghost" id="cmp-open" type="button" data-i="cmp">+ Compare with another district</button>
+    <a class="btn ghost" id="report" data-i="report" href="d/index.html">Full district page</a>
+    <button class="btn ghost" id="embed" type="button" data-i="embed">Embed on your site</button>
   </div>
   <div class="search" id="cmp-box" hidden style="margin-top:14px">
     <label for="q2" data-i="q2">Compare with</label>
@@ -455,7 +457,7 @@ const fmtPP = v => (v > 0 ? "+" : "") + (v * 100).toFixed(Math.abs(v) < 0.1 ? 1 
 function decodeCurves(j){const f=r=>{let v=1000;r[r.length-1]=r[r.length-1].map(d=>d==null?null:(v-=d)/1000)};
   j.national.forEach(f);Object.values(j.states).forEach(s=>Object.values(s).forEach(l=>l.forEach(f)));return j}
 const LANG="hi", HI=LANG==="hi";
-const HIS={nav1:"निष्कर्ष",nav2:"कैलकुलेटर",kicker:"8.09 करोड़ मुक़दमे · 617 ज़िले · 10 तरह के मामले",
+const HIS={nav1:"निष्कर्ष",nav2:"कैलकुलेटर",kicker:"8.09 करोड़ मुक़दमे · 599 ज़िले · 10 तरह के मामले",
  h1:"मेरे मुक़दमे में कितना समय लगेगा?",lede:"आपके ज़िला न्यायालय में आप जैसे मामलों में कितना समय लगा: 2010 से 2018 के बीच वहाँ दर्ज हर मुक़दमे के आधार पर।",
  st:"राज्य",di:"ज़िला",ty:"मामले का प्रकार",ch:"हर महीने, कितने मामले अब भी लंबित थे",lg2:"पूरा भारत, इसी प्रकार के मामले",lg3:"राज्य के अन्य ज़िले",
  cap:"कैपलान–मायर अनुमान। डेटा इकट्ठा होने के समय जो मामले लंबित थे, उन्हें उस तारीख़ तक अनिर्णीत गिना गया है। किसी भी महीने का आँकड़ा देखने के लिए चार्ट पर कर्सर ले जाएँ।",
@@ -465,7 +467,7 @@ const HIS={nav1:"निष्कर्ष",nav2:"कैलकुलेटर",ki
 <li>यह अतीत का विवरण है, किसी एक मुक़दमे की भविष्यवाणी नहीं: 2018 के बाद अदालतें बदली हैं, और हर मुक़दमा अपने तथ्यों और तारीख़ों पर निर्भर करता है।</li>
 <li>मामलों के प्रकार अदालतों द्वारा इस्तेमाल किए गए नामों से समूहित किए गए हैं; जो समूहित नहीं हो सके वे "अन्य" में हैं। जिन ज़िलों में किसी प्रकार के 200 से कम मामले हैं, वे नहीं दिखाए गए। उच्च न्यायालय और सर्वोच्च न्यायालय शामिल नहीं हैं। राज्यों और ज़िलों के नाम मूल डेटा की तरह अंग्रेज़ी में हैं।</li>`,
  foot:`CourtSight: अर्णव गोयल · <a href="https://github.com/ArnavGoel98/CourtSight">कोड और विधि</a> · डेटा: डेवलपमेंट डेटा लैब, ई-कोर्ट्स रिकॉर्ड 2010–2018 (CC BY-NC-SA 4.0)।`};
-Object.assign(HIS,{nav3:"शोध-पत्र",nav4:"रैंकिंग",nav5:"नक़्शा",q:"1. आपका ज़िला",tl:"2. मामले का प्रकार",share:"इस नतीजे का लिंक कॉपी करें",cmp:"+ किसी दूसरे ज़िले से तुलना करें",q2:"इससे तुलना करें"});
+Object.assign(HIS,{nav3:"शोध-पत्र",nav4:"रैंकिंग",nav5:"नक़्शा",nav6:"ज़िले",q:"1. आपका ज़िला",tl:"2. मामले का प्रकार",share:"इस नतीजे का लिंक कॉपी करें",report:"ज़िले का पूरा पेज",embed:"अपनी वेबसाइट पर लगाएँ",cmp:"+ किसी दूसरे ज़िले से तुलना करें",q2:"इससे तुलना करें"});
 const HIL={civ_suit:"दीवानी वाद (संपत्ति, अनुबंध, पैसा)",civ_execution:"निष्पादन (डिक्री लागू कराना)",civ_family:"तलाक़ / पारिवारिक",
  civ_mact:"मोटर दुर्घटना दावा",civ_misc:"अन्य दीवानी आवेदन",crim_bail:"ज़मानत आवेदन",crim_magisterial:"मजिस्ट्रेट के समक्ष आपराधिक मामला",
  crim_sessions:"सत्र विचारण (गंभीर अपराध)",crim_ni138:"चेक बाउंस (एनआई एक्ट धारा 138)",other:"अन्य / अवर्गीकृत"};
@@ -534,6 +536,14 @@ $("share").onclick=async()=>{const b=$("share"),old=b.textContent;
   catch(e){prompt(HI?"यह लिंक कॉपी करें:":"Copy this link:",location.href)}
   setTimeout(()=>b.textContent=old,1800)};
 
+const slug=x=>x.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")||"x";
+$("embed").onclick=async()=>{const b=$("embed"),old=b.textContent,[s,d]=st.A;
+  const src=location.href.replace(/calculator(-hi)?\.html.*$/,"")+`embed.html#s=${encodeURIComponent(s)}&d=${encodeURIComponent(d)}&t=${st.t}`;
+  const code=`<iframe src="${src}" title="How long court cases take in ${d}" width="100%" height="440" style="border:0;max-width:540px" loading="lazy"></iframe>`;
+  try{await navigator.clipboard.writeText(code);b.textContent=HI?"कोड कॉपी हो गया ✓":"Embed code copied ✓"}
+  catch(e){prompt(HI?"यह कोड कॉपी करें:":"Copy this code:",code)}
+  setTimeout(()=>b.textContent=old,2200)};
+
 function chips(list){
   const box=$("types");box.innerHTML="";
   if(!row(list,st.t))st.t=row(list,"civ_suit")?"civ_suit":list[0][0];
@@ -558,6 +568,7 @@ function render(){
   const h=`#s=${encodeURIComponent(s)}&d=${encodeURIComponent(d)}&t=${st.t}`+(st.B?`&cs=${encodeURIComponent(st.B[0])}&cd=${encodeURIComponent(st.B[1])}`:"");
   history.replaceState(null,"",h); $("lang").href=(HI?"calculator.html":"calculator-hi.html")+h;
   if(document.activeElement!==$("q"))$("q").value=`${d}, ${s}`;
+  $("report").href=`d/${slug(s)}/${slug(d)}.html`;
   if(st.B&&document.activeElement!==$("q2")){$("q2").value=`${st.B[1]}, ${st.B[0]}`;$("cmp-box").hidden=false;$("cmp-open").hidden=true}
   const med=r[C.median_months], p90=r[C.p90_months], lab=label(st.t), N=r[C.cases].toLocaleString("en-IN");
   $("head").textContent=med==null?(HI?"आधे से ज़्यादा मामले अब भी लंबित":"Over half still pending"):fmtM(med);
