@@ -121,9 +121,16 @@ def site_data() -> dict[str, object]:
                   .loc[["civ_suit", "crim_magisterial", "crim_ni138", "crim_sessions", "civ_family"]]
                   .round(3).reset_index().to_dict("records"),
                   "coverage": json.loads((RES / "audit" / "coverage.json").read_text()),
+                  "age_check": json.loads((RES / "audit" / "age_check.json").read_text()),
                   "speedup": pd.read_csv(RES / "audit" / "speedup_by_year.csv").round(3).to_dict("list"),
                   "sens": pd.read_csv(RES / "audit" / "national_sensitivity.csv").set_index("case_type")
                   .loc[["civ_suit", "crim_magisterial"]].round(3).reset_index().to_dict("records")},
+        "hearings": {**json.loads((RES / "hearings" / "national.json").read_text()),
+                     "stages": pd.read_csv(RES / "hearings" / "by_stage.csv").round(4).to_dict("records"),
+                     "fifths": pd.read_csv(RES / "hearings" / "gap_fifths.csv").round(4).to_dict("list"),
+                     "coef": pd.read_csv(RES / "hearings" / "coefficients.csv").round(4).to_dict("records")},
+        "decided_only": pd.read_csv(RES / "time_to_decision" / "national_decided_only_case_type.csv").round(3)
+        .to_dict("records"),
         "slow5": _slowest_fifth(),
         "withheld": withheld_pages(),
         "district_keys": sorted({(r.state_name, r.district_name) for r in pd.read_csv(
@@ -215,8 +222,13 @@ def map_data() -> dict[str, object]:
     su = state_units()
     ddl_states = key.groupby("state_code")["state_name"].first()
     coverage = {ddl_states[k]: _num(cov.get(v), 2) for k, v in su.items() if v in cov.index}
+    hd = pd.read_csv(RES / "hearings" / "districts.csv").dropna(subset=["district_name"])
+    stale = set(json.loads((RES / "hearings" / "national.json").read_text())["stale_record_states_left_out"])
+    hearing = {f"{r.state_name}|{r.district_name}": [_num(r.gap_days, 1), int(r.with_next_date), _num(r.share_service),
+                                                      int(r.state_name in stale)]
+               for r in hd.itertuples() if r.with_next_date >= 1000}
     return {"w": geo["w"], "h": geo["h"], "source": geo["source"], "names": geo["names"], "paths": geo["paths"],
-            "units": units, "withheld": withheld, "coverage": coverage}
+            "units": units, "withheld": withheld, "coverage": coverage, "hearing": hearing}
 
 
 def map_svg(m: dict[str, object], case_type: str = "civ_suit") -> str:
@@ -301,6 +313,40 @@ def paper_vars(d: dict) -> dict[str, str]:
         "f50": cr(F["q50"]), "f10": cr(F["q10"]), "f90": cr(F["q90"]), "locked_on": F["locked_on"], "commit": F["commit"],
         "sha": F["sha"]["forecast_states_2026.csv"],
         **audit_vars(d["audit"]),
+        **hearing_vars(d),
+    }
+
+
+def hearing_vars(d: dict) -> dict[str, str]:
+    h, a = d["hearings"], d["audit"]["age_check"]
+    st = {r["group"]: r for r in h["stages"]}
+    co = {(r["outcome"], r["feature"]): r for r in h["coef"]}
+    nv = {r["case_type"]: r for r in d["decided_only"]}
+    pct = lambda v: f"{v * 100:.0f}"
+    f1 = lambda v: f"{v * 100:.1f}".replace("-", "−")
+    f = h["fifths"]
+    return {
+        "hg_n": f"{h['pending_listed'] / 1e7:.2f}", "hg_service": pct(st["service"]["share"]),
+        "hg_evidence": pct(st["evidence"]["share"]), "hg_charge": pct(st["charge"]["share"]),
+        "hg_hearing": pct(st["hearing"]["share"]), "hg_final": pct(st["final"]["share"]),
+        "hg_gap": f"{h['gap_days_national_without_stale_states']:.0f}",
+        "hg_gap_service": f"{st['service']['gap_days']:.0f}", "hg_gap_evidence": f"{st['evidence']['gap_days']:.0f}",
+        "hg_stale": ", ".join("Odisha" if x == "Orissa" else x for x in h["stale_record_states_left_out"]),
+        "hg_p10": f"{h['gap_days_district_p10_p50_p90'][0]:.0f}", "hg_p90": f"{h['gap_days_district_p10_p50_p90'][2]:.0f}",
+        "hg_c1": pct(f["pending_3y_criminal"][0]), "hg_c5": pct(f["pending_3y_criminal"][-1]),
+        "hg_v1": pct(f["pending_3y_civil"][0]), "hg_v5": pct(f["pending_3y_civil"][-1]),
+        "hg_bc": f1(co[("criminal", "log_gap_days")]["coef_per_sd"]), "hg_bc_lo": f1(co[("criminal", "log_gap_days")]["lo"]),
+        "hg_bc_hi": f1(co[("criminal", "log_gap_days")]["hi"]), "hg_bv": f1(co[("civil", "log_gap_days")]["coef_per_sd"]),
+        "hg_r2c": pct(h["r2_with_gap"]["criminal"]), "hg_r2v": pct(h["r2_with_gap"]["civil"]),
+        "hg_wc": f"{h['spearman_gap_vs_pending_3y_within_states']['criminal']:.2f}",
+        "hg_wv": f"{h['spearman_gap_vs_pending_3y_within_states']['civil']:.2f}",
+        "hg_police": f"{h['label_checks']['police_reports_filed_as_final'] * 100:.1f}",
+        "hg_blank": f"{h['label_checks']['blank_label'] * 100:.1f}",
+        "nv_civ": f"{nv['civ_suit']['median_months_decided_only']:.0f}", "nv_mag": f"{nv['crim_magisterial']['median_months_decided_only']:.0f}",
+        "km_mag": f"{nv['crim_magisterial']['median_months_kaplan_meier']:.0f}",
+        "ag_states": str(a["states"]), "ag_r13": pct(a["records_share"]["1_3y"]), "ag_r35": pct(a["records_share"]["3_5y"]),
+        "ag_r510": pct(a["records_share"]["5_10y"]), "ag_n13": pct(a["njdg_share"]["1_3y"]),
+        "ag_n35": pct(a["njdg_share"]["3_5y"]), "ag_n510": pct(a["njdg_share"]["5_10y"]),
     }
 
 

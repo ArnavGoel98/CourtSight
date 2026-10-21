@@ -1,0 +1,49 @@
+group,label,n,share_of_group
+evidence,evidence,4119021,0.9004
+service,appearance,1788204,0.2281
+hearing,hearing,1600446,0.4799
+service,summons,1318129,0.1682
+final,argument,896558,0.4215
+charge,issue,805423,0.5708
+service,appearence,698864,0.0892
+service,appereance,436954,0.0557
+final,order,421136,0.198
+hearing,misc,316450,0.0949
+unclear,,295866,0.1488
+service,process to accused,269399,0.0344
+service,appearance of accused,246915,0.0315
+charge,charge,236288,0.1674
+service,appearance of accused/ surety,228964,0.0292
+service,steps,215474,0.0275
+final,awated for final form / chargesheet,190873,0.0897
+unclear,not heard cases,178174,0.0896
+hearing,written statement,177777,0.0533
+unclear,call on,168062,0.0845
+final,final form,122812,0.0577
+hearing,w.s.,112263,0.0337
+evidence,for trial,108746,0.0238
+unclear,no sitting notified,103731,0.0522
+final,f. o.,94702,0.0445
+final,objection/disposal,90868,0.0427
+hearing,bail,83352,0.025
+unclear,unready board,79544,0.04
+hearing,referred to lokadalat,77301,0.0232
+evidence,trial,73141,0.016
+evidence,examination,70193,0.0153
+final,judgement,68579,0.0322
+unclear,adjourned,66970,0.0337
+charge,charge / plea hearing,60173,0.0426
+hearing,ia / ea pending / cmp pending / crp pending / cma pending,59920,0.018
+final,disposal of 6c,55512,0.0261
+hearing,reply,55350,0.0166
+charge,consideration,53303,0.0378
+unclear,executionof w.a/wpa,44652,0.0225
+charge,framing of charge or  plea,35416,0.0251
+charge,police paper,33429,0.0237
+charge,plea / particulars,30699,0.0218
+charge,framing of charge/ plea,29391,0.0208
+unclear,call with ias,28397,0.0143
+evidence,cross examination of pet,27402,0.006
+evidence,enquiry & witness,22305,0.0049
+evidence,enquiry and witness,14755,0.0032
+evidence,witness,14192,0.0031

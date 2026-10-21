@@ -15,6 +15,8 @@ Output per district x case type: cases, median months to decision (blank if over
 the data ends), 90th percentile, and the share still pending after 1, 3 and 5 years, with a 95% interval
 (Greenwood) on the 3-year figure. The whole curve (share still pending every 3 months, 0-120) goes to
 curves_*.csv for the charts. Rows with fewer than --min-cases cases are dropped.
+national_decided_only_*.csv sets the national Kaplan-Meier median beside the statistic usually quoted, time to
+decision averaged over decided cases only, to show how far leaving out the pending cases understates delay.
 """
 from __future__ import annotations
 
@@ -88,6 +90,24 @@ def digitisation_month(c: pd.DataFrame, share: float = 0.5, decision_share: floa
     good_after = ok.loc[:, ::-1].cummin(axis=1).loc[:, ::-1]        # True from m onwards only if every later window is ok
     first = good_after.idxmax(axis=1).where(good_after.any(axis=1))
     return first.rename("digitised_m")
+
+
+def decided_only(c: pd.DataFrame) -> pd.DataFrame:
+    """What the usual statistic says: time to decision averaged over cases already decided by collection, ignoring
+    the ones still waiting. Compared with Kaplan-Meier, it shows how much leaving out pending cases understates delay."""
+    cut = collection_month(c)
+    c = c.assign(fm=months(c["f"]), cut=(c["district_id"] // 1000).map(cut))
+    c = c.loc[c["cut"].notna() & (c["fm"] <= c["cut"]) & (c["d"] > 0)]
+    dm = months(c["d"])
+    c = c.assign(m=(dm - c["fm"]).clip(lower=0)).loc[dm <= c["cut"]]
+    rows = []
+    for ct, g in c.groupby("case_type"):
+        h = g.groupby("m")["n"].sum().sort_index()
+        cum = h.cumsum() / h.sum()
+        rows.append({"case_type": ct, "decided_cases": int(h.sum()),
+                     "median_months_decided_only": float(cum.index[np.searchsorted(cum.to_numpy(), 0.5)]),
+                     "mean_months_decided_only": float((h.index.to_numpy() * h.to_numpy()).sum() / h.sum())})
+    return pd.DataFrame(rows)
 
 
 def km_table(c: pd.DataFrame, min_cases: int, entry: pd.Series | None = None) -> pd.DataFrame:
@@ -171,7 +191,8 @@ def main() -> None:
         k["district_id"] = k["state_code"] * 1000 + k["dist_code"]
         t = t.merge(k[["district_id", "state_name", "district_name"]], on="district_id", how="left")
     curve_cols = ["district_id", "case_type", "curve_q"]
-    t[curve_cols].to_csv(args.out / f"curves_by_district_{level}.csv.gz", index=False)
+    t[curve_cols].to_csv(args.out / f"curves_by_district_{level}.csv.gz", index=False,
+                         compression={"method": "gzip", "mtime": 0})   # no timestamp: same data, same bytes
     t = t.drop(columns="curve_q")
     t.to_csv(args.out / f"by_district_{level}.csv", index=False)
     pooled = c.assign(district_id=0) if entry is None else c.assign(entry_m=c["district_id"].map(entry), district_id=0)
@@ -179,6 +200,10 @@ def main() -> None:
     nat[["case_type", "curve_q"]].to_csv(args.out / f"curves_national_{level}.csv", index=False)
     nat = nat.drop(columns="curve_q")
     nat.to_csv(args.out / f"national_{level}.csv", index=False)
+    naive = decided_only(c).merge(nat[["case_type", "cases", "median_months", "pending_after_5y"]]
+                                  .rename(columns={"median_months": "median_months_kaplan_meier"}), on="case_type")
+    naive.round(3).to_csv(args.out / f"national_decided_only_{level}.csv", index=False)
+    print(naive.round(1).to_string(index=False))
     pd.set_option("display.width", 200)
     print(nat.round(3).to_string(index=False))
     print(f"{len(t)} district x case-type rows; districts: {t['district_id'].nunique()}")

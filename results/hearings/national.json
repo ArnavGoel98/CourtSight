@@ -1,0 +1,64 @@
+{
+  "pending_listed": 21274360,
+  "share_with_next_date": 0.9649,
+  "gap_days_national": 59.9,
+  "gap_days_district_p10_p50_p90": [
+    33.9,
+    49.2,
+    72.0
+  ],
+  "share_by_group": {
+    "service": 0.3684,
+    "charge": 0.0663,
+    "evidence": 0.215,
+    "hearing": 0.1568,
+    "final": 0.1,
+    "unclear": 0.0935
+  },
+  "gap_days_by_group": {
+    "service": 68.6,
+    "charge": 65.2,
+    "evidence": 48.8,
+    "hearing": 56.2,
+    "final": 51.4,
+    "unclear": 71.7
+  },
+  "stale_record_states_left_out": [
+    "Mizoram",
+    "Orissa",
+    "West Bengal"
+  ],
+  "gap_days_national_without_stale_states": 56.2,
+  "districts_compared": 528,
+  "spearman_gap_vs_pending_3y": {
+    "civil": 0.198,
+    "criminal": 0.421
+  },
+  "spearman_gap_vs_pending_3y_all_states": {
+    "civil": 0.314,
+    "criminal": 0.502
+  },
+  "spearman_gap_vs_pending_3y_within_states": {
+    "civil": 0.332,
+    "criminal": 0.423
+  },
+  "spearman_service_share_vs_pending_3y": {
+    "civil": 0.145,
+    "criminal": -0.03
+  },
+  "spearman_stage_adjusted_gap_vs_pending_3y": {
+    "civil": 0.228,
+    "criminal": 0.404
+  },
+  "spearman_gap_vs_caseload_per_court": 0.433,
+  "r2_with_gap": {
+    "civil": 0.202,
+    "criminal": 0.318
+  },
+  "label_checks": {
+    "police_reports_filed_as_final": 0.0174,
+    "generic_order_label_in_final": 0.0198,
+    "blank_label": 0.0139,
+    "no_sitting_notified": 0.0049
+  }
+}

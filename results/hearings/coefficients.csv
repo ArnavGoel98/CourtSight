@@ -1,0 +1,13 @@
+outcome,feature,coef_per_sd,lo,hi
+civil,log_gap_days,0.0273,0.0173,0.0382
+civil,log_filings_per_court,-0.0194,-0.0328,-0.0061
+civil,log_filings,0.0136,-0.0022,0.0288
+civil,criminal_share,0.0255,0.0146,0.0354
+civil,judge_tenure_months,-0.0254,-0.0374,-0.0154
+civil,records_complete_year,-0.0028,-0.0134,0.008
+criminal,log_gap_days,0.0682,0.0574,0.079
+criminal,log_filings_per_court,-0.0217,-0.0372,-0.0058
+criminal,log_filings,-0.0234,-0.0408,-0.0064
+criminal,criminal_share,0.0088,-0.0041,0.0201
+criminal,judge_tenure_months,-0.0307,-0.044,-0.0199
+criminal,records_complete_year,0.0051,-0.0054,0.0155

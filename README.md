@@ -61,8 +61,14 @@ case types (14 more withheld), with names and 90% rank ranges:
 [`results/time_to_decision/by_district_case_type.csv`](results/time_to_decision/by_district_case_type.csv),
 [`results/audit/rank_intervals.csv`](results/audit/rank_intervals.csv).
 
+**The usual numbers understate delay.** Averaged over decided cases only, the way delay is often quoted, civil
+suits took a median of 17 months and magistrate criminal cases 3; counting the cases still waiting, 29 and 8
+(`national_decided_only_case_type.csv`).
+
 **Try it:** [`docs/calculator.html`](docs/calculator.html), a "how long will my case take?" page with the full
-survival curve for every district and case type, next to the national curve and the state's other districts.
+survival curve for every district and case type, next to the national curve and the state's other districts. It
+also answers "my case has already waited three years; what happened to cases like it?" (for example, of civil suits
+in Pune still pending after 3 years, about 1 in 10 were decided in the following year).
 
 ![Civil suits still pending after 3 years, by district](docs/map-civil-suits.svg)
 
@@ -94,7 +100,19 @@ tenure goes with faster courts (−1.8 points per SD), and larger districts (+3.
 with slower civil cases. Together these explain only **10%** of the variation; most of what makes a district slow is
 not in this data (`district_drivers.py`, [`results/district_drivers/`](results/district_drivers/)).
 
-### 7. What a change of judge costs a courtroom: no reliable estimate (a negative result)
+### 7. Where cases get stuck, and how far apart hearings are
+Of the 2.13 crore cases pending when the data was collected, **37% were next listed for summons, notices or
+appearance**, getting the parties before the court rather than evidence (22%) or arguments and judgment (10%). A
+pending case's next hearing was set a typical **56 days** after its last one, and **districts that space hearings
+further apart are slower**: 31% of criminal cases were still pending after 3 years in the fifth of districts with the
+longest gaps, against 14% in the fifth with the shortest (civil: 34% against 28%). Unlike caseload per courtroom, this
+holds with caseload, size, case mix and judge tenure held fixed (+6.8 points of criminal cases pending per SD), with
+every district given the same stage mix, and within states (ρ = 0.42 criminal, 0.33 civil). West Bengal, Odisha and
+Mizoram are left out because their hearing records look stale. Correlation, not cause: congested courts may space
+hearings out. The purpose labels are free text; what each group holds is published (`hearings.py`,
+[`results/hearings/`](results/hearings/)).
+
+### 8. What a change of judge costs a courtroom: no reliable estimate (a negative result)
 [`judge_transfer.py`](judge_transfer.py) compares courtroom disposals around 11,142 judge handovers (447 districts)
 with courtrooms in the same district that had no change. On synthetic data it recovers a planted 30% drop. On the
 real data it finds disposals about **10% lower for a year** after a handover, **but a placebo test fails**: moving
@@ -104,7 +122,7 @@ slowing down anyway, not the cost of the change itself. Only 42% of judge-months
 same court number, so courtroom matching is weak. We report this as no reliable estimate rather than publish the
 −10%. Details: [`results/judge_transfer/summary.json`](results/judge_transfer/summary.json).
 
-### 8. A district-level model on 80.9 million cases, graded honestly
+### 9. A district-level model on 80.9 million cases, graded honestly
 - **Model:** quantile models (best case, median, worst case) of each district's 12-month backlog growth and clearance
   ratio (disposals ÷ filings). They are built from every case's filing and decision dates in Development Data Lab's
   eCourts data: 632 districts, 2010–2018.
@@ -133,6 +151,11 @@ We looked for ways the data could mislead (`data_audit.py`, [`results/audit/`](r
   requires recorded decisions of at least 20% of filings in every six-month window; units that never pass are
   withheld, and each has a page explaining why. Thresholds of 10% or 35%: civil-suit median 29–30 months. The
   never-complete units had also been included uncorrected in the national figures; that bug is fixed and tested.
+- **The pending stock against NJDG (tested).** The National Judicial Data Grid's age bands for pending district-court
+  cases on 24 May 2020 (as reported) against these records, for the ages they fully cover (1–10 years, 28 states):
+  52% / 26% / 22% aged 1–3 / 3–5 / 5–10 years here, 48% / 26% / 26% in NJDG. Agreement within 3.7 points.
+- **Hearing labels (stated).** Stage groups are named for what their free-text labels mostly contain; 1.7% of
+  pending cases carry police-report labels filed under "arguments, orders and judgment", 1.4% have none.
 - **Collection date (tested).** Moving the collection-month rule from 20% to 10% or 40%: civil-suit median 29–32 months.
 - **Coverage of the court system (tested).** Compared with the filings implied by the official figures, the eCourts
   records hold **61% of cases filed in 2015–2018** (55% in 2015, 67% in 2018), from 8% in Tripura to roughly all in
@@ -176,6 +199,7 @@ We looked for ways the data could mislead (`data_audit.py`, [`results/audit/`](r
 | `build_site.py`, `site/`, `docs/` | Project site and calculator (built from `results/`, served from `docs/`); `site/card.html` is the link-preview image (`docs/og.png`) |
 | `district_pages.py`, `docs/d/`, `docs/api/v1/` | A static page and a JSON file for every district (written by `build_site.py`); `site/embed.html` is the embeddable card, `site/press.html` the press kit |
 | `backlog_clock.py`, `time_to_decision.py`, `judge_transfer.py` | Clearance clock, time to decision, judge handover study |
+| `hearings.py` | Where pending cases are stuck, the gap between hearings, and how it relates to delay |
 | `data_audit.py`, `coverage_audit.py` | Checks for digitisation bias, cut-off rules, rank precision, special courts, coverage against official filings and the apparent speed-up |
 | `make_map.py`, `sources/india_districts_2011.json`, `sources/map_crosswalk.csv` | District map geometry (Census 2011 via DataMeet) and the DDL-to-2011 district crosswalk |
 | `waiting_years.py`, `district_drivers.py` | Case-years of waiting; what slow districts have in common |
@@ -192,6 +216,7 @@ python3 forecast_2026.py                    # rebuilds the 2026 forecast and its
 python3 pendency_forecast.py --ddl-compact ddl_compact --ddl-only --out outputs/   # district model (~5 min)
 python3 make_charts.py                      # charts
 python3 time_to_decision.py && python3 data_audit.py && python3 coverage_audit.py   # needs ddl_compact/
+python3 hearings.py                         # after coverage_audit.py (uses its stale-records check)
 python3 waiting_years.py && python3 district_drivers.py   # needs ddl_compact/
 python3 build_site.py && python3 make_paper_pdf.py         # site, paper and PDF (PDF needs playwright)
 for t in tests/test_*.py; do python3 "$t"; done           # every test CI runs

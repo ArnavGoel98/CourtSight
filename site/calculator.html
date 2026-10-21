@@ -25,6 +25,9 @@
 html[lang=hi] .kicker{font-family:inherit;letter-spacing:0;font-size:.85rem}
 .tenof{font-size:1.05rem;color:var(--ink);margin:10px 0 0;max-width:62ch}
 .based{font-size:.82rem;color:var(--ink-3);margin-top:12px}
+.waiting{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.waiting select{max-width:260px}.waiting p{margin:8px 0 0;max-width:62ch;color:var(--ink)}
+.waiting p small{display:block;color:var(--ink-3);margin-top:4px}
 </style>
 </head>
 <body>
@@ -50,6 +53,11 @@ html[lang=hi] .kicker{font-family:inherit;letter-spacing:0;font-size:.85rem}
   <div class="prose" id="sub" style="margin-top:6px"></div>
   <p class="tenof" id="tenof"></p>
   <div class="facts" id="facts"></div>
+  <div class="waiting">
+    <label for="wait" data-i="wl">Already waiting? How long has the case been pending</label>
+    <select id="wait"></select>
+    <p id="wait-out"></p>
+  </div>
   <div class="based" id="based"></div>
   <div class="actions">
     <button class="btn" id="share" type="button" data-i="share">Copy link to this result</button>
@@ -100,7 +108,7 @@ const HIS={nav1:"निष्कर्ष",nav2:"कैलकुलेटर",ki
 <li>मामलों के प्रकार अदालतों द्वारा इस्तेमाल किए गए नामों से समूहित किए गए हैं; जो समूहित नहीं हो सके वे "अन्य" में हैं। जिन ज़िलों में किसी प्रकार के 200 से कम मामले हैं, वे नहीं दिखाए गए। उच्च न्यायालय और सर्वोच्च न्यायालय शामिल नहीं हैं। राज्यों और ज़िलों के नाम मूल डेटा की तरह अंग्रेज़ी में हैं।</li>
 <li>2015–2018 में आधिकारिक आँकड़ों के अनुसार दर्ज मामलों में से लगभग 61% ही ई-कोर्ट्स रिकॉर्ड में हैं; त्रिपुरा में 8%, बिहार में लगभग सभी। ये आँकड़े उन्हीं अदालतों के हैं जिनके रिकॉर्ड मौजूद हैं। जिन ज़िलों (जैसे गया) के रिकॉर्ड में लगभग कोई फ़ैसला दर्ज नहीं है, उनके आँकड़े ग़लत दिखाने के बजाय रोके गए हैं। <a href="index.html#audit">जाँच का ब्योरा (अंग्रेज़ी में)</a></li>`,
  foot:`CourtSight: अर्णव गोयल · <a href="https://github.com/ArnavGoel98/CourtSight">कोड और विधि</a> · डेटा: डेवलपमेंट डेटा लैब, ई-कोर्ट्स रिकॉर्ड 2010–2018 (CC BY-NC-SA 4.0)।`};
-Object.assign(HIS,{nav3:"शोध-पत्र",nav4:"रैंकिंग",nav5:"नक़्शा",nav6:"ज़िले",q:"1. आपका ज़िला",tl:"2. मामले का प्रकार",share:"इस नतीजे का लिंक कॉपी करें",report:"ज़िले का पूरा पेज",embed:"अपनी वेबसाइट पर लगाएँ",cmp:"+ किसी दूसरे ज़िले से तुलना करें",q2:"इससे तुलना करें"});
+Object.assign(HIS,{nav3:"शोध-पत्र",nav4:"रैंकिंग",nav5:"नक़्शा",nav6:"ज़िले",q:"1. आपका ज़िला",tl:"2. मामले का प्रकार",share:"इस नतीजे का लिंक कॉपी करें",wl:"पहले से इंतज़ार कर रहे हैं? मामला कितने समय से लंबित है",report:"ज़िले का पूरा पेज",embed:"अपनी वेबसाइट पर लगाएँ",cmp:"+ किसी दूसरे ज़िले से तुलना करें",q2:"इससे तुलना करें"});
 const HIL={civ_suit:"दीवानी वाद (संपत्ति, अनुबंध, पैसा)",civ_execution:"निष्पादन (डिक्री लागू कराना)",civ_family:"तलाक़ / पारिवारिक",
  civ_mact:"मोटर दुर्घटना दावा",civ_misc:"अन्य दीवानी आवेदन",crim_bail:"ज़मानत आवेदन",crim_magisterial:"मजिस्ट्रेट के समक्ष आपराधिक मामला",
  crim_sessions:"सत्र विचारण (गंभीर अपराध)",crim_ni138:"चेक बाउंस (एनआई एक्ट धारा 138)",other:"अन्य / अवर्गीकृत"};
@@ -117,6 +125,8 @@ document.getElementById("head").textContent="…";
 fetch("calc-data.json").then(r=>{if(!r.ok)throw r.status;return r.json()}).then(j=>{D=decodeCurves(j);main()})
   .catch(()=>{document.getElementById("head").textContent=HI?"डेटा लोड नहीं हो सका। पेज रीफ़्रेश करें।":"Could not load the data. Please refresh the page."});
 function main(){
+const WAITS=[0,6,12,24,36,48,60];
+const wName=w=>HI?(w<12?`${w} महीने`:`${w/12} साल`):(w<12?`${w} months`:`${w/12} year${w>12?"s":""}`);
 const label=t=>HI?(HIL[t]||t):(D.labels[t]||t), short=t=>HI?(HIS2[t]||t):(D.short[t]||t);
 const C=Object.fromEntries(D.cols.map((c,i)=>[c,i]));
 const yrs=m=>(m/12).toFixed(1).replace(/\.0$/,"");
@@ -149,6 +159,9 @@ const q=new URLSearchParams(location.hash.slice(1));
 st.A=(q.get("s")&&q.get("d")&&D.states[q.get("s")]?.[q.get("d")])?[q.get("s"),q.get("d")]:(D.states.Delhi?.Central?["Delhi","Central"]:KEYS[Object.keys(KEYS)[0]]);
 if(q.get("cs")&&q.get("cd")&&D.states[q.get("cs")]?.[q.get("cd")])st.B=[q.get("cs"),q.get("cd")];
 if(q.get("t"))st.t=q.get("t");
+st.w=WAITS.includes(+q.get("w"))?+q.get("w"):0;
+$("wait").innerHTML=WAITS.map(w=>`<option value="${w}"${w===st.w?" selected":""}>${w?wName(w):(HI?"— चुनें —":"— choose —")}</option>`).join("");
+$("wait").onchange=e=>{st.w=+e.target.value;render()};
 
 function matches(txt){const t=txt.trim().toLowerCase();return t.length<2?[]:Object.keys(KEYS).filter(k=>k.includes(t)).slice(0,12)}
 function bindSearch(inp,hint,set){
@@ -198,6 +211,22 @@ function dataNote(s,d){const m=D.meta[s][d];let t="";
   if(m[1])t+=HI?" यह पूरा ज़िला नहीं, बल्कि एक विशेष अदालत या कोर्ट परिसर है।":" This is a special court or court complex, not a whole district.";
   if(m[0]>2010)t+=HI?` इस ज़िले के रिकॉर्ड ${m[0]} से पूरे हैं; पहले दर्ज मामलों को उसी समय से गिना गया है।`:` Records here are complete from ${m[0]}; cases filed earlier are counted only from then.`;
   return t}
+// already waiting: of the cases still pending after w months, how many were decided in the following year, and
+// how much longer until half were (conditional Kaplan-Meier, from the quarterly curve)
+function waitText(r,w){
+  if(!w)return "";
+  const c=r[C.curve], i=w/3, S=c[i];
+  if(S==null||S<=0.02)return HI?"इस ज़िले और मामले के प्रकार के लिए डेटा इतनी दूर तक नहीं जाता।":"The data for this district and type of case does not reach that far.";
+  const S12=c[i+4], p=S12==null?null:1-S12/S;
+  let k=null;for(let j=i+1;j<c.length;j++){if(c[j]==null)break;if(c[j]<=S/2){k=j-i;break}}
+  const x=p==null?null:Math.round(10*p);
+  const caveat=HI?"<small>यह पिछले मामलों का विवरण है, आपके मामले की भविष्यवाणी नहीं: जो मामला लंबे समय से अटका है, उसकी कोई वजह हो सकती है।</small>"
+    :"<small>This describes past cases, not a prediction for yours: a case that has waited long may be waiting for a reason.</small>";
+  if(HI)return `${wName(w)} बाद भी लंबित ऐसे मामलों में से `+(x==null?"":x<1?"10 में से 1 से भी कम का":`लगभग <b>${x}</b> (10 में से) का`)+(x==null?"":" फ़ैसला अगले एक साल में हुआ")+
+    (k?`${x==null?"":"; "}आधे मामलों का फ़ैसला अगले <b>${fmtM(k*3)}</b> में हुआ।`:`${x==null?"":"; "}डेटा ख़त्म होने तक आधे से ज़्यादा अब भी लंबित थे।`)+caveat;
+  return `Of cases like this in ${st.A[1]} still waiting after ${wName(w)}, `+(x==null?"":x<1?"fewer than 1 in 10 were decided in the following year":`about <b>${x} in 10</b> were decided in the following year`)+
+    (k?`${x==null?"":"; "}half were decided within a further <b>${fmtM(k*3)}</b>.`:`${x==null?"":"; "}more than half were still waiting when the data ends.`)+caveat;
+}
 function tenOf(r){
   const n1=Math.round(10*(1-r[C.pending_after_1y])), n3=r[C.pending_after_3y]==null?null:Math.round(10*(1-r[C.pending_after_3y]));
   const p5=r[C.pending_after_5y], s5=p5==null?null:Math.round(10*p5);
@@ -207,7 +236,7 @@ function tenOf(r){
 function render(){
   const [s,d]=st.A, list=D.states[s][d]; chips(list);
   const r=row(list,st.t), n=row(D.national,st.t), B=st.B?row(D.states[st.B[0]][st.B[1]],st.t):null;
-  const h=`#s=${encodeURIComponent(s)}&d=${encodeURIComponent(d)}&t=${st.t}`+(st.B?`&cs=${encodeURIComponent(st.B[0])}&cd=${encodeURIComponent(st.B[1])}`:"");
+  const h=`#s=${encodeURIComponent(s)}&d=${encodeURIComponent(d)}&t=${st.t}`+(st.B?`&cs=${encodeURIComponent(st.B[0])}&cd=${encodeURIComponent(st.B[1])}`:"")+(st.w?`&w=${st.w}`:"");
   history.replaceState(null,"",h); $("lang").href=(HI?"calculator.html":"calculator-hi.html")+h;
   if(document.activeElement!==$("q"))$("q").value=`${d}, ${s}`;
   $("report").href=`d/${slug(s)}/${slug(d)}.html`;
@@ -220,6 +249,7 @@ function render(){
     :(med==null?`More than half of these cases were still pending when the data ends, so the typical time is longer than the data can show. ${lab}, ${d}.`
       :`is the typical time to a decision for a <b>${lab.toLowerCase()}</b> in <b>${d}</b>: half were decided sooner, half later.`);
   $("tenof").innerHTML=tenOf(r);
+  $("wait-out").innerHTML=waitText(r,st.w);
   const bv=(k,f)=>B?`<em>${st.B[1]}: ${f(B)}</em>`:"";
   $("facts").innerHTML=[["pending_after_1y",1],["pending_after_3y",3],["pending_after_5y",5]].map(([k,y])=>
     `<div><b>${r[C[k]]==null?"–":pc(1-r[C[k]])}</b><span>${HI?`${y} साल के भीतर फ़ैसला`:`decided within ${y} year${y>1?"s":""}`}</span>${bv(k,x=>x[C[k]]==null?"–":pc(1-x[C[k]]))}</div>`).join("")+

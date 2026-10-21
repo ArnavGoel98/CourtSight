@@ -1,0 +1,16 @@
+{
+  "states": 28,
+  "pending_cases_aged_1_10y": 16613323,
+  "records_share": {
+    "1_3y": 0.515,
+    "3_5y": 0.26,
+    "5_10y": 0.225
+  },
+  "njdg_share": {
+    "1_3y": 0.48,
+    "3_5y": 0.257,
+    "5_10y": 0.262
+  },
+  "max_abs_gap_points": 3.7,
+  "njdg_source": "NJDG figures for 24 May 2020 as reported by LiveLaw (shares of cases aged 1-10 years)"
+}

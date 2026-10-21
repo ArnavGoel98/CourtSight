@@ -1,0 +1,3 @@
+case_type,decided_cases,median_months_decided_only,mean_months_decided_only,cases,median_months_kaplan_meier,pending_after_5y
+civil,20073050,12.0,18.632,26875660,18.0,0.165
+criminal,38508797,3.0,11.717,50181074,7.0,0.154
