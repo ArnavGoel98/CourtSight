@@ -492,6 +492,8 @@ function draw(){
   $("tbl").querySelectorAll("th button").forEach(b=>b.onclick=()=>{const k=b.dataset.k;
     if(st.sort===k)st.dir=-st.dir;else{st.sort=k;st.dir=(k==="cases"||k==="d1")?-1:1}draw()});
   $("count").textContent=`${VIEW.length} of ${ROWS.length} districts${st.s?` in ${st.s}`:""} · ${D.labels[st.t]}`;
+  const held=f.length>2?Object.entries(D.withheld||{}).filter(([k])=>k.toLowerCase().includes(f)):[];
+  if(held.length)$("count").innerHTML+=` · <span style="color:var(--neg)">Withheld, records hold almost no decisions before 2018: ${held.map(([k,u])=>`<a href="${u}">${k}</a>`).join(", ")}</span>`;
 }
 function csv(){
   const esc=v=>v==null?"":/[",\n]/.test(String(v))?`"${String(v).replace(/"/g,'""')}"`:String(v);

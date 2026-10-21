@@ -125,10 +125,20 @@ def site_data() -> dict[str, object]:
                   "sens": pd.read_csv(RES / "audit" / "national_sensitivity.csv").set_index("case_type")
                   .loc[["civ_suit", "crim_magisterial"]].round(3).reset_index().to_dict("records")},
         "slow5": _slowest_fifth(),
+        "withheld": withheld_pages(),
         "district_keys": sorted({(r.state_name, r.district_name) for r in pd.read_csv(
             RES / "time_to_decision" / "by_district_case_type.csv").dropna(subset=["state_name", "district_name"]).itertuples()}),
         "model": {"skill_vs_best_naive": [_num(med["skill_vs_best_naive"].min(), 2), _num(med["skill_vs_best_naive"].max(), 2)]},
     }
+
+
+def withheld_pages() -> dict[str, str]:
+    """"District, State" -> its page, for units whose records never look complete (see data_audit.py), so that
+    searching for one explains why there are no figures instead of saying it does not exist."""
+    from district_pages import slug
+    held = json.loads((RES / "audit" / "summary.json").read_text())["withheld_detail"]
+    return {f"{d}, {v['state']}": f"d/{slug(v['state'])}/{slug(d)}.html"
+            for d, v in sorted(held.items()) if v["filed_2010_2017"] >= 1000}
 
 
 def _slowest_fifth() -> dict[str, object]:
@@ -178,7 +188,7 @@ def calc_data() -> dict[str, object]:
         y = dig.get(int(g["district_id"].iloc[0]))
         meta.setdefault(s, {})[d] = [None if y is None or pd.isna(y) else int(y), int(d in special)]
     return {"labels": LABELS, "short": SHORT, "cols": ["type"] + STATS + rank_cols + ["curve"],
-            "national": [row(r) for r in nat.itertuples()], "states": states, "meta": meta}
+            "national": [row(r) for r in nat.itertuples()], "states": states, "meta": meta, "withheld": withheld_pages()}
 
 
 def map_data() -> dict[str, object]:

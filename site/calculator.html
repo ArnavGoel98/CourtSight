@@ -79,6 +79,7 @@ html[lang=hi] .kicker{font-family:inherit;letter-spacing:0;font-size:.85rem}
 <li>Cases still pending when the data was collected (late 2018 to 2020, depending on the state) are counted as undecided up to that date, so slow cases are not left out. Where the curve stops, there is no more follow-up.</li>
 <li>This describes the past. It is not a prediction for one particular case: courts have changed since 2018, and each case depends on its own facts and adjournments.</li>
 <li>Case types are grouped from the names each court uses; "Other / unclassified" collects what could not be grouped. Districts with fewer than 200 cases of a type are not shown. High Courts and the Supreme Court are not covered.</li>
+<li>The eCourts records hold about 61% of the cases the official figures say were filed in 2015–2018, from 8% in Tripura to nearly all in Bihar; these figures describe the courts that were recorded. Districts whose records hold almost no decisions (such as Gaya) are withheld rather than shown wrong. See the <a href="index.html#audit">audit</a>.</li>
 </ul>
 </details>
 </main>
@@ -96,7 +97,8 @@ const HIS={nav1:"निष्कर्ष",nav2:"कैलकुलेटर",ki
  lim:`<li><b>सामान्य समय</b> माध्यिका (मीडियन) है: ऐसे आधे मामलों का फ़ैसला इससे पहले हो गया। "फ़ैसला" का अर्थ है मामले का कोई भी अंतिम निपटारा (निर्णय, ख़ारिज होना, वापसी, समझौता या स्थानांतरण), ज़रूरी नहीं कि किसी के पक्ष में निर्णय हो।</li>
 <li>डेटा इकट्ठा होने के समय (राज्य के अनुसार 2018 के अंत से 2020 तक) जो मामले लंबित थे, उन्हें उस तारीख़ तक अनिर्णीत गिना गया है, ताकि धीमे मामले छूटें नहीं। जहाँ रेखा रुकती है, वहाँ के आगे का डेटा नहीं है।</li>
 <li>यह अतीत का विवरण है, किसी एक मुक़दमे की भविष्यवाणी नहीं: 2018 के बाद अदालतें बदली हैं, और हर मुक़दमा अपने तथ्यों और तारीख़ों पर निर्भर करता है।</li>
-<li>मामलों के प्रकार अदालतों द्वारा इस्तेमाल किए गए नामों से समूहित किए गए हैं; जो समूहित नहीं हो सके वे "अन्य" में हैं। जिन ज़िलों में किसी प्रकार के 200 से कम मामले हैं, वे नहीं दिखाए गए। उच्च न्यायालय और सर्वोच्च न्यायालय शामिल नहीं हैं। राज्यों और ज़िलों के नाम मूल डेटा की तरह अंग्रेज़ी में हैं।</li>`,
+<li>मामलों के प्रकार अदालतों द्वारा इस्तेमाल किए गए नामों से समूहित किए गए हैं; जो समूहित नहीं हो सके वे "अन्य" में हैं। जिन ज़िलों में किसी प्रकार के 200 से कम मामले हैं, वे नहीं दिखाए गए। उच्च न्यायालय और सर्वोच्च न्यायालय शामिल नहीं हैं। राज्यों और ज़िलों के नाम मूल डेटा की तरह अंग्रेज़ी में हैं।</li>
+<li>2015–2018 में आधिकारिक आँकड़ों के अनुसार दर्ज मामलों में से लगभग 61% ही ई-कोर्ट्स रिकॉर्ड में हैं; त्रिपुरा में 8%, बिहार में लगभग सभी। ये आँकड़े उन्हीं अदालतों के हैं जिनके रिकॉर्ड मौजूद हैं। जिन ज़िलों (जैसे गया) के रिकॉर्ड में लगभग कोई फ़ैसला दर्ज नहीं है, उनके आँकड़े ग़लत दिखाने के बजाय रोके गए हैं। <a href="index.html#audit">जाँच का ब्योरा (अंग्रेज़ी में)</a></li>`,
  foot:`CourtSight: अर्णव गोयल · <a href="https://github.com/ArnavGoel98/CourtSight">कोड और विधि</a> · डेटा: डेवलपमेंट डेटा लैब, ई-कोर्ट्स रिकॉर्ड 2010–2018 (CC BY-NC-SA 4.0)।`};
 Object.assign(HIS,{nav3:"शोध-पत्र",nav4:"रैंकिंग",nav5:"नक़्शा",nav6:"ज़िले",q:"1. आपका ज़िला",tl:"2. मामले का प्रकार",share:"इस नतीजे का लिंक कॉपी करें",report:"ज़िले का पूरा पेज",embed:"अपनी वेबसाइट पर लगाएँ",cmp:"+ किसी दूसरे ज़िले से तुलना करें",q2:"इससे तुलना करें"});
 const HIL={civ_suit:"दीवानी वाद (संपत्ति, अनुबंध, पैसा)",civ_execution:"निष्पादन (डिक्री लागू कराना)",civ_family:"तलाक़ / पारिवारिक",
@@ -126,6 +128,14 @@ const row=(list,t)=>list&&list.find(r=>r[0]===t);
 const KEYS={}, NAME={}, dl=$("dl");
 for(const s of Object.keys(D.states).sort())for(const d of Object.keys(D.states[s]).sort()){
   const k=`${d}, ${s}`;KEYS[k.toLowerCase()]=[s,d];NAME[k.toLowerCase()]=k;const o=document.createElement("option");o.value=k;dl.appendChild(o)}
+// withheld units: searchable, but they lead to an explanation instead of figures
+const HELD={};
+for(const [k,u] of Object.entries(D.withheld||{})){HELD[k.toLowerCase()]=[k,u];const o=document.createElement("option");o.value=k;dl.appendChild(o)}
+function heldFor(txt){const t=txt.trim().toLowerCase();if(!t)return null;
+  if(HELD[t])return HELD[t];
+  const h=Object.entries(HELD).filter(([k])=>k.split(",")[0]===t);return h.length===1?h[0][1]:null}
+const heldMsg=([k,u])=>HI?`<span class="err"><b>${k}</b>: यहाँ के रिकॉर्ड में 2018 से पहले लगभग कोई फ़ैसला दर्ज नहीं है, इसलिए हर मामला अटका हुआ दिखता। आँकड़े ग़लत दिखाने के बजाय रोके गए हैं। <a href="${u}">कारण देखें</a></span>`
+  :`<span class="err"><b>${k}</b>: its records hold almost no decisions before 2018, so every case would look stuck. Its figures are withheld rather than shown wrong. <a href="${u}">Why</a></span>`;
 function lookup(txt){
   const t=txt.trim().toLowerCase(); if(!t)return null;
   if(KEYS[t])return KEYS[t];
@@ -149,12 +159,13 @@ function bindSearch(inp,hint,set){
     if(r){shown=null;pick(r);return}
     if(shown===inp.value)return;   // a blur before clicking a suggestion must not redraw it away
     shown=inp.value;
+    const held=heldFor(inp.value);if(held){hint.innerHTML=heldMsg(held);return}
     const m=matches(inp.value);
     hint.innerHTML=m.length?`<span>${HI?"इनमें से चुनें:":"Did you mean:"}</span>`+m.map(k=>`<button type="button" class="chip" data-k="${k}">${NAME[k]}</button>`).join("")
       :(inp.value.trim()?`<span class="err">${HI?"कोई ज़िला नहीं मिला। वर्तनी जाँचें या पुराना नाम आज़माएँ।":"No district found. Check the spelling, or try the old name."}</span>`:"");
     hint.querySelectorAll("button").forEach(b=>b.onclick=()=>{const r2=KEYS[b.dataset.k];pick(r2)});
   };
-  inp.addEventListener("change",go);inp.addEventListener("input",()=>{if(KEYS[inp.value.trim().toLowerCase()])go()});
+  inp.addEventListener("change",go);inp.addEventListener("input",()=>{const t=inp.value.trim().toLowerCase();if(KEYS[t]||HELD[t])go()});
   inp.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();go()}});
 }
 bindSearch($("q"),$("q-hint"),r=>{st.A=r;render()});

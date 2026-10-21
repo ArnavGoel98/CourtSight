@@ -383,15 +383,18 @@ document.getElementById("skill").textContent=`${Math.round(D.model.skill_vs_best
 // district finder
 const FK={}, FN2={}, fdl=document.getElementById("fdl");
 for(const [st,d] of D.district_keys){const k=`${d}, ${st}`;FK[k.toLowerCase()]=[st,d];FN2[k.toLowerCase()]=k;const o=document.createElement("option");o.value=k;fdl.appendChild(o)}
+const FH={};for(const [k,u] of Object.entries(D.withheld)){FH[k.toLowerCase()]=[k,u];const o=document.createElement("option");o.value=k;fdl.appendChild(o)}
 document.getElementById("finder").onsubmit=e=>{e.preventDefault();
   const t=document.getElementById("fq").value.trim().toLowerCase();
+  const held=FH[t]||(()=>{const h=Object.entries(FH).filter(([k])=>k.split(",")[0]===t);return h.length===1?h[0][1]:null})();
+  if(held&&!FK[t]){document.getElementById("fhint").innerHTML=`<span class="err"><b>${held[0]}</b>: its records hold almost no decisions before 2018, so every case would look stuck. Its figures are withheld rather than shown wrong. <a href="${held[1]}">Why</a></span>`;return}
   let r=FK[t]; if(!r){const h=Object.entries(FK).filter(([k])=>k.split(",")[0]===t||k.startsWith(t));if(h.length===1)r=h[0][1];}
   if(!r){const m=t.length<2?[]:Object.keys(FK).filter(k=>k.includes(t)).slice(0,12), h=document.getElementById("fhint");
     h.innerHTML=m.length?"<span>Did you mean:</span>"+m.map(k=>`<button type="button" class="chip" data-k="${k}">${FN2[k]}</button>`).join("")
       :`<span class="err">${t?"No district found. Check the spelling, or try the old name.":"Type a district name, e.g. Pune."}</span>`;
     h.querySelectorAll("button").forEach(b=>b.onclick=()=>{document.getElementById("fq").value=FN2[b.dataset.k];document.getElementById("finder").requestSubmit()});return}
   location.href=`calculator.html#s=${encodeURIComponent(r[0])}&d=${encodeURIComponent(r[1])}&t=civ_suit`};
-document.getElementById("fq").addEventListener("input",e=>{if(FK[e.target.value.trim().toLowerCase()])document.getElementById("finder").requestSubmit()});
+document.getElementById("fq").addEventListener("input",e=>{const t=e.target.value.trim().toLowerCase();if(FK[t]||FH[t])document.getElementById("finder").requestSubmit()});
 const drawAll=()=>{drawBacklog();drawClock();drawKM();drawAge();drawDrivers();drawJudge();drawAudit()};
 onResize(drawAll);
 </script>
