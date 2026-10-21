@@ -168,7 +168,7 @@ details.card[open]>summary{margin-bottom:12px}
   <button class="btn ghost" id="csv" type="button">Download this table (CSV)</button>
 </div>
 <div class="tablewrap"><table class="rank" id="tbl"></table></div>
-<p class="caption">Kaplan–Meier estimates: cases still pending when the data was collected count as undecided up to that date. "Median" is blank where over half were still pending when the data ends. Districts with fewer than 200 cases of a type are left out. Rank 1 = smallest share still pending after 3 years, among all districts in India for this case type; the small range under it is where the rank lies 90% of the time once sampling noise is allowed for, so districts whose ranges overlap are not clearly different. Where a district's records only become complete in a later year, earlier cases are counted only from then (a correction for eCourts digitisation; see the <a href="index.html#audit">audit</a>). Units marked "court, not district" are special courts listed separately in the source data. Click a district for its full curve. Descriptive only: a slow district is not necessarily a badly run one (case mix, vacancies and local practice all differ).</p>
+<p class="caption">Kaplan–Meier estimates: cases still pending when the data was collected count as undecided up to that date. "Median" is blank where over half were still pending when the data ends. Each curve stops once fewer than 20 cases are still being followed, so a blank "slowest 1 in 10" means longer than the data can follow (followed_months in the download), not necessarily 10 years. Districts with fewer than 200 cases of a type are left out. Rank 1 = smallest share still pending after 3 years, among all districts in India for this case type; the small range under it is where the rank lies 90% of the time once sampling noise is allowed for, so districts whose ranges overlap are not clearly different. The range allows for sampling noise only, not for the data problems in the audit (incomplete coverage, stale records), which can move a district further. Where a district's records only become complete in a later year, earlier cases are counted only from then (a correction for eCourts digitisation; see the <a href="index.html#audit">audit</a>). Units marked "court, not district" are special courts listed separately in the source data. Click a district for its full curve. Descriptive only: a slow district is not necessarily a badly run one (case mix, vacancies and local practice all differ).</p>
 </main>
 <footer><div class="wrap">CourtSight by Arnav Goel · <a href="https://github.com/ArnavGoel98/CourtSight">Code and method</a> · Data: Development Data Lab eCourts records 2010–2018 (CC BY-NC-SA 4.0). You may reuse this table with attribution under the same licence.</div></footer>
 <script>
@@ -446,7 +446,7 @@ const COLS=[
   {k:"d1",l:"Decided in 1 yr",num:true,cls:"hide-sm",f:v=>v==null?"–":Math.round(v*100)+"%"},
   {k:"pending_after_3y",l:"Pending at 3 yrs",num:true,f:v=>v==null?"–":Math.round(v*100)+"%"},
   {k:"pending_after_5y",l:"Pending at 5 yrs",num:true,cls:"hide-sm",f:v=>v==null?"–":Math.round(v*100)+"%"},
-  {k:"p90_months",l:"Slowest 1 in 10",num:true,cls:"hide-sm",f:v=>v==null?"10+ yrs":v<24?`${v} mo`:`${(v/12).toFixed(1)} yrs`},
+  {k:"p90_months",l:"Slowest 1 in 10",num:true,cls:"hide-sm",f:(v,r)=>v==null?(r&&r.reach!=null?(r.reach<24?`over ${r.reach} mo`:`over ${Math.floor(r.reach/12)} yrs`):"beyond the data"):v<24?`${v} mo`:`${(v/12).toFixed(1)} yrs`},
 ];
 const q=new URLSearchParams(location.hash.slice(1));
 const st={t:q.get("t")||"civ_suit",s:q.get("s")||"",f:q.get("q")||"",sort:q.get("sort")||"pending_after_3y",dir:q.get("dir")==="desc"?-1:1};
@@ -473,7 +473,7 @@ function build(){   // rows for this case type (and state), ranked by share pend
   for(const [s,ds] of Object.entries(D.states)){ if(st.s&&s!==st.s)continue;
     for(const [d,l] of Object.entries(ds)){const r=l.find(x=>x[0]===st.t);if(!r)continue;
       const m=D.meta[s][d];
-      ROWS.push({district:d,state:s,rank:r[C.rank],rank_lo:r[C.rank_lo],rank_hi:r[C.rank_hi],of:r[C.of],from:m[0],special:m[1],cases:r[C.cases],median_months:r[C.median_months],p90_months:r[C.p90_months],
+      ROWS.push({district:d,state:s,reach:(r[C.curve].length-1)*3,rank:r[C.rank],rank_lo:r[C.rank_lo],rank_hi:r[C.rank_hi],of:r[C.of],from:m[0],special:m[1],cases:r[C.cases],median_months:r[C.median_months],p90_months:r[C.p90_months],
         d1:r[C.pending_after_1y]==null?null:1-r[C.pending_after_1y],pending_after_3y:r[C.pending_after_3y],pending_after_5y:r[C.pending_after_5y]})}}
   draw();
 }
@@ -490,21 +490,21 @@ function draw(){
   const cell=(c,r)=>{const v=r[c.k];
     if(c.k==="district")return `<td><a href="calculator.html#s=${encodeURIComponent(r.state)}&d=${encodeURIComponent(r.district)}&t=${st.t}">${r.district}</a>${r.special?' <span class="badge" title="A special court or court complex, not a whole district">court, not district</span>':""}<div class="st" style="color:var(--ink-3);font-size:.8rem;font-weight:400">${r.state}${r.from>2010?` · records complete from ${r.from}`:""}</div></td>`;
     if(c.k==="rank")return `<td class="n" title="90% range of this rank, given sampling uncertainty">${v??"–"}${v!=null?`<div style="font-size:.75rem">${r.rank_lo}–${r.rank_hi}</div>`:""}</td>`;
-    const txt=c.f?c.f(v):v;
+    const txt=c.f?c.f(v,r):v;
     if(c.k==="pending_after_3y"&&v!=null)return `<td>${txt}<span class="meter"><i style="width:${Math.round(v/max*100)}%"></i></span></td>`;
     return `<td class="${c.cls||""}">${txt}</td>`};
-  const nat=n?`<tr class="nat"><td class="n"></td><td>All of India</td><td class="hide-sm">${n[C.cases].toLocaleString("en-IN")}</td><td>${COLS[3].f(n[C.median_months])}</td><td class="hide-sm">${COLS[4].f(1-n[C.pending_after_1y])}</td><td>${COLS[5].f(n[C.pending_after_3y])}</td><td class="hide-sm">${COLS[6].f(n[C.pending_after_5y])}</td><td class="hide-sm">${COLS[7].f(n[C.p90_months])}</td></tr>`:"";
+  const nat=n?`<tr class="nat"><td class="n"></td><td>All of India</td><td class="hide-sm">${n[C.cases].toLocaleString("en-IN")}</td><td>${COLS[3].f(n[C.median_months])}</td><td class="hide-sm">${COLS[4].f(1-n[C.pending_after_1y])}</td><td>${COLS[5].f(n[C.pending_after_3y])}</td><td class="hide-sm">${COLS[6].f(n[C.pending_after_5y])}</td><td class="hide-sm">${COLS[7].f(n[C.p90_months],{reach:(n[C.curve].length-1)*3})}</td></tr>`:"";
   $("tbl").innerHTML=`<thead>${head}</thead><tbody>${nat}${VIEW.map(r=>`<tr>${COLS.map(c=>cell(c,r)).join("")}</tr>`).join("")}</tbody>`;
   $("tbl").querySelectorAll("th button").forEach(b=>b.onclick=()=>{const k=b.dataset.k;
     if(st.sort===k)st.dir=-st.dir;else{st.sort=k;st.dir=(k==="cases"||k==="d1")?-1:1}draw()});
-  $("count").textContent=`${VIEW.length} of ${ROWS.length} districts${st.s?` in ${st.s}`:""} · ${D.labels[st.t]}`;
+  $("count").textContent=`${VIEW.length} of ${ROWS.length} court units${st.s?` in ${st.s}`:""} · ${D.labels[st.t]}`;
   const held=f.length>2?Object.entries(D.withheld||{}).filter(([k])=>k.toLowerCase().includes(f)):[];
   if(held.length)$("count").innerHTML+=` · <span style="color:var(--neg)">Withheld, records hold almost no decisions before 2018: ${held.map(([k,u])=>`<a href="${u}">${k}</a>`).join(", ")}</span>`;
 }
 function csv(){
   const esc=v=>v==null?"":/[",\n]/.test(String(v))?`"${String(v).replace(/"/g,'""')}"`:String(v);
-  const hdr=["rank_in_india","rank_lo_90","rank_hi_90","district","state","records_complete_from","special_court","case_type","cases","median_months","decided_within_1y","pending_after_3y","pending_after_5y","p90_months"];
-  const lines=[hdr.join(","),...VIEW.map(r=>[r.rank,r.rank_lo,r.rank_hi,r.district,r.state,r.from,r.special,st.t,r.cases,r.median_months,r.d1==null?"":r.d1.toFixed(3),r.pending_after_3y,r.pending_after_5y,r.p90_months].map(esc).join(","))];
+  const hdr=["rank_in_india","rank_lo_90","rank_hi_90","district","state","records_complete_from","special_court","case_type","cases","median_months","decided_within_1y","pending_after_3y","pending_after_5y","p90_months","followed_months"];
+  const lines=[hdr.join(","),...VIEW.map(r=>[r.rank,r.rank_lo,r.rank_hi,r.district,r.state,r.from,r.special,st.t,r.cases,r.median_months,r.d1==null?"":r.d1.toFixed(3),r.pending_after_3y,r.pending_after_5y,r.p90_months,r.reach].map(esc).join(","))];
   const blob=new Blob(["# CourtSight district rankings. Source: Development Data Lab eCourts 2010-2018, CC BY-NC-SA 4.0. https://arnavgoel98.github.io/CourtSight/\n"+lines.join("\n")+"\n"],{type:"text/csv"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`courtsight_${st.t}${st.s?"_"+st.s.replace(/\W+/g,"_"):""}.csv`;a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),1000);

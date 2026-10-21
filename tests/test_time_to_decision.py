@@ -58,6 +58,17 @@ def test_missing_decisions() -> None:
     assert set(t["district_id"]) == {1001}
 
 
+def test_curve_stops_when_few_remain() -> None:
+    """30 cases filed Jan 2015: 15 decided after 6 months, 15 still pending. From month 7 only 15 are followed, fewer
+    than MIN_AT_RISK (20), so the curve stops at 6 months: the median (6) is known, the 1-year share is not."""
+    rows = [(1001, 201501, 201507, "civil", 15), (1001, 201501, 0, "civil", 15)]
+    rows += [(1002, 201701, 201800 + m, "other", 10) for m in range(1, 13)]
+    c = pd.DataFrame(rows, columns=["district_id", "f", "d", "case_type", "n"])
+    t = ttd.km_table(c, min_cases=10).set_index(["district_id", "case_type"]).loc[(1001, "civil")]
+    assert ttd.MIN_AT_RISK == 20 and t["followed_months"] == 6
+    assert t["median_months"] == 6 and np.isnan(t["pending_after_1y"]) and np.isnan(t["p90_months"])
+
+
 def test_decided_only() -> None:
     """100 civil cases filed Jan 2015: 40 decided after 6 months, 60 still pending. Counting only decided cases says the
     median is 6 months; Kaplan-Meier says over half are still pending."""
@@ -70,9 +81,29 @@ def test_decided_only() -> None:
     assert np.isnan(km.loc[(1001, "civil"), "median_months"])
 
 
+def test_national_keeps_each_state_collection_month() -> None:
+    """State 1 is collected in Dec 2018, state 2 in Jun 2020. Each has 40 civil cases filed Jan 2016: 20 decided after
+    5 months; the other 20 are still pending at state 1's collection (censored at 35 months) and decided after 48
+    months in state 2. Pooled with each state's own collection month, every case still followed at 48 months is
+    decided then, so 90% are decided by 48 months. Pooling with one national collection month (Jun 2020 here) would
+    keep state 1's 20 cases at risk with no decisions recorded, and the curve would stall at 25%."""
+    rows = [(1001, 201601, 201606, "civil", 20), (1001, 201601, 0, "civil", 20),
+            (2001, 201601, 201606, "civil", 20), (2001, 201601, 202001, "civil", 20)]
+    rows += [(1001, 201601, 201800 + m, "other", 10) for m in range(1, 13)]                  # state 1: data ends Dec 2018
+    rows += [(2001, 201601, y * 100 + m, "other", 10) for y in (2018, 2019, 2020) for m in range(1, 13)
+             if y * 100 + m <= 202006]                                                       # state 2: data ends Jun 2020
+    c = pd.DataFrame(rows, columns=["district_id", "f", "d", "case_type", "n"])
+    t = ttd.km_table(ttd.as_national(c), min_cases=10).set_index("case_type").loc["civil"]
+    assert t["median_months"] == 5 and t["p90_months"] == 48 and t["followed_months"] == 48
+    one = ttd.km_table(c.assign(district_id=0), min_cases=10).set_index("case_type").loc["civil"]
+    assert np.isnan(one["p90_months"])   # the old pooling: state 1's pending cases never resolve
+
+
 if __name__ == "__main__":
     test_km_simple()
     test_delayed_entry()
     test_missing_decisions()
+    test_curve_stops_when_few_remain()
     test_decided_only()
+    test_national_keeps_each_state_collection_month()
     print("time-to-decision tests passed")

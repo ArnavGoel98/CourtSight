@@ -199,7 +199,7 @@ html[lang=hi] .kicker{font-family:inherit;letter-spacing:0;font-size:.85rem}
 <li>Cases still pending when the data was collected (late 2018 to 2020, depending on the state) are counted as undecided up to that date, so slow cases are not left out. Where the curve stops, there is no more follow-up.</li>
 <li>This describes the past. It is not a prediction for one particular case: courts have changed since 2018, and each case depends on its own facts and adjournments.</li>
 <li>Case types are grouped from the names each court uses; "Other / unclassified" collects what could not be grouped. Districts with fewer than 200 cases of a type are not shown. High Courts and the Supreme Court are not covered.</li>
-<li>The eCourts records hold about 61% of the cases the official figures say were filed in 2015–2018, from 8% in Tripura to nearly all in Bihar; these figures describe the courts that were recorded. Districts whose records hold almost no decisions (such as Gaya) are withheld rather than shown wrong. See the <a href="index.html#audit">audit</a>.</li>
+<li>The case records used here (Development Data Lab's copy of eCourts) hold about 61% of the cases the official figures say were filed in 2015–2018, from 8% in Tripura to nearly all in Bihar; in Jharkhand (122%) the records even exceed the official figures, so the comparison is rough. These figures describe the courts that were recorded. Districts whose records hold almost no decisions (such as Gaya) are withheld rather than shown wrong. See the <a href="index.html#audit">audit</a>.</li>
 </ul>
 </details>
 </main>
@@ -481,7 +481,7 @@ const HIS={nav1:"निष्कर्ष",nav2:"कैलकुलेटर",ki
 <li>डेटा इकट्ठा होने के समय (राज्य के अनुसार 2018 के अंत से 2020 तक) जो मामले लंबित थे, उन्हें उस तारीख़ तक अनिर्णीत गिना गया है, ताकि धीमे मामले छूटें नहीं। जहाँ रेखा रुकती है, वहाँ के आगे का डेटा नहीं है।</li>
 <li>यह अतीत का विवरण है, किसी एक मुक़दमे की भविष्यवाणी नहीं: 2018 के बाद अदालतें बदली हैं, और हर मुक़दमा अपने तथ्यों और तारीख़ों पर निर्भर करता है।</li>
 <li>मामलों के प्रकार अदालतों द्वारा इस्तेमाल किए गए नामों से समूहित किए गए हैं; जो समूहित नहीं हो सके वे "अन्य" में हैं। जिन ज़िलों में किसी प्रकार के 200 से कम मामले हैं, वे नहीं दिखाए गए। उच्च न्यायालय और सर्वोच्च न्यायालय शामिल नहीं हैं। राज्यों और ज़िलों के नाम मूल डेटा की तरह अंग्रेज़ी में हैं।</li>
-<li>2015–2018 में आधिकारिक आँकड़ों के अनुसार दर्ज मामलों में से लगभग 61% ही ई-कोर्ट्स रिकॉर्ड में हैं; त्रिपुरा में 8%, बिहार में लगभग सभी। ये आँकड़े उन्हीं अदालतों के हैं जिनके रिकॉर्ड मौजूद हैं। जिन ज़िलों (जैसे गया) के रिकॉर्ड में लगभग कोई फ़ैसला दर्ज नहीं है, उनके आँकड़े ग़लत दिखाने के बजाय रोके गए हैं। <a href="index.html#audit">जाँच का ब्योरा (अंग्रेज़ी में)</a></li>`,
+<li>2015–2018 में आधिकारिक आँकड़ों के अनुसार दर्ज मामलों में से लगभग 61% ही यहाँ इस्तेमाल किए गए रिकॉर्ड (डेवलपमेंट डेटा लैब की ई-कोर्ट्स प्रति) में हैं; त्रिपुरा में 8%, बिहार में लगभग सभी। झारखंड में रिकॉर्ड में आधिकारिक आँकड़ों से भी ज़्यादा मामले हैं, इसलिए यह तुलना मोटा अनुमान ही है। ये आँकड़े उन्हीं अदालतों के हैं जिनके रिकॉर्ड मौजूद हैं। जिन ज़िलों (जैसे गया) के रिकॉर्ड में लगभग कोई फ़ैसला दर्ज नहीं है, उनके आँकड़े ग़लत दिखाने के बजाय रोके गए हैं। <a href="index.html#audit">जाँच का ब्योरा (अंग्रेज़ी में)</a></li>`,
  foot:`CourtSight: अर्णव गोयल · <a href="https://github.com/ArnavGoel98/CourtSight">कोड और विधि</a> · डेटा: डेवलपमेंट डेटा लैब, ई-कोर्ट्स रिकॉर्ड 2010–2018 (CC BY-NC-SA 4.0)।`};
 Object.assign(HIS,{nav3:"शोध-पत्र",nav4:"रैंकिंग",nav5:"नक़्शा",nav6:"ज़िले",q:"1. आपका ज़िला",tl:"2. मामले का प्रकार",share:"इस नतीजे का लिंक कॉपी करें",wl:"पहले से इंतज़ार कर रहे हैं? मामला कितने समय से लंबित है",report:"ज़िले का पूरा पेज",embed:"अपनी वेबसाइट पर लगाएँ",cmp:"+ किसी दूसरे ज़िले से तुलना करें",q2:"इससे तुलना करें"});
 const HIL={civ_suit:"दीवानी वाद (संपत्ति, अनुबंध, पैसा)",civ_execution:"निष्पादन (डिक्री लागू कराना)",civ_family:"तलाक़ / पारिवारिक",
@@ -595,13 +595,17 @@ function waitText(r,w){
   const S12=c[i+4], p=S12==null?null:1-S12/S;
   let k=null;for(let j=i+1;j<c.length;j++){if(c[j]==null)break;if(c[j]<=S/2){k=j-i;break}}
   const x=p==null?null:Math.round(10*p);
-  const caveat=HI?"<small>यह पिछले मामलों का विवरण है, आपके मामले की भविष्यवाणी नहीं: जो मामला लंबे समय से अटका है, उसकी कोई वजह हो सकती है।</small>"
-    :"<small>This describes past cases, not a prediction for yours: a case that has waited long may be waiting for a reason.</small>";
+  const caveat=HI?"<small>यह पिछले मामलों का विवरण है, आपके मामले की भविष्यवाणी नहीं: जो मामला लंबे समय से अटका है, उसकी कोई वजह हो सकती है, और लंबा इंतज़ार केवल 2010–2018 की शुरुआत में दर्ज मामलों में ही दिखता है।</small>"
+    :"<small>This describes past cases, not a prediction for yours: a case that has waited long may be waiting for a reason, and long waits are seen only for cases filed early in 2010–2018.</small>";
   if(HI)return `${wName(w)} बाद भी लंबित ऐसे मामलों में से `+(x==null?"":x<1?"10 में से 1 से भी कम का":`लगभग <b>${x}</b> (10 में से) का`)+(x==null?"":" फ़ैसला अगले एक साल में हुआ")+
     (k?`${x==null?"":"; "}आधे मामलों का फ़ैसला अगले <b>${fmtM(k*3)}</b> में हुआ।`:`${x==null?"":"; "}डेटा ख़त्म होने तक आधे से ज़्यादा अब भी लंबित थे।`)+caveat;
   return `Of cases like this in ${st.A[1]} still waiting after ${wName(w)}, `+(x==null?"":x<1?"fewer than 1 in 10 were decided in the following year":`about <b>${x} in 10</b> were decided in the following year`)+
     (k?`${x==null?"":"; "}half were decided within a further <b>${fmtM(k*3)}</b>.`:`${x==null?"":"; "}more than half were still waiting when the data ends.`)+caveat;
 }
+// how far a curve is followed (it stops when fewer than 20 cases are left); a blank slowest-tenth means "longer than
+// that", which can be far less than 10 years
+function beyond(r){const m=(r[C.curve].length-1)*3;
+  return HI?(m<24?`${m} महीने से ज़्यादा`:`${Math.floor(m/12)} साल से ज़्यादा`):(m<24?`over ${m} months`:`over ${Math.floor(m/12)} yrs`)}
 function tenOf(r){
   const n1=Math.round(10*(1-r[C.pending_after_1y])), n3=r[C.pending_after_3y]==null?null:Math.round(10*(1-r[C.pending_after_3y]));
   const p5=r[C.pending_after_5y], s5=p5==null?null:Math.round(10*p5);
@@ -628,7 +632,7 @@ function render(){
   const bv=(k,f)=>B?`<em>${st.B[1]}: ${f(B)}</em>`:"";
   $("facts").innerHTML=[["pending_after_1y",1],["pending_after_3y",3],["pending_after_5y",5]].map(([k,y])=>
     `<div><b>${r[C[k]]==null?"–":pc(1-r[C[k]])}</b><span>${HI?`${y} साल के भीतर फ़ैसला`:`decided within ${y} year${y>1?"s":""}`}</span>${bv(k,x=>x[C[k]]==null?"–":pc(1-x[C[k]]))}</div>`).join("")+
-    `<div><b>${p90==null?(HI?"10+ साल":"10+ yrs"):fmtM(p90)}</b><span>${HI?"सबसे धीमे 10 में से 1 मामले में":"for the slowest 1 in 10"}</span>${bv("p90",x=>x[C.p90_months]==null?(HI?"10+ साल":"10+ yrs"):fmtM(x[C.p90_months]))}</div>`;
+    `<div><b>${p90==null?beyond(r):fmtM(p90)}</b><span>${HI?"सबसे धीमे 10 में से 1 मामले में":"for the slowest 1 in 10"}</span>${bv("p90",x=>x[C.p90_months]==null?beyond(x):fmtM(x[C.p90_months]))}</div>`;
   $("based").textContent=(HI?`${s} के ${d} में दर्ज ${N} मामलों पर आधारित (2010–2018)।`:`Based on ${N} cases filed in ${d}, ${s}, 2010–2018.`)+
     dataNote(s,d)+(st.B&&!B?(HI?` ${st.B[1]} में इस प्रकार के पर्याप्त मामले नहीं हैं।`:` ${st.B[1]} has too few cases of this type to compare.`):"");
   $("lg-here").textContent=d; $("lg-b").hidden=!B; if(B)$("lg-b-name").textContent=st.B[1];

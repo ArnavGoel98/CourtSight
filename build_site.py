@@ -320,7 +320,8 @@ def paper_vars(d: dict) -> dict[str, str]:
 def hearing_vars(d: dict) -> dict[str, str]:
     h, a = d["hearings"], d["audit"]["age_check"]
     st = {r["group"]: r for r in h["stages"]}
-    co = {(r["outcome"], r["feature"]): r for r in h["coef"]}
+    co = {(r["outcome"], r["feature"]): r for r in h["coef"] if r["model"] == "structural"}
+    ca = {(r["outcome"], r["feature"]): r for r in h["coef"] if r["model"] == "with_pending_age"}
     nv = {r["case_type"]: r for r in d["decided_only"]}
     pct = lambda v: f"{v * 100:.0f}"
     f1 = lambda v: f"{v * 100:.1f}".replace("-", "−")
@@ -340,10 +341,15 @@ def hearing_vars(d: dict) -> dict[str, str]:
         "hg_r2c": pct(h["r2_with_gap"]["criminal"]), "hg_r2v": pct(h["r2_with_gap"]["civil"]),
         "hg_wc": f"{h['spearman_gap_vs_pending_3y_within_states']['criminal']:.2f}",
         "hg_wv": f"{h['spearman_gap_vs_pending_3y_within_states']['civil']:.2f}",
+        "hg_bca": f1(ca[("criminal", "log_gap_days")]["coef_per_sd"]), "hg_bva": f1(ca[("civil", "log_gap_days")]["coef_per_sd"]),
+        "hg_bva_lo": f1(ca[("civil", "log_gap_days")]["lo"]), "hg_bva_hi": f1(ca[("civil", "log_gap_days")]["hi"]),
+        "hg_summons": pct(h["label_checks"]["service_summons_notice_warrant_labels"]),
+        "hg_appear": pct(h["label_checks"]["service_appearance_labels"]),
         "hg_police": f"{h['label_checks']['police_reports_filed_as_final'] * 100:.1f}",
         "hg_blank": f"{h['label_checks']['blank_label'] * 100:.1f}",
         "nv_civ": f"{nv['civ_suit']['median_months_decided_only']:.0f}", "nv_mag": f"{nv['crim_magisterial']['median_months_decided_only']:.0f}",
-        "km_mag": f"{nv['crim_magisterial']['median_months_kaplan_meier']:.0f}",
+        "nv_civ_km": f"{nv['civ_suit']['median_months_kaplan_meier_same_cases']:.0f}",
+        "nv_mag_km": f"{nv['crim_magisterial']['median_months_kaplan_meier_same_cases']:.0f}",
         "ag_states": str(a["states"]), "ag_r13": pct(a["records_share"]["1_3y"]), "ag_r35": pct(a["records_share"]["3_5y"]),
         "ag_r510": pct(a["records_share"]["5_10y"]), "ag_n13": pct(a["njdg_share"]["1_3y"]),
         "ag_n35": pct(a["njdg_share"]["3_5y"]), "ag_n510": pct(a["njdg_share"]["5_10y"]),
@@ -366,6 +372,15 @@ def audit_vars(a: dict) -> dict[str, str]:
         "au_rwidth": str(a["civil_suit_median_rank_interval_width"]),
         "au_rwide": pct(a["civil_suit_share_rank_interval_over_50"]),
         "au_ncourts": str(len(a["units_that_are_court_complexes"])),
+        "au_med_onecut": f"{t['median_months__one_national_collection_month']:.0f}",
+        "au_3y_onecut": pct(t["pending_after_3y__one_national_collection_month"]),
+        "au_3y": pct(t["pending_after_3y__corrected_50"]), "au_5y": pct(t["pending_after_5y__corrected_50"]),
+        "au_sa3": pct(t["pending_after_3y__state_curves_averaged"]),
+        "au_sa5": pct(t["pending_after_5y__state_curves_averaged"]),
+        "au_thin3": f"{a['thin_tail_figures_left_blank_3y']:,}", "au_thin5": f"{a['thin_tail_figures_left_blank_5y']:,}",
+        "au_late": f"{a['decisions_after_collection_share'] * 100:.1f}",
+        "au_late12": pct(a["decisions_after_collection_within_12m_share_of_those"]),
+        "au_late_bad": f"{a['decisions_after_collection_dated_2022_or_later']:,}",
         "wh_n": str(len(a["units_withheld_records_never_complete"])),
         "wh_gaya_d": f"{a['withheld_detail']['Gaya']['decided_2010_2017']:,}",
         "wh_gaya_18": f"{a['withheld_detail']['Gaya']['decided_2018']:,}",
@@ -391,7 +406,13 @@ def coverage_vars(a: dict) -> dict[str, str]:
     sn = {r["case_type"]: r for r in a["sens"]}["civ_suit"]
     pct = lambda v: f"{v * 100:.0f}"
     low = next(iter(cv["lowest_coverage"]))
+    full = [k for k, v in cv["highest_coverage"].items() if .95 <= v <= 1.05]
+    over = [f"{k} ({pct(v)}%)" for k, v in cv["highest_coverage"].items() if v > 1.05]
+    # the Hindi calculator names these states in Hindi; if the extremes change, its coverage line must be rewritten
+    assert (low, full, [o.split(" (")[0] for o in over]) == ("Tripura", ["Bihar"], ["Jharkhand"]), \
+        "coverage extremes changed: update the Hindi coverage line in site/calculator.html"
     return {
+        "cv_full": " and ".join(full), "cv_over": " and ".join(over),
         "cv_all": pct(cv["coverage_2015_18"]), "cv_15": pct(cv["coverage_by_year"]["2015"]),
         "cv_18": pct(cv["coverage_by_year"]["2018"]), "cv_low": pct(cv["lowest_coverage"][low]), "cv_low_state": low,
         "cv_none": str(len(cv["official_units_with_no_records"])),
@@ -426,22 +447,22 @@ def render(template: str, data: dict[str, object], out: Path, lang: str = "en", 
 def main() -> None:
     (HERE / "docs").mkdir(exist_ok=True)
     sd, n = site_data(), unit_counts()
+    pv = paper_vars(sd) | n          # figures quoted in page text, so no page hard-codes a number
     render("index.html", sd, HERE / "docs" / "index.html", fill=n)
-    render("paper.html", {k: v for k, v in sd.items() if k != "district_keys"}, HERE / "docs" / "paper.html",
-           fill=paper_vars(sd) | n)
+    render("paper.html", {k: v for k, v in sd.items() if k != "district_keys"}, HERE / "docs" / "paper.html", fill=pv)
     cd = calc_data()
     (HERE / "docs" / "calc-data.json").write_text(json.dumps(cd, separators=(",", ":")))
     print(f"wrote docs/calc-data.json ({(HERE / 'docs' / 'calc-data.json').stat().st_size / 1e3:.0f} kB)")
-    render("calculator.html", {}, HERE / "docs" / "calculator.html", fill=n)
-    render("calculator.html", {}, HERE / "docs" / "calculator-hi.html", lang="hi", fill=n)
+    render("calculator.html", {}, HERE / "docs" / "calculator.html", fill=pv)
+    render("calculator.html", {}, HERE / "docs" / "calculator-hi.html", lang="hi", fill=pv)
     render("districts.html", {}, HERE / "docs" / "districts.html", fill=n)
     md = map_data()
     (HERE / "docs" / "map-data.json").write_text(json.dumps(md, separators=(",", ":"), ensure_ascii=False))
     (HERE / "docs" / "map-civil-suits.svg").write_text(map_svg(md))
     print(f"wrote docs/map-data.json ({(HERE / 'docs' / 'map-data.json').stat().st_size / 1e3:.0f} kB)")
-    render("map.html", {}, HERE / "docs" / "map.html", fill=n)
+    render("map.html", {}, HERE / "docs" / "map.html", fill=pv)
     render("embed.html", {}, HERE / "docs" / "embed.html", fill=n)
-    render("press.html", {}, HERE / "docs" / "press.html", fill=paper_vars(sd) | n)
+    render("press.html", {}, HERE / "docs" / "press.html", fill=pv)
     import district_pages
     pages = list(PAGES)
     print(f"wrote {district_pages.build(pages)} district pages in docs/d/")

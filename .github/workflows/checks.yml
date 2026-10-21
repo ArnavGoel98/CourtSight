@@ -48,9 +48,9 @@ jobs:
           python time_to_decision.py --level civil_criminal > /dev/null
           python data_audit.py > /dev/null
           python coverage_audit.py > /dev/null
-          python hearings.py > /dev/null
           python waiting_years.py > /dev/null
           python district_drivers.py > /dev/null
+          python hearings.py > /dev/null
           python tests/compare_outputs.py /tmp/committed/covid results/covid_excess
           python tests/compare_outputs.py /tmp/committed/grading results/ddl_2010_2018/grading_2019_state
           python tests/compare_outputs.py /tmp/committed/waiting results/waiting_years

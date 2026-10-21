@@ -11,6 +11,8 @@
 3. Rank uncertainty. Each district's share pending after 3 years has a sampling interval (Greenwood); ranks are
    simulated from it, giving a 90% range for each district's rank within its case type.
 4. Units that are not districts. Some DDL "districts" are court complexes (e.g. Mumbai City Civil Court).
+5. Thin tails: how many district figures are left blank because fewer than 20 cases were still being followed, and
+   decision dates after a state's collection month (treated as undecided).
 
 Outputs (results/audit/): summary.json, cohort_speed.csv, correction_by_type.csv, rank_intervals.csv
 """
@@ -33,6 +35,9 @@ NOT_DISTRICT: Final = re.compile(r"court|tribunal|cmm|claims|family|city civil|s
 
 
 def cohort_speed(c: pd.DataFrame, entry: pd.Series) -> pd.DataFrame:
+    # 2018 filings are left out: the first states were collected in December 2018, before a year had passed for
+    # most of them, so their share decided within a year would look low for no real reason
+    c = c.loc[c["f"] // 100 <= 2017]
     fm, dm = T.months(c["f"]), np.where(c["d"] > 0, T.months(c["d"]), np.nan)
     complete = fm >= c["district_id"].map(entry).fillna(0)
     dec12 = np.isfinite(dm) & (dm - fm <= 12)
@@ -42,6 +47,21 @@ def cohort_speed(c: pd.DataFrame, entry: pd.Series) -> pd.DataFrame:
     out = g["decided_within_12m"].unstack().rename(columns={True: "after_records_complete", False: "before"})
     out["cases_filed"] = d.groupby("year")["n"].sum()
     return out.reset_index()
+
+
+def state_average(c: pd.DataFrame, entry: pd.Series) -> pd.DataFrame:
+    """National shares still pending as the case-weighted average of each state's own Kaplan-Meier curve (its own
+    collection month, delayed entry). Pooling all cases into one curve lets the states followed longest dominate the
+    long durations; averaging state curves does not, so it checks the pooled national figures."""
+    st = T.km_table(c.assign(entry_m=c["district_id"].map(entry), district_id=(c["district_id"] // 1000) * 1000), 200)
+    rows = []
+    for ct, g in st.groupby("case_type"):
+        r = {"case_type": ct, "median_months": np.nan}
+        for k in COLS[1:]:
+            ok = g[k].notna()
+            r[k] = float((g.loc[ok, k] * g.loc[ok, "cases"]).sum() / g.loc[ok, "cases"].sum())
+        rows.append(r)
+    return pd.DataFrame(rows)
 
 
 def rank_intervals(t: pd.DataFrame, draws: int = 2000, seed: int = 0) -> pd.DataFrame:
@@ -64,18 +84,21 @@ def main() -> None:
     entry = T.digitisation_month(c)
     cohort_speed(c, entry).round(4).to_csv(OUT / "cohort_speed.csv", index=False)
 
-    nat = {"uncorrected": T.km_table(c.assign(district_id=0), 200)}
+    nat = {"uncorrected": T.km_table(T.as_national(c), 200)}
     for share in (0.3, 0.5, 0.7):
         e = T.digitisation_month(c, share)
-        nat[f"corrected_{int(share * 100)}"] = T.km_table(c.assign(entry_m=c["district_id"].map(e), district_id=0), 200)
+        nat[f"corrected_{int(share * 100)}"] = T.km_table(T.as_national(c, e), 200)
     e50 = T.digitisation_month(c)
     for frac in (0.1, 0.4):   # the collection-month rule (20% of 2018 monthly decisions) moved both ways
         T.COLLECTION_FRAC = frac
-        nat[f"collection_{int(frac * 100)}"] = T.km_table(c.assign(entry_m=c["district_id"].map(e50), district_id=0), 200)
+        nat[f"collection_{int(frac * 100)}"] = T.km_table(T.as_national(c, e50), 200)
     T.COLLECTION_FRAC = 0.2
     for ds in (0.1, 0.35):   # the decision-recording rule (decisions >= 20% of filings per window) moved both ways
         e = T.digitisation_month(c, decision_share=ds)
-        nat[f"decisions_{int(ds * 100)}"] = T.km_table(c.assign(entry_m=c["district_id"].map(e), district_id=0), 200)
+        nat[f"decisions_{int(ds * 100)}"] = T.km_table(T.as_national(c, e), 200)
+    # the earlier national tables, which found one collection month for the pooled country (February 2019)
+    nat["one_national_collection_month"] = T.km_table(c.assign(entry_m=c["district_id"].map(e50), district_id=0), 200)
+    nat["state_curves_averaged"] = state_average(c, e50)
     by_type = pd.concat([v.set_index("case_type")[COLS].add_suffix(f"__{k}") for k, v in nat.items()], axis=1)
     by_type.round(4).reset_index().to_csv(OUT / "correction_by_type.csv", index=False)
 
@@ -85,6 +108,12 @@ def main() -> None:
     shift = (m["pending_after_3y"] - m["pending_after_3y_naive"]).dropna()
     civ = m.loc[m["case_type"] == "civ_suit"].dropna(subset=["pending_after_3y", "pending_after_3y_naive"])
     rshift = (civ["pending_after_3y"].rank() - civ["pending_after_3y_naive"].rank()).abs()
+
+    # thin tails: how many district figures the 20-cases-still-followed rule leaves blank
+    T.MIN_AT_RISK = 1
+    loose = T.km_table(c, 200, entry)
+    T.MIN_AT_RISK = 20
+    thin = {k: int(loose[k].notna().sum() - corr[k].notna().sum()) for k in ("pending_after_3y", "pending_after_5y")}
 
     ri = rank_intervals(corr)
     ri.to_csv(OUT / "rank_intervals.csv", index=False)
@@ -107,7 +136,20 @@ def main() -> None:
         "filed_2010_2017": int(c.loc[(c["district_id"] == d) & (yr_f <= 2017), "n"].sum()),
         "decided_2010_2017": int(c.loc[(c["district_id"] == d) & (yr_d >= 2010) & (yr_d <= 2017), "n"].sum()),
         "decided_2018": int(c.loc[(c["district_id"] == d) & (yr_d == 2018), "n"].sum())} for d in sorted(never)}
+    # decision dates after a state's collection month: mostly the scrape tailing off, then 2020 dates (a later partial
+    # update), and a few impossible ones (2022 or later, after every state was collected; e.g. the year 9201). All are
+    # treated as undecided at collection, which is the conservative choice
+    cm = (c["district_id"] // 1000).map(T.collection_month(c))
+    dm = T.months(c["d"].where(c["d"] > 0))
+    late = (dm > cm) & c["d"].gt(0)
     summary = {
+        "thin_tail_figures_left_blank_3y": thin["pending_after_3y"],
+        "thin_tail_figures_left_blank_5y": thin["pending_after_5y"],
+        "decisions_after_collection_share": round(float(c.loc[late, "n"].sum() / c["n"].sum()), 4),
+        "decisions_after_collection_within_12m_share_of_those": round(float(
+            c.loc[late & (dm - cm <= 12), "n"].sum() / c.loc[late, "n"].sum()), 3),
+        "decisions_after_collection_dated_2022_or_later": int(c.loc[late & (c["d"] // 100 >= 2022), "n"].sum()),
+        "decision_before_filing_cases": int(c.loc[c["d"].gt(0) & (dm < T.months(c["f"])), "n"].sum()),
         "recorded_filings_2010": int(yearly.loc[2010]), "recorded_filings_2018": int(yearly.loc[2018]),
         "share_of_cases_filed_before_records_complete": round(float(
             c.loc[T.months(c["f"]) < c["district_id"].map(entry).fillna(0), "n"].sum() / c["n"].sum()), 4),

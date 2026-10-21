@@ -24,7 +24,8 @@ and the weaker results are reported alongside the strong ones.
 At the end of 2021, the courts held **48 lakh (4.8 million) more pending cases** than each state's pre-pandemic trend
 implies (range 32–70 lakh). That is about **one in every eight pending cases**. The trend is corrected by its own
 error in pre-COVID backtests, and the range spans that observed error rather than a model of it. By 2024 the gap can
-no longer be told apart from the trend.
+no longer be told apart from the trend. The method attributes the whole departure from trend to the pandemic years;
+the flows below show why most of it is the court closures.
 
 The official flows show where it came from. In 2020 the courts disposed of **92 lakh cases, less than half the
 2017–19 average of 1.91 crore**. Over 2020–21 they disposed of about **1.2 crore fewer cases than normal**, while new
@@ -52,17 +53,18 @@ the backlog is falling, would clear it in about 33 years. Code: [`backlog_clock.
 Survival analysis on all 80.9 million cases. Cases still pending when the data was collected count as undecided up to
 each state's own collection date, and cases filed before a district's eCourts records became complete are counted
 only from that date, and districts whose records hold almost no decisions are withheld (see
-[the audit](#auditing-our-own-results)). A civil case filed in 2010–2018 took a median **18 months** to decide and a
+[the audit](#auditing-our-own-results)). A civil case filed in 2010–2018 took a median **19 months** to decide and a
 criminal case **7 months**, but about **1 in 6 of either was still pending after 5 years**. Across districts the median ranges from under a month to over 8 years. By case type: bail applications are
-decided almost at once (median **0 months**), divorce and family cases take a median **12 months**, motor-accident
-claims **19 months**, sessions trials **20 months**, cheque-bounce (NI Act s.138) cases **21 months**, and **ordinary
-civil suits 29 months, with 27% still pending after 5 years**. Results for 599 districts and 8 special courts × 10
+decided almost at once (median **0 months**), divorce and family cases take a median **13 months**, motor-accident
+claims **19 months**, sessions trials **20 months**, cheque-bounce (NI Act s.138) cases **20 months**, and **ordinary
+civil suits 30 months, with 27% still pending after 5 years**. Results for 599 districts and 8 special courts × 10
 case types (14 more withheld), with names and 90% rank ranges:
 [`results/time_to_decision/by_district_case_type.csv`](results/time_to_decision/by_district_case_type.csv),
 [`results/audit/rank_intervals.csv`](results/audit/rank_intervals.csv).
 
-**The usual numbers understate delay.** Averaged over decided cases only, the way delay is often quoted, civil
-suits took a median of 17 months and magistrate criminal cases 3; counting the cases still waiting, 29 and 8
+**The usual numbers understate delay.** On the same complete records (cases filed once their district's records were
+complete), decided civil suits took a median of 14 months, the way delay is often quoted; Kaplan–Meier on exactly the
+same cases, counting those still waiting, gives 29. Magistrate criminal cases: 2 against 8
 (`national_decided_only_case_type.csv`).
 
 **Try it:** [`docs/calculator.html`](docs/calculator.html), a "how long will my case take?" page with the full
@@ -94,22 +96,26 @@ that clock was still running: the typical pending case was **2.3 years** old, **
 
 ### 6. Slow districts are not explained by caseload (correlation, not cause)
 The share of civil cases still pending after 3 years ranges from **17%** in the fastest tenth of districts to **48%**
-in the slowest. Across 571 districts, caseload per courtroom does not make districts slower: holding district size
-fixed, busier courtrooms are if anything slightly faster (−1.8 points per SD, 95% interval −3.1 to −0.3). Longer judge
-tenure goes with faster courts (−1.8 points per SD), and larger districts (+3.1) and a heavier criminal docket (+1.9)
+in the slowest. Across 570 districts, busier courtrooms are not slower: holding district size fixed, they are if
+anything slightly faster (−1.7 points per SD, 95% interval −3.2 to −0.3). Longer judge
+tenure goes with faster courts (−1.8 points per SD), and larger districts (+3.0) and a heavier criminal docket (+1.9)
 with slower civil cases. Together these explain only **10%** of the variation; most of what makes a district slow is
-not in this data (`district_drivers.py`, [`results/district_drivers/`](results/district_drivers/)).
+not in these features (section 7 adds hearing gaps; `district_drivers.py`, [`results/district_drivers/`](results/district_drivers/)).
 
 ### 7. Where cases get stuck, and how far apart hearings are
-Of the 2.13 crore cases pending when the data was collected, **37% were next listed for summons, notices or
-appearance**, getting the parties before the court rather than evidence (22%) or arguments and judgment (10%). A
-pending case's next hearing was set a typical **56 days** after its last one, and **districts that space hearings
-further apart are slower**: 31% of criminal cases were still pending after 3 years in the fifth of districts with the
-longest gaps, against 14% in the fifth with the shortest (civil: 34% against 28%). Unlike caseload per courtroom, this
-holds with caseload, size, case mix and judge tenure held fixed (+6.8 points of criminal cases pending per SD), with
-every district given the same stage mix, and within states (ρ = 0.42 criminal, 0.33 civil). West Bengal, Odisha and
-Mizoram are left out because their hearing records look stale. Correlation, not cause: congested courts may space
-hearings out. The purpose labels are free text; what each group holds is published (`hearings.py`,
+Of the 2.13 crore cases pending when the data was collected, **18% were next listed for summons, notices, warrants
+or process**, the court still trying to get a party there, and another 19% for "appearance", which can be a routine
+date. Evidence accounted for 22% and arguments and judgment for 10%. A pending case's next hearing was set a typical
+**56 days** after its last one, and **districts that space hearings further apart are slower, clearly so for
+criminal cases**: 31% were still pending after 3 years in the fifth of districts with the longest gaps, against 14%
+in the fifth with the shortest (civil: 34% against 28%). Unlike caseload per courtroom, this holds with caseload,
+size, case mix and judge tenure held fixed (+6.8 points of criminal cases pending per SD), with every district given
+the same stage mix, and within states (ρ = 0.42 criminal, 0.33 civil). The obvious objection is that districts with
+older pending cases both space hearings out and look slow. Holding the mean age of the pending stock fixed too, the
+criminal association shrinks but holds (+5.1 per SD, 95% interval 4.0–6.2); the civil one mostly does not (+1.1,
+0.2–2.1). West Bengal, Odisha and Mizoram are left out because their hearing records look stale. These are district
+averages, so they say nothing about any single case, and they are correlations: congested courts may space hearings
+out. The purpose labels are free text; what each group holds is published (`hearings.py`,
 [`results/hearings/`](results/hearings/)).
 
 ### 8. What a change of judge costs a courtroom: no reliable estimate (a negative result)
@@ -141,9 +147,9 @@ We looked for ways the data could mislead (`data_audit.py`, [`results/audit/`](r
   reached districts at different times and cases already decided by then were mostly never entered. Among 2010
   filings, 16% of those filed before their district's records became complete were decided within a year, against
   42% of those filed after: the early records are the slow survivors. Every estimate now uses delayed entry from each
-  district's completeness month. Nationally the effect is modest (civil suits 32 → 29 months), but 1,031 of 4,596
-  district results moved by more than 5 points and one district moved 278 places in the civil-suit ranking.
-  Completeness threshold 30–70%: civil-suit median 28–30 months.
+  district's completeness month. Nationally the effect is modest (civil suits 33 → 30 months), but 1,020 of 4,314
+  district results moved by more than 5 points and one district moved 277 places in the civil-suit ranking.
+  Completeness threshold 30–70%: civil-suit median 29–30 months.
 - **Districts that never recorded decisions (fixed).** Filings alone can look complete while decisions are missing.
   In 14 court units, including Gaya, Muzaffarpur, Bhojpur and Vaishali in Bihar and Chandauli in Uttar Pradesh, the
   records hold almost no decisions before 2018 (Gaya: 33 in 2010–2017, 7,969 in 2018), so every case looked stuck,
@@ -156,12 +162,29 @@ We looked for ways the data could mislead (`data_audit.py`, [`results/audit/`](r
   52% / 26% / 22% aged 1–3 / 3–5 / 5–10 years here, 48% / 26% / 26% in NJDG. Agreement within 3.7 points.
 - **Hearing labels (stated).** Stage groups are named for what their free-text labels mostly contain; 1.7% of
   pending cases carry police-report labels filed under "arguments, orders and judgment", 1.4% have none.
-- **Collection date (tested).** Moving the collection-month rule from 20% to 10% or 40%: civil-suit median 29–32 months.
-- **Coverage of the court system (tested).** Compared with the filings implied by the official figures, the eCourts
-  records hold **61% of cases filed in 2015–2018** (55% in 2015, 67% in 2018), from 8% in Tripura to roughly all in
-  Bihar; Andaman & Nicobar, Arunachal Pradesh, Lakshadweep, Nagaland and Puducherry have none. The results describe
-  the courts eCourts recorded. Weighting each state by its official filings gives a civil-suit median of 30 months,
-  and counting every record only from 2014 gives 29 (`coverage_audit.py`).
+- **Collection date (tested).** Moving the collection-month rule from 20% to 10% or 40%: civil-suit median 29–31 months.
+  1.2% of cases carry a decision date after their state's collection month: 95% of those within a year of it (the
+  collection tailing off), most of the rest in 2020, and 1,412 with impossible dates from 2022 on (the year 9201). All
+  count as undecided at collection. No decision precedes its filing date.
+- **One collection date for the whole country (fixed).** The national tables pooled every district, and the pooling
+  also merged every state's collection date into one, February 2019: states collected later were cut off early, and
+  the seven collected in December 2018 or January 2019 (a tenth of all cases) were followed a month or two past their
+  end with no decisions recorded. Every case now keeps its own state's date: civil-suit median 29 → 30 months, 43% →
+  44% still pending after 3 years. Pooling lets the states followed longest weigh more at long durations, so as a
+  check each state's curve is averaged with case-count weights instead: 44% and 28% still pending at 3 and 5 years,
+  against 44% and 27% pooled. District figures were never affected (`data_audit.py`, `correction_by_type.csv`).
+- **Estimates resting on a handful of cases (fixed).** The far end of a survival curve can rest on a few cases still
+  being followed. Every curve now stops once fewer than 20 cases are followed, which leaves 253 three-year and 550
+  five-year district figures blank rather than estimated; the calculator says "longer than the data follows" instead
+  of quoting a number of years the data never reaches.
+- **Coverage of the court system (tested).** Compared with the filings implied by the official figures, the case
+  records used here (Development Data Lab's copy of eCourts) hold **61% of cases filed in 2015–2018** (55% in 2015,
+  67% in 2018), from 8% in Tripura to roughly all in Bihar, and in Jharkhand the records even exceed the official
+  figures (122%), which neither source should allow, so single states are rough; Andaman & Nicobar, Arunachal Pradesh,
+  Lakshadweep, Nagaland and Puducherry have none. Whether the gap is in eCourts itself or in what was collected from
+  it cannot be told, so the results describe the courts these records cover. Weighting each state by its official
+  filings gives a civil-suit median of 31 months, and counting every record only from 2014 gives 29
+  (`coverage_audit.py`).
 - **Are "pending" cases really pending? (tested).** A decision never entered would make a court look slow. Of cases
   pending at collection, 95% had a hearing listed in the year before (Bihar 99%), so most are live. Exceptions: West
   Bengal (53% not listed for over a year) and Odisha (29%), whose delays may be overstated.
@@ -177,7 +200,8 @@ We looked for ways the data could mislead (`data_audit.py`, [`results/audit/`](r
 - **Slow-district correlates (tested).** With corrected outcomes and the records-complete year as a control, the
   judge-tenure association holds.
 - **Open.** "Decided" includes transfers and dismissals, which the compact data cannot separate. Whether the cases
-  missing from eCourts differ from the recorded ones cannot be checked. The Hindi translation has not been reviewed by a professional legal translator.
+  missing from these records differ from the recorded ones cannot be checked. The Hindi translation has not been
+  reviewed by a professional legal translator.
 
 ## What the project does not claim
 - **No "judges needed" numbers.** The data cannot separate the effect of adding judges from where judges are posted.
@@ -215,9 +239,10 @@ python3 covid_excess.py                     # COVID estimate (official data is b
 python3 forecast_2026.py                    # rebuilds the 2026 forecast and its backtest
 python3 pendency_forecast.py --ddl-compact ddl_compact --ddl-only --out outputs/   # district model (~5 min)
 python3 make_charts.py                      # charts
-python3 time_to_decision.py && python3 data_audit.py && python3 coverage_audit.py   # needs ddl_compact/
-python3 hearings.py                         # after coverage_audit.py (uses its stale-records check)
-python3 waiting_years.py && python3 district_drivers.py   # needs ddl_compact/
+python3 time_to_decision.py && python3 time_to_decision.py --level civil_criminal   # needs ddl_compact/
+python3 data_audit.py && python3 coverage_audit.py
+python3 waiting_years.py && python3 district_drivers.py
+python3 hearings.py                         # after coverage_audit, waiting_years and district_drivers
 python3 build_site.py && python3 make_paper_pdf.py         # site, paper and PDF (PDF needs playwright)
 for t in tests/test_*.py; do python3 "$t"; done           # every test CI runs
 ```

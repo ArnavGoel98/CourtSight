@@ -9,7 +9,9 @@ Derived from it and released under the **same CC BY-NC-SA 4.0 licence** (attribu
 non-commercial use only, share-alike):
 - `ddl_compact/` (aggregated filing x decision month counts, hearing snapshots, judge postings, district key, and
   `detail/`: case-type counts and courtroom-month filings and disposals)
-- `results/time_to_decision/`, `results/judge_transfer/` and the pages in `docs/` built from them
+- `results/time_to_decision/`, `results/judge_transfer/`, `results/audit/`, `results/hearings/`,
+  `results/waiting_years/`, `results/district_drivers/`, and everything in `docs/` built from them (the site, the
+  district pages in `docs/d/`, the JSON files in `docs/api/`, `docs/calc-data.json` and `docs/map-data.json`)
 - `models/ddl_2010_2018/` and `results/ddl_2010_2018/` (models, forecasts and metrics trained on that data)
 
 ## District boundaries (Census of India 2011, via DataMeet)

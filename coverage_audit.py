@@ -152,11 +152,11 @@ def main() -> None:
     weight = 1 / unit.map(cov["coverage_2015_18"].clip(upper=1.0)).fillna(1.0)
     e = c["district_id"].map(entry)
     m2014 = float(T.months(pd.Series([201401])).iloc[0])
-    runs = {"as_published": c.assign(entry_m=e),
-            "records_from_2014": c.assign(entry_m=np.maximum(e.fillna(np.inf), m2014)),
-            "weighted_to_official_filings": c.assign(entry_m=e, n=c["n"] * weight)}
-    nat = pd.concat({k: T.km_table(v.assign(district_id=0), 200).set_index("case_type")[COLS]
-                     for k, v in runs.items()}, axis=1)
+    base = T.as_national(c)   # each row keeps its state's collection month
+    runs = {"as_published": base.assign(entry_m=e),
+            "records_from_2014": base.assign(entry_m=np.maximum(e.fillna(np.inf), m2014)),
+            "weighted_to_official_filings": base.assign(entry_m=e, n=c["n"] * weight)}
+    nat = pd.concat({k: T.km_table(v, 200).set_index("case_type")[COLS] for k, v in runs.items()}, axis=1)
     nat.columns = [f"{b}__{a}" for a, b in nat.columns]
     nat.round(4).reset_index().to_csv(OUT / "national_sensitivity.csv", index=False)
 
