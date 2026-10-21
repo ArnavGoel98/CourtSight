@@ -12,12 +12,17 @@
 3. Are "pending" records live? A case that was decided but never marked decided would sit in the data as pending
    and make a court look slower. For cases pending at collection, the date each was last listed for a hearing is
    compared with the state's collection month: a live case is listed every few months.
-4. Sensitivity of the national figures to the remaining gaps: (a) counting every record only from January 2014,
+4. Age of the pending stock against NJDG. The National Judicial Data Grid's age bands for pending district-court
+   cases on 24 May 2020 (as reported in the press) are compared with the ages of cases pending at collection here.
+   The records hold only cases filed 2010-2018, so cases under a year old are missing wherever a state was
+   collected after 2018; the comparison uses cases aged 1-10 years in states collected by December 2019, for which
+   those ages are fully covered.
+5. Sensitivity of the national figures to the remaining gaps: (a) counting every record only from January 2014,
    when coverage had largely settled, and (b) weighting each state by its official filings instead of its recorded
    ones (each record counts 1 / coverage), so that thinly covered states are not under-represented.
 
 Outputs (results/audit/): coverage_by_state.csv, speedup_by_year.csv, pending_activity.csv, national_sensitivity.csv,
-coverage.json
+age_check.json, coverage.json
 """
 from __future__ import annotations
 
@@ -105,6 +110,28 @@ def pending_activity(c: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
+# NJDG, district and taluka courts, 24 May 2020: share of pending cases by age, as printed (sources/README.md)
+NJDG_2020: Final = {"under_1y": 32.0, "1_3y": 28.0, "3_5y": 15.0, "5_10y": 15.28, "10_20y": 7.1, "20_30y": 1.28,
+                    "over_30y": 0.26}
+
+
+def age_check() -> dict[str, object]:
+    import waiting_years as W
+    c = W.load()
+    cut = c.groupby(c["district_id"] // 1000)["cut"].first()
+    ok = cut.index[cut <= T.months(pd.Series([201912])).iloc[0]]
+    p = c.loc[c["pending"] & (c["district_id"] // 1000).isin(ok)]
+    yrs = p["age"] // 12
+    bands = {"1_3y": (1, 2), "3_5y": (3, 4), "5_10y": (5, 9)}
+    tot = p.loc[yrs.between(1, 9), "n"].sum()
+    ours = {k: round(float(p.loc[yrs.between(a, b), "n"].sum() / tot), 3) for k, (a, b) in bands.items()}
+    nj = sum(NJDG_2020[k] for k in bands)
+    njdg = {k: round(NJDG_2020[k] / nj, 3) for k in bands}
+    return {"states": int(len(ok)), "pending_cases_aged_1_10y": int(tot), "records_share": ours, "njdg_share": njdg,
+            "max_abs_gap_points": round(max(abs(ours[k] - njdg[k]) for k in bands) * 100, 1),
+            "njdg_source": "NJDG figures for 24 May 2020 as reported by LiveLaw (shares of cases aged 1-10 years)"}
+
+
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     c, _ = T.load(HERE / "ddl_compact")
@@ -116,6 +143,8 @@ def main() -> None:
     sp = speedup(c, entry, cov["group"], units)
     sp.round(4).reset_index().to_csv(OUT / "speedup_by_year.csv", index=False)
 
+    ages = age_check()
+    (OUT / "age_check.json").write_text(json.dumps(ages, indent=2) + "\n")
     act = pending_activity(c)
     act.round(4).reset_index().to_csv(OUT / "pending_activity.csv", index=False)
 
@@ -160,6 +189,7 @@ def main() -> None:
         "pending_not_listed_in_12m_worst": {k: round(float(v), 2) for k, v in
                                             act.drop("All states")["not_listed_in_12m"].nlargest(3).items()},
         "pending_not_listed_in_12m_bihar": round(float(act.loc["Bihar", "not_listed_in_12m"]), 3),
+        "age_check_max_gap_points": ages["max_abs_gap_points"],
         "spearman_state_coverage_vs_civil_suit_pending_3y": round(float(rho), 3),
         "states_in_spearman": int(len(st)),
     }

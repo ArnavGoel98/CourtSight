@@ -26,6 +26,9 @@
 "distribution":[{"@type":"DataDownload","encodingFormat":"text/csv","contentUrl":"https://raw.githubusercontent.com/ArnavGoel98/CourtSight/main/results/time_to_decision/by_district_case_type.csv"},
 {"@type":"DataDownload","encodingFormat":"application/json","contentUrl":"https://arnavgoel98.github.io/CourtSight/calc-data.json"}]}</script>
 <style>/*CSS*/
+.stages{width:100%;font-size:.88rem}.stages td{padding:5px 4px;vertical-align:middle}
+.stages td.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.stages .bar{height:10px;border-radius:0 4px 4px 0;background:var(--s1);min-width:2px}
 .live{margin:14px 0 0;font-size:.98rem;color:var(--ink-2)}.live b.num{font-variant-numeric:tabular-nums;color:var(--ink)}
 .live .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--neg);margin-right:8px;vertical-align:middle;animation:pulse 2s infinite}
 @keyframes pulse{50%{opacity:.25}}@media (prefers-reduced-motion:reduce){.live .dot{animation:none}}
@@ -47,7 +50,7 @@
     <div class="hint" id="fhint"></div>
   </form>
   <div class="tiles" id="tiles"></div>
-  <div class="jump"><span>On this page:</span><a href="#backlog">Backlog</a><a href="#clock">When it clears</a><a href="#time">Time to decision</a><a href="#waiting">Years of waiting</a><a href="#districts">Slow districts</a><a href="#judges">Judge changes</a><a href="#audit">What could be wrong</a><a href="#method">Method</a></div>
+  <div class="jump"><span>On this page:</span><a href="#backlog">Backlog</a><a href="#clock">When it clears</a><a href="#time">Time to decision</a><a href="#waiting">Years of waiting</a><a href="#districts">Slow districts</a><a href="#stuck">Where cases get stuck</a><a href="#judges">Judge changes</a><a href="#audit">What could be wrong</a><a href="#method">Method</a></div>
 </header>
 
 <section id="backlog">
@@ -82,6 +85,12 @@
     <div class="caption">80.9 million cases filed 2010–2018. Up to four highlighted types (coloured underline = line colour), the rest in grey. Pick case types above; hover to read the share still pending at any month.</div>
   </div>
   <div class="card" style="overflow-x:auto"><table id="t-ttd"></table></div>
+  <div class="card">
+    <h3>Why the usual numbers understate delay</h3>
+    <p class="prose" id="naive-text" style="margin:0 0 10px"></p>
+    <div style="overflow-x:auto"><table id="t-naive"></table></div>
+    <div class="caption">"Decided cases only": the median time from filing to decision among cases already decided when the data was collected, the way delay is often quoted. Kaplan–Meier: the same cases, with those still waiting counted as waiting. Source: <code>time_to_decision.py</code>.</div>
+  </div>
   <a class="cta" href="calculator.html">Look up any district →</a>
 </section>
 
@@ -126,8 +135,28 @@
   </div>
 </section>
 
-<section id="judges">
+<section id="stuck">
   <div class="num">06</div>
+  <h2>Where cases get stuck, and how far apart hearings are <span class="badge">new</span></h2>
+  <p class="prose" id="stuck-text"></p>
+  <div class="grid2">
+  <div class="card">
+    <h3>What pending cases were next listed for</h3>
+    <table class="stages" id="t-stages"></table>
+    <div class="caption">Cases pending when the data was collected, by the purpose of their next hearing, grouped from free-text labels typed by court staff. Days: typical (geometric mean) gap between the last hearing and the next one.</div>
+  </div>
+  <div class="card">
+    <h3>Districts that space hearings further apart are slower</h3>
+    <div class="legend"><span><i class="box" style="background:var(--s1)"></i>Civil cases</span><span><i class="box" style="background:var(--s2)"></i>Criminal cases</span></div>
+    <div id="c-gap"></div>
+    <div class="caption">Share of cases still pending 3 years after filing (median district), by fifths of districts from the shortest to the longest typical gap between hearings. Correlation, not cause.</div>
+  </div>
+  </div>
+  <details class="card"><summary>What the hearing labels say, and their limits</summary><div class="prose" id="stuck-limits" style="margin-top:10px"></div></details>
+</section>
+
+<section id="judges">
+  <div class="num">07</div>
   <h2>Does a change of judge slow a courtroom down? <span class="badge neg">no reliable estimate</span></h2>
   <p class="prose" id="judge-text"></p>
   <div class="card">
@@ -138,7 +167,7 @@
 </section>
 
 <section id="audit">
-  <div class="num">07</div>
+  <div class="num">08</div>
   <h2>What could be wrong with this? <span class="badge">audit</span></h2>
   <p class="prose" id="audit-text"></p>
   <div class="card">
@@ -159,7 +188,7 @@
 </section>
 
 <section id="method">
-  <div class="num">08</div>
+  <div class="num">09</div>
   <h2>Method, and how it can be checked</h2>
   <p class="prose">Every number on this site is rebuilt from the public repository by CI on each change, and the 2026 forecast is locked by a SHA-256 hash.</p>
   <details class="card"><summary>Show the methods: formulas, tests and limits</summary>
@@ -193,7 +222,7 @@
   </details>
 </section>
 <section id="data">
-  <div class="num">09</div>
+  <div class="num">10</div>
   <h2>Data and code</h2>
   <p class="prose">Everything behind this page is in the repository and can be downloaded as plain CSV. Only aggregate counts are published. Every district also has its own <a href="d/index.html">page</a> and <a href="api/v1/index.json">JSON file</a>, and an embeddable card; journalists, see the <a href="press.html">press kit</a>.</p>
   <div class="card" style="overflow-x:auto"><table>
@@ -361,6 +390,8 @@ const AUD=[
  ["Rankings look more precise than they are","A district's figure has sampling noise; small differences in rank mean little.","Every rank now shows its 90% range. Median range width for civil suits: "+AU.civil_suit_median_rank_interval_width+" places; "+Math.round(AU.civil_suit_share_rank_interval_over_50*100)+"% span over 50.","fixed"],
  ["Some \"districts\" are not districts",AU.units_that_are_court_complexes.length+" units are special courts or court complexes ("+AU.units_that_are_court_complexes.slice(0,3).join(", ")+"…).","Labelled \"court, not district\" in the calculator and rankings.","fixed"],
  ["Districts that never recorded decisions","In "+AU.units_withheld_records_never_complete.length+" units (Gaya, Muzaffarpur, Bhojpur, Vaishali, Chandauli…) the records hold almost no decisions before 2018 (Gaya: "+AU.withheld_detail.Gaya.decided_2010_2017+" in 2010–17, "+AU.withheld_detail.Gaya.decided_2018.toLocaleString("en-IN")+" in 2018). An earlier version ranked them the slowest in India.","Completeness now also requires recorded decisions (≥20% of filings per half-year); units that never pass are withheld and explained on their pages. Threshold 10–35%: civil-suit median "+[...new Set([nat["median_months__decisions_35"],nat["median_months__decisions_10"]].sort((a,b)=>a-b))].join("–")+" months.","fixed"],
+ ["Do the records' pending cases look like the official ones?","The National Judicial Data Grid published the age mix of pending district-court cases on 24 May 2020. Among cases aged 1–10 years (the ages these records fully cover), the records give "+["1_3y","3_5y","5_10y"].map(k=>p100(AU.age_check.records_share[k])).join(" / ")+" aged 1–3 / 3–5 / 5–10 years; NJDG gives "+["1_3y","3_5y","5_10y"].map(k=>p100(AU.age_check.njdg_share[k])).join(" / ")+".","Agreement within "+AU.age_check.max_abs_gap_points+" points. The records start in 2010, so their 5–10-year share runs slightly low. NJDG figures as reported in the press.","tested"],
+ ["Hearing labels are free text",D.hearings.label_checks?"Purposes such as \"appearance\" or \"order\" are typed by court staff; "+(D.hearings.label_checks.police_reports_filed_as_final*100).toFixed(1)+"% of pending cases carry police-report labels filed under arguments and judgment, and "+(D.hearings.label_checks.blank_label*100).toFixed(1)+"% have no label.":"","Stages are named for what their labels mostly contain, the commonest labels are published, and states with stale hearing records are left out of the hearing-gap comparisons.","stated"],
  ["The records miss part of the system","eCourts records hold "+p100(CV.coverage_2015_18)+" of officially implied filings in 2015–18, from "+p100(Object.values(CV.lowest_coverage)[0])+" ("+Object.keys(CV.lowest_coverage)[0]+") to about all (Bihar); "+CV.official_units_with_no_records.length+" states and UTs have none.","Headline figures reweighted to official filings: civil-suit median "+SN.civ_suit.median_months__weighted_to_official_filings+" months (published: "+SN.civ_suit.median_months__as_published+"). Coverage shown by state on the map. Who the missing cases are cannot be checked.","tested"],
  ["Did courts speed up, or is some bias left?","Within complete records, the share decided within a year rises from "+p100(SP.all_complete_records[0])+" (2010 filings) to "+p100(SP.all_complete_records[7])+" (2017); "+p100(SP.fixed_case_mix[0])+" → "+p100(SP.fixed_case_mix[7])+" at a fixed case mix.","Split by coverage: states with steady records "+p100(SP.stable_coverage_states[0])+" → "+p100(SP.stable_coverage_states[7])+", states still filling in "+p100(SP.growing_coverage_states[0])+" → "+p100(SP.growing_coverage_states[7])+". "+((SP.growing_coverage_states[7]-SP.growing_coverage_states[0])>(SP.stable_coverage_states[7]-SP.stable_coverage_states[0])+.1?"Most of the rise is records filling in.":"Coverage does not explain it; part is case mix, the rest may be real.")+" Pooled figures describe 2010–2018 filings, not today.","open"],
  ["Are \"pending\" cases really pending?","A decision never entered would leave a case looking pending. Nationally "+p100(1-CV.pending_not_listed_in_12m)+" of pending records had a hearing listed in the year before collection (Bihar "+p100(1-CV.pending_not_listed_in_12m_bihar)+"). Exceptions: "+Object.entries(CV.pending_not_listed_in_12m_worst).map(([k,v])=>k+" "+p100(v)+" not listed").join(", ")+".","Most pending records are live cases. West Bengal and Odisha delays may be overstated; flagged on the map.","tested"],
@@ -395,7 +426,24 @@ document.getElementById("finder").onsubmit=e=>{e.preventDefault();
     h.querySelectorAll("button").forEach(b=>b.onclick=()=>{document.getElementById("fq").value=FN2[b.dataset.k];document.getElementById("finder").requestSubmit()});return}
   location.href=`calculator.html#s=${encodeURIComponent(r[0])}&d=${encodeURIComponent(r[1])}&t=civ_suit`};
 document.getElementById("fq").addEventListener("input",e=>{const t=e.target.value.trim().toLowerCase();if(FK[t]||FH[t])document.getElementById("finder").requestSubmit()});
-const drawAll=()=>{drawBacklog();drawClock();drawKM();drawAge();drawDrivers();drawJudge();drawAudit()};
+// why decided-only figures understate delay
+const NV=D.decided_only, NVc=NV.find(r=>r.case_type==="civ_suit");
+const moY=v=>`${Math.round(v)} months`;
+document.getElementById("naive-text").innerHTML=`Delay is often reported as the time decided cases took. That leaves out every case still waiting, which are the slowest ones. For ordinary civil suits, decided cases took a median of <b>${moY(NVc.median_months_decided_only)}</b>; counting the ${p100(NVc.pending_after_5y)} still waiting five years on, the median is <b>${moY(NVc.median_months_kaplan_meier)}</b>.`;
+document.getElementById("t-naive").innerHTML=`<tr><th>Type of case</th><th>Decided cases only</th><th>Counting cases still waiting</th></tr>`+
+  NV.filter(r=>r.case_type!=="other"&&r.case_type!=="crim_bail").sort((a,b)=>b.median_months_kaplan_meier-a.median_months_kaplan_meier)
+  .map(r=>`<tr><td>${D.ttd.find(x=>x.type===r.case_type).label}</td><td>${moY(r.median_months_decided_only)}</td><td><b>${moY(r.median_months_kaplan_meier)}</b></td></tr>`).join("");
+// 06 where cases get stuck
+const HG=D.hearings, HS=Object.fromEntries(HG.stages.map(r=>[r.group,r])), HF=HG.fifths;
+const hco=(o,f)=>HG.coef.find(r=>r.outcome===o&&r.feature===f);
+document.getElementById("stuck-text").innerHTML=`Of the <b>${(HG.pending_listed/1e7).toFixed(2)} crore</b> cases pending when the data was collected, <b>${p100(HS.service.share)}</b> were next listed for summons, notices or appearance: steps to get the parties before the court, rather than evidence or argument. ${p100(HS.evidence.share)} were at evidence, and ${p100(HS.final.share)} at arguments, orders or judgment. A pending case's next hearing was set a typical <b>${Math.round(HG.gap_days_national_without_stale_states)} days</b> after its last one; in a tenth of districts the gap was ${Math.round(HG.gap_days_district_p10_p50_p90[2])} days or more, in another tenth ${Math.round(HG.gap_days_district_p10_p50_p90[0])} or fewer. <b>Districts that space hearings further apart are slower.</b> In the fifth of districts with the longest gaps, ${p100(HF.pending_3y_criminal[4])} of criminal cases were still pending three years after filing, against ${p100(HF.pending_3y_criminal[0])} in the fifth with the shortest (civil: ${p100(HF.pending_3y_civil[4])} against ${p100(HF.pending_3y_civil[0])}). These comparisons leave out ${HG.stale_record_states_left_out.map(x=>x==="Orissa"?"Odisha":x).join(", ").replace(/, ([^,]*)$/," and $1")}, whose hearing records look stale. Unlike caseload per courtroom, the link holds when caseload, district size, case mix and judge tenure are held fixed (one standard deviation longer gaps go with ${fmtPP(hco("criminal","log_gap_days").coef_per_sd)} criminal and ${fmtPP(hco("civil","log_gap_days").coef_per_sd)} civil cases pending at three years), when every district is given the same stage mix, and when districts are compared only with others in their own state (ρ = ${HG.spearman_gap_vs_pending_3y_within_states.criminal.toFixed(2)} criminal, ${HG.spearman_gap_vs_pending_3y_within_states.civil.toFixed(2)} civil). It is stronger for criminal cases than civil ones. It is a correlation: congested courts may space hearings out because they are congested. See every district's gap on the <a href="map.html#m=gap">map</a>.`;
+document.getElementById("t-stages").innerHTML=HG.stages.map(r=>`<tr><td>${r.name}</td><td style="width:34%"><div class="bar" style="width:${Math.round(r.share/HS.service.share*100)}%"></div></td><td class="n">${p100(r.share)}</td><td class="n">${Math.round(r.gap_days)} days</td></tr>`).join("");
+const LC=HG.label_checks;
+document.getElementById("stuck-limits").innerHTML=`<p>Each pending case carries the purpose of its next listing as free text ("appearance", "summons", "evidence", "argument"…). The groups above are named for what they mostly contain; the most common labels in each are published in <code>results/hearings/labels_top.csv</code>. Some labels are misfiled: police "final form" and charge-sheet labels, which come before a trial, make up ${(LC.police_reports_filed_as_final*100).toFixed(1)}% of all cases and sit in "arguments, orders and judgment"; a bare "order" (${(LC.generic_order_label_in_final*100).toFixed(1)}%) may be an interim order. ${(LC.blank_label*100).toFixed(1)}% have no label, and ${(LC.no_sitting_notified*100).toFixed(1)}% say no judge was sitting. "Appearance" can also be a routine date on which nothing else happens. The gaps cover only cases still pending at collection (${p100(HG.share_with_next_date)} had a next date), which are the slower cases, and each gap is the one scheduled, not the time a case actually waited. Source: <code>hearings.py</code>.</p>`;
+function drawStuck(){columnChart(document.getElementById("c-gap"),HF.gap_days.map(v=>Math.round(v)+" days"),
+  [{name:"Civil",values:HF.pending_3y_civil,color:"var(--s1)"},{name:"Criminal",values:HF.pending_3y_criminal,color:"var(--s2)"}],
+  {grouped:true,yfmt:p100,tipx:c=>`Typical gap ${c}`})}
+const drawAll=()=>{drawBacklog();drawClock();drawKM();drawAge();drawDrivers();drawStuck();drawJudge();drawAudit()};
 onResize(drawAll);
 </script>
 </body>

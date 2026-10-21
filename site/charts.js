@@ -151,14 +151,15 @@ const fmtPct = v => (v > 0 ? "+" : "") + Math.round(v * 100) + "%";
 const fmtPct1 = v => (v > 0 ? "+" : "") + (v * 100).toFixed(1) + "%";
 const onResize = fn => { let w = 0; new ResizeObserver(es => { const nw = Math.round(es[0].contentRect.width); if (nw !== w) { w = nw; fn(); } }).observe(document.body); };
 
-// stacked columns. cats:[labels], stacks:[{name, values, color}]
+// stacked columns (or side by side with opts.grouped). cats:[labels], stacks:[{name, values, color}]
 function columnChart(host, cats, stacks, opts = {}) {
   host.innerHTML = "";
   host.classList.add("chart");
   const W = Math.max(host.clientWidth, 300), H = opts.height || Math.round(Math.min(320, Math.max(220, W * 0.42)));
   const m = {t: 12, r: 12, b: 30, l: opts.left ?? 52};
   const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": chartLabel(host, opts)}, host);
-  const tot = cats.map((_, i) => stacks.reduce((a, s) => a + s.values[i], 0)), ymax = Math.max(...tot);
+  const tot = cats.map((_, i) => opts.grouped ? Math.max(...stacks.map(s => s.values[i])) : stacks.reduce((a, s) => a + s.values[i], 0));
+  const ymax = opts.ymax ?? Math.max(...tot);
   const bw = (W - m.l - m.r) / cats.length, Y = v => H - m.b - v / ymax * (H - m.t - m.b);
   const g = el("g", {class: "grid"}, svg), ax = el("g", {class: "axis"}, svg);
   for (const t of niceTicks(0, ymax, 4)) {
@@ -169,8 +170,13 @@ function columnChart(host, cats, stacks, opts = {}) {
   cats.forEach((c, i) => {
     let base = 0;
     const x = m.l + i * bw + bw * 0.14, w = bw * 0.72, rects = [];
-    stacks.forEach(s => {
+    stacks.forEach((s, k) => {
       const v = s.values[i];
+      if (opts.grouped) {   // side by side, with a 2px surface gap between neighbouring bars
+        const gw = w / stacks.length;
+        rects.push(el("rect", {x: x + k * gw + 1, y: Y(v), width: Math.max(gw - 2, 1), height: Math.max(Y(0) - Y(v), 0), fill: s.color, rx: 2}, svg));
+        return;
+      }
       rects.push(el("rect", {x, y: Y(base + v), width: w, height: Math.max(Y(base) - Y(base + v), 0), fill: s.color, rx: 2}, svg));
       base += v;
     });

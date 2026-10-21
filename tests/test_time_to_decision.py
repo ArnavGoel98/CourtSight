@@ -58,8 +58,21 @@ def test_missing_decisions() -> None:
     assert set(t["district_id"]) == {1001}
 
 
+def test_decided_only() -> None:
+    """100 civil cases filed Jan 2015: 40 decided after 6 months, 60 still pending. Counting only decided cases says the
+    median is 6 months; Kaplan-Meier says over half are still pending."""
+    rows = [(1001, 201501, 201507, "civil", 40), (1001, 201501, 0, "civil", 60)]
+    rows += [(1002, 201701, 201800 + m, "other", 10) for m in range(1, 13)]   # sets the collection month
+    c = pd.DataFrame(rows, columns=["district_id", "f", "d", "case_type", "n"])
+    d = ttd.decided_only(c).set_index("case_type")
+    assert d.loc["civil", "decided_cases"] == 40 and d.loc["civil", "median_months_decided_only"] == 6
+    km = ttd.km_table(c, min_cases=50).set_index(["district_id", "case_type"])
+    assert np.isnan(km.loc[(1001, "civil"), "median_months"])
+
+
 if __name__ == "__main__":
     test_km_simple()
     test_delayed_entry()
     test_missing_decisions()
+    test_decided_only()
     print("time-to-decision tests passed")

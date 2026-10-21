@@ -1,0 +1,11 @@
+case_type,decided_cases,median_months_decided_only,mean_months_decided_only,cases,median_months_kaplan_meier,pending_after_5y
+civ_execution,1795127,14.0,19.755,2526502,21.0,0.162
+civ_family,1501275,10.0,15.086,1749001,12.0,0.048
+civ_mact,2392754,15.0,20.224,2975875,19.0,0.116
+civ_misc,3987482,8.0,14.95,4912007,11.0,0.121
+civ_suit,5068702,17.0,23.641,7813353,29.0,0.266
+crim_bail,3627356,0.0,0.932,3472349,0.0,0.001
+crim_magisterial,30435139,3.0,12.101,40309886,8.0,0.164
+crim_ni138,508374,15.0,19.747,772890,21.0,0.135
+crim_sessions,3937928,11.0,17.649,5625949,20.0,0.186
+other,5327710,9.0,16.53,6898922,15.0,0.137

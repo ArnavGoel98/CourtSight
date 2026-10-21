@@ -7,4 +7,5 @@ on 8 October 2026, so a reader can check they have the same file.
 |---|---|---|---|
 | Lok Sabha USQ 1838, 16.12.2022 | Pending 2014–2022 (Annex III), disposed 2014–2021 (Annex VIII) | https://sansad.in/getFile/loksabhaquestions/annex/1710/AU1838.pdf?source=pqals | `0738a4dc0ff657fd6a1b0382091c89cd983cd5e1fad96b44979b30d40e88c6b3` |
 | Lok Sabha USQ 2362, 13.02.2026 | Pending 2023–2025 (Annex II) | https://sansad.in/getFile/loksabhaquestions/annex/187/AU2362_8Lccb3.pdf?source=pqals | `69feb96cb9a764240f87014d6723d2651c8ca9f0bbead6e4d768847d0905c17f` |
+| NJDG age-wise pendency, 24 May 2020 (as reported) | Check of the age mix of pending cases (`coverage_audit.py`) | https://www.livelaw.in/top-stories/3245-million-cases-pending-in-india-10-over-10-years-old-justice-chandrachud-shares-njdg-statistics-157257 | press report of NJDG figures shared by Justice D. Y. Chandrachud; percentages only, as printed |
 | Development Data Lab judicial data | 80.9M case records, 2010–2018 (district model) | https://www.devdatalab.org/judicial-data | see `ddl_compact/report.json` |

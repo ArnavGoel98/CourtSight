@@ -78,6 +78,7 @@
     "Mizoram": 0.22
   },
   "pending_not_listed_in_12m_bihar": 0.012,
+  "age_check_max_gap_points": 3.7,
   "spearman_state_coverage_vs_civil_suit_pending_3y": -0.086,
   "states_in_spearman": 22
 }

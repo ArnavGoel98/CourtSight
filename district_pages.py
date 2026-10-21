@@ -224,7 +224,10 @@ def load() -> dict[str, object]:
     names = pd.read_csv(HERE / "ddl_compact" / "district_key.csv").groupby("state_code")["state_name"].first()
     unit_of = {names[k]: v for k, v in state_units().items()}
     held = json.loads((RES / "audit" / "summary.json").read_text())["withheld_detail"]
+    hear = pd.read_csv(RES / "hearings" / "districts.csv").set_index("district_id")
+    hn = json.loads((RES / "hearings" / "national.json").read_text())
     return {"t": t, "nat": nat, "dig": dig, "wy": wy, "drv": drv, "special": special, "cov": cov, "act": act, "held": held,
+            "hear": hear, "hn": hn,
             "unit_of": unit_of, "map": B.map_data()}
 
 
@@ -376,6 +379,22 @@ def build(sitemap: list[str]) -> int:
                        f'<b>{drv["courts"]:.0f}</b> courtrooms were active in an average month of 2014–2017. Across districts, '
                        f'longer postings go with faster civil cases, but this is a correlation, not a cause '
                        f'(<a href="../../index.html#districts">details</a>).</p>')
+            hr = D["hear"].loc[did] if did in D["hear"].index else None
+            hearing_txt, hearing_api = "", None
+            if hr is not None and hr["with_next_date"] >= 1000:
+                stale_here = s in D["hn"]["stale_record_states_left_out"]
+                hearing_api = {"gap_days": round(float(hr["gap_days"]), 1), "share_service": round(float(hr["share_service"]), 3),
+                               "pending_listed": int(hr["pending_listed"]), "stale_records": stale_here}
+                hearing_txt = (f'<p class="prose">Of the cases pending here when the data was collected, '
+                               f'<b>{pct(hr["share_service"])}</b> were next listed for summons, notices or appearance '
+                               f'(India: {pct(D["hn"]["share_by_group"]["service"])}), and the next hearing was set a typical '
+                               f'<b>{hr["gap_days"]:.0f} days</b> after the last one (India: '
+                               f'{D["hn"]["gap_days_national_without_stale_states"]:.0f}).'
+                               + (" Hearing records in this state look stale, so these gaps may reflect record-keeping."
+                                  if stale_here else
+                                  " Across districts, longer gaps go with slower courts, especially for criminal cases;"
+                                  " that is a correlation, not a cause.")
+                               + ' <a href="../../index.html#stuck">More</a></p>')
             others = [x for x in dists if x != d]
             others_html = ", ".join(f'<a href="{dist_slug[(s, x)]}.html">{esc(x)}</a>' for x in others)
             q = f"#s={esc(s)}&amp;d={esc(d)}&amp;t={prim}".replace(" ", "%20")
@@ -393,6 +412,7 @@ def build(sitemap: list[str]) -> int:
 <h2 style="margin-top:28px">Every type of case</h2>
 <div class="card">{table}<div class="caption">Rank: 1 = smallest share still pending after 3 years among all units in India with at least 200 cases of that type; the small range is where the rank lies 90% of the time once sampling noise is allowed for. Types with fewer than 200 cases are left out.</div></div>
 {ctx}
+{hearing_txt}
 <h2 style="margin-top:28px">Read this with care</h2>
 <ul class="prose">{"".join(f"<li>{x}</li>" for x in notes)}</ul>
 <p class="caption">Method and every check behind these numbers: <a href="../../paper.html">working paper</a> · <a href="../../index.html#audit">audit</a> · <a href="https://github.com/ArnavGoel98/CourtSight/blob/main/results/time_to_decision/by_district_case_type.csv">raw table (CSV)</a></p>
@@ -404,6 +424,7 @@ def build(sitemap: list[str]) -> int:
                    else round(float(cov_row["coverage_2015_18"]), 3),
                    "state_pending_not_listed_12m": None if act_v is None else round(act_v, 3),
                    "page": f"{B.BASE}d/{state_slug[s]}/{dist_slug[(s, d)]}.html",
+                   "hearings": hearing_api,
                    "case_types": {ct: {"label": B.LABELS[ct], "cases": int(r.loc[ct, "cases"]),
                                        **{k: num(r.loc[ct, k]) for k in ("median_months", "p90_months", "pending_after_1y",
                                                                           "pending_after_3y", "pending_after_5y",

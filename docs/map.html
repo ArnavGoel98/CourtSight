@@ -144,7 +144,7 @@ details.card[open]>summary{margin-bottom:12px}
 @media (max-width:640px){.side{grid-template-columns:1fr}}
 .side ol{margin:6px 0 0;padding-left:22px;font-size:.9rem;color:var(--ink-2)}
 .side li b{color:var(--ink);font-variant-numeric:tabular-nums}
-.side a{color:var(--ink);text-decoration:none}.side a:hover{color:var(--link);text-decoration:underline}
+.side a{color:var(--ink);text-decoration:underline;text-decoration-color:var(--ink-3);text-underline-offset:3px}.side a:hover{color:var(--link)}
 .back{display:none;margin:0 0 8px}
 #detail{min-height:3.2em}
 #detail .units a{font-weight:600}
@@ -167,6 +167,8 @@ details.card[open]>summary{margin-bottom:12px}
     <option value="p1">Share still pending after 1 year</option>
     <option value="p5">Share still pending after 5 years</option>
     <option value="med">Median time to decision</option>
+    <option value="gap">Days between hearings (pending cases)</option>
+    <option value="svc">Pending cases still at summons or appearance</option>
     <option value="cov">How complete the records are (by state)</option>
   </select></div>
   <div><label for="state">Zoom to a state</label><select id="state"><option value="">All of India</option></select></div>
@@ -195,6 +197,7 @@ details.card[open]>summary{margin-bottom:12px}
 <p><b>Colours are fifths.</b> Each colour holds about a fifth of the shapes, so the map shows rank, not size. Check the legend: for some case types the slowest fifth and the fastest fifth differ by only a few points. Small districts have wide uncertainty. Where two districts' rank ranges overlap on the <a href="districts.html">rankings page</a>, they are not clearly different.</p>
 <p><b>The records are incomplete.</b> For 2015–2018, the eCourts records hold about 61% of the cases the official figures say were filed, from 8% in Tripura to all of them in Bihar. The coverage layer shows this by state; states with under 2 lakh official filings in those years (Goa, Sikkim, Manipur, Mizoram, Meghalaya and the smallest union territories) are left blank there, because their official figures move too much from year to year to compare. Thinly covered states may be represented by unusual courts. See the <a href="index.html#audit">audit</a>.</p>
 <p><b>Pending records are mostly live cases.</b> Nationally, 95% of cases pending at collection had a hearing listed in the year before, so a slow district is not just one that failed to record its decisions. The exceptions are West Bengal and Odisha, where 53% and 29% had not been listed for over a year; their delays may be overstated.</p>
+<p><b>Hearing layers.</b> "Days between hearings" is the typical (geometric mean) gap between a pending case's last hearing and its next scheduled one, for cases still pending when the data was collected; "summons or appearance" is the share of those cases whose next hearing was for getting the parties to court. West Bengal, Odisha and Mizoram are hatched on these layers: many of their pending records had no hearing listed in the year before collection, so their gaps may reflect record-keeping rather than scheduling. Both come from free-text labels and dates typed by court staff (see the <a href="index.html#stuck">findings</a>). Districts that space hearings further apart are slower, but that is a correlation.</p>
 <p><b>Descriptive only.</b> A slow district is not necessarily a badly run one: case mix, vacancies, local practice and how cases are recorded all differ.</p>
 <p>Boundaries: Census of India 2011 via <a href="https://github.com/datameet/maps">DataMeet</a> (CC BY 4.0), simplified. Court data: Development Data Lab eCourts records (CC BY-NC-SA 4.0).</p>
 </div></details>
@@ -354,14 +357,15 @@ const fmtPct = v => (v > 0 ? "+" : "") + Math.round(v * 100) + "%";
 const fmtPct1 = v => (v > 0 ? "+" : "") + (v * 100).toFixed(1) + "%";
 const onResize = fn => { let w = 0; new ResizeObserver(es => { const nw = Math.round(es[0].contentRect.width); if (nw !== w) { w = nw; fn(); } }).observe(document.body); };
 
-// stacked columns. cats:[labels], stacks:[{name, values, color}]
+// stacked columns (or side by side with opts.grouped). cats:[labels], stacks:[{name, values, color}]
 function columnChart(host, cats, stacks, opts = {}) {
   host.innerHTML = "";
   host.classList.add("chart");
   const W = Math.max(host.clientWidth, 300), H = opts.height || Math.round(Math.min(320, Math.max(220, W * 0.42)));
   const m = {t: 12, r: 12, b: 30, l: opts.left ?? 52};
   const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": chartLabel(host, opts)}, host);
-  const tot = cats.map((_, i) => stacks.reduce((a, s) => a + s.values[i], 0)), ymax = Math.max(...tot);
+  const tot = cats.map((_, i) => opts.grouped ? Math.max(...stacks.map(s => s.values[i])) : stacks.reduce((a, s) => a + s.values[i], 0));
+  const ymax = opts.ymax ?? Math.max(...tot);
   const bw = (W - m.l - m.r) / cats.length, Y = v => H - m.b - v / ymax * (H - m.t - m.b);
   const g = el("g", {class: "grid"}, svg), ax = el("g", {class: "axis"}, svg);
   for (const t of niceTicks(0, ymax, 4)) {
@@ -372,8 +376,13 @@ function columnChart(host, cats, stacks, opts = {}) {
   cats.forEach((c, i) => {
     let base = 0;
     const x = m.l + i * bw + bw * 0.14, w = bw * 0.72, rects = [];
-    stacks.forEach(s => {
+    stacks.forEach((s, k) => {
       const v = s.values[i];
+      if (opts.grouped) {   // side by side, with a 2px surface gap between neighbouring bars
+        const gw = w / stacks.length;
+        rects.push(el("rect", {x: x + k * gw + 1, y: Y(v), width: Math.max(gw - 2, 1), height: Math.max(Y(0) - Y(v), 0), fill: s.color, rx: 2}, svg));
+        return;
+      }
       rects.push(el("rect", {x, y: Y(base + v), width: w, height: Math.max(Y(base) - Y(base + v), 0), fill: s.color, rx: 2}, svg));
       base += v;
     });
@@ -466,7 +475,9 @@ const st={t:q.get("t")||"civ_suit",m:q.get("m")||"p3",s:q.get("s")||""};
 const BINS=["--m1","--m2","--m3","--m4","--m5"];
 const SLOW=1e6;   // median not reached: over half still pending when the data ends
 const pct=v=>Math.round(v*100)+"%", mo=v=>v==null||v>=SLOW?"over half still pending":v<24?`${Math.round(v)} months`:`${(v/12).toFixed(1)} years`;
-const FMT={p1:pct,p3:pct,p5:pct,med:mo,cov:v=>v>=1?"100%+":pct(v)};
+const FMT={p1:pct,p3:pct,p5:pct,med:mo,gap:v=>Math.round(v)+" days",svc:pct,cov:v=>v>=1?"100%+":pct(v)};
+const UNIT={cov:"records coverage (state)",gap:"between hearings",svc:"of pending cases at summons or appearance"};
+const PER_DISTRICT=m=>m==="gap"||m==="svc"||m==="cov";   // not by type of case
 let D,G,C,VAL={},sel=null;
 Promise.all(["calc-data.json","map-data.json"].map(u=>fetch(u).then(r=>{if(!r.ok)throw r.status;return r.json()})))
   .then(([d,g])=>{D=d;G=g;C=Object.fromEntries(D.cols.map((c,i)=>[c,i]));heldCount();init()})
@@ -507,6 +518,10 @@ function rowsFor(code){return (G.units[code]||[]).map(([s,d,rel])=>({s,d,rel,r:(
 function value(code){
   const u=G.units[code];if(!u)return null;
   if(st.m==="cov"){const v=G.coverage[u[0][0]];return v==null?null:Math.min(v,1)}
+  if(st.m==="gap"||st.m==="svc"){   // pool the court units in a shape, weighting by pending cases with a next date
+    const h=u.map(([s,d])=>G.hearing[s+"|"+d]).filter(x=>x&&!x[3]);if(!h.length)return null;   // x[3]: stale records
+    const W=h.reduce((a,x)=>a+x[1],0);
+    return st.m==="gap"?Math.exp(h.reduce((a,x)=>a+x[1]*Math.log(x[0]),0)/W):h.reduce((a,x)=>a+x[1]*x[2],0)/W}
   const rows=rowsFor(code);if(!rows.length)return null;
   const key={p1:"pending_after_1y",p3:"pending_after_3y",p5:"pending_after_5y",med:"median_months"}[st.m];
   if(rows.length===1){const v=rows[0].r[C[key]];return v==null&&st.m==="med"?SLOW:v}
@@ -520,7 +535,7 @@ function draw(){
   history.replaceState(null,"",`#t=${st.t}&m=${st.m}`+(st.s?`&s=${encodeURIComponent(st.s)}`:""));
   const box=$("types");box.innerHTML="";
   for(const t of ORDER){const b=document.createElement("button");b.type="button";b.className="chip";b.textContent=D.short[t];b.title=D.labels[t];
-    b.setAttribute("aria-pressed",t===st.t);b.disabled=st.m==="cov";b.onclick=()=>{st.t=t;draw()};box.appendChild(b)}
+    b.setAttribute("aria-pressed",t===st.t);b.disabled=PER_DISTRICT(st.m);b.onclick=()=>{st.t=t;draw()};box.appendChild(b)}
   VAL={};for(const code of Object.keys(G.paths))VAL[code]=value(code);
   const inView=c=>!st.s||G.names[c][1]===st.s;
   const vals=Object.entries(VAL).filter(([c,v])=>v!=null&&inView(c)).map(([,v])=>v).sort((a,b)=>a-b);
@@ -535,8 +550,8 @@ function draw(){
   const f=FMT[st.m], lo=vals[0], hi=vals[vals.length-1];
   const edges=[lo,...cuts,hi];
   const lab=st.m==="cov"?["under 40%","40–60%","60–80%","80–95%","95% or more"]:edges.slice(0,5).map((e,i)=>`${f(e)} – ${f(edges[i+1])}`);
-  const title={p1:"Still pending after 1 year",p3:"Still pending after 3 years",p5:"Still pending after 5 years",med:"Median time to decision",cov:"Records held, as a share of official filings 2015–18"}[st.m];
-  $("scale").innerHTML=`<b style="color:var(--ink)">${title}${st.m==="cov"?"":" · "+D.labels[st.t]}</b>`+
+  const title={p1:"Still pending after 1 year",p3:"Still pending after 3 years",p5:"Still pending after 5 years",med:"Median time to decision",gap:"Typical days between hearings, cases pending at collection",svc:"Share of pending cases next listed for summons, notices or appearance",cov:"Records held, as a share of official filings 2015–18"}[st.m];
+  $("scale").innerHTML=`<b style="color:var(--ink)">${title}${PER_DISTRICT(st.m)?"":" · "+D.labels[st.t]}</b>`+
     lab.map((l,i)=>`<span><i style="background:var(${BINS[i]})"></i>${l}</span>`).join("")+
     `<span><i style="background:repeating-linear-gradient(45deg,var(--nodata) 0 3px,var(--line) 3px 5px)"></i>no records, or withheld</span>`;
   lists(f);
@@ -550,7 +565,8 @@ function lists(f){
   items.sort((a,b)=>a.v-b.v);
   const li=x=>`<li><a href="#" data-code="${x.code}">${x.name}</a> <b>${f(x.v)}</b></li>`;
   const k=Math.min(8,Math.floor(items.length/2));
-  $("slowh").textContent=st.m==="cov"?"Fullest records":"Slowest";$("fasth").textContent=st.m==="cov"?"Thinnest records":"Fastest";
+  $("slowh").textContent={cov:"Fullest records",gap:"Longest gaps",svc:"Most stuck at summons"}[st.m]||"Slowest";
+  $("fasth").textContent={cov:"Thinnest records",gap:"Shortest gaps",svc:"Fewest at summons"}[st.m]||"Fastest";
   $("slow").innerHTML=items.slice(-k).reverse().map(li).join("");$("fast").innerHTML=items.slice(0,k).map(li).join("");
   document.querySelectorAll(".side a[data-code]").forEach(a=>a.onclick=e=>{e.preventDefault();
     const p=document.querySelector(`#map path[data-code="${a.dataset.code}"]`);p.focus({preventScroll:false})});
@@ -560,7 +576,9 @@ function shapeName(code){const u=G.units[code]||[],n=G.names[code];
 function tipHtml(code){const v=VAL[code],n=G.names[code],u=G.units[code];
   if(!u&&G.withheld[code])return `<b>${n[0]}</b><div class="k">${n[1]} · withheld: the records hold almost no decisions before 2018, so every case would look stuck</div>`;
   if(!u)return `<b>${n[0]==="Data Not Available"?"No district data":n[0]}</b><div class="k">${n[1]} · no court records in this data</div>`;
-  return `<b>${shapeName(code)}</b><div class="k">${u[0][0]}</div><div>${v==null?(rowsFor(code).length?"The data ends before this point":"Too few cases of this type"):`<b>${FMT[st.m](v)}</b> <span class="k">${st.m==="cov"?"records coverage (state)":D.short[st.t].toLowerCase()}</span>`}</div>`}
+  const staleH=(st.m==="gap"||st.m==="svc")&&u.some(([s,d])=>(G.hearing[s+"|"+d]||[])[3]);
+  if(v==null&&staleH)return `<b>${shapeName(code)}</b><div class="k">${u[0][0]} · hearing records here look stale (many pending cases had no hearing listed in the year before collection), so gaps are not shown</div>`;
+  return `<b>${shapeName(code)}</b><div class="k">${u[0][0]}</div><div>${v==null?(rowsFor(code).length?"The data ends before this point":"Too few cases of this type"):`<b>${FMT[st.m](v)}</b> <span class="k">${UNIT[st.m]||D.short[st.t].toLowerCase()}</span>`}</div>`}
 function detailHtml(code){const u=G.units[code],n=G.names[code];if(!u)return tipHtml(code);
   const rel={carved_from:"carved out after 2011, pooled here",renamed:"",city_courts:"city-wide court",split_court:"one of several court units here","":""};
   const rows=rowsFor(code);
