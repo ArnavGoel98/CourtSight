@@ -1,7 +1,7 @@
 group,name,pending_listed,share,gap_days
-service,"Getting the parties to court (summons, notices, appearance, warrants)",7838183,0.3684,68.627
-charge,Framing of charges or issues,1411162,0.0663,65.2422
-evidence,Evidence and witnesses,4574704,0.215,48.8441
-hearing,Applications and general hearings,3335171,0.1568,56.2043
-final,"Arguments, orders and judgment",2126946,0.1,51.3905
-unclear,"Unclear, blank or not heard",1988194,0.0935,71.6577
+service,"Getting the parties to court (summons, notices, appearance, warrants)",7838183,0.3684,64.1151
+charge,Framing of charges or issues,1411162,0.0663,60.3261
+evidence,Evidence and witnesses,4574704,0.215,46.1715
+hearing,Applications and general hearings,3335171,0.1568,53.6449
+final,"Arguments, orders and judgment",2126946,0.1,49.6537
+unclear,"Unclear, blank or not heard",1988194,0.0935,64.5439

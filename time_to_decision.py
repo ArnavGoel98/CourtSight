@@ -13,10 +13,14 @@ is estimated (digitisation_month) and earlier cases enter the risk set only from
 --no-truncation-fix for the uncorrected estimate.
 Output per district x case type: cases, median months to decision (blank if over half are still pending when
 the data ends), 90th percentile, and the share still pending after 1, 3 and 5 years, with a 95% interval
-(Greenwood) on the 3-year figure. The whole curve (share still pending every 3 months, 0-120) goes to
+(Greenwood) on the 3-year figure. Each curve stops once fewer than MIN_AT_RISK (20) cases are still being followed
+(followed_months), so no figure rests on a handful of cases; a blank 90th percentile means "longer than the
+followed_months the data can show", not "over 10 years". The whole curve (share still pending every 3 months, 0-120) goes to
 curves_*.csv for the charts. Rows with fewer than --min-cases cases are dropped.
 national_decided_only_*.csv sets the national Kaplan-Meier median beside the statistic usually quoted, time to
-decision averaged over decided cases only, to show how far leaving out the pending cases understates delay.
+decision averaged over decided cases only, to show how far leaving out the pending cases understates delay. Both are
+also computed on exactly the same cases (those filed once their district's records are complete), so that the only
+difference is how the cases still waiting are treated.
 """
 from __future__ import annotations
 
@@ -29,6 +33,8 @@ import pandas as pd
 
 HERE: Final = Path(__file__).resolve().parent
 H: Final = 120  # months of follow-up kept (10 years; the data spans at most ~9.5)
+MIN_AT_RISK: Final = 20  # a curve stops once fewer cases than this are still being followed; beyond that point a
+                         # handful of cases would decide the estimate
 
 
 def months(ym: pd.Series) -> pd.Series:
@@ -92,11 +98,15 @@ def digitisation_month(c: pd.DataFrame, share: float = 0.5, decision_share: floa
     return first.rename("digitised_m")
 
 
-def decided_only(c: pd.DataFrame) -> pd.DataFrame:
+def decided_only(c: pd.DataFrame, entry: pd.Series | None = None) -> pd.DataFrame:
     """What the usual statistic says: time to decision averaged over cases already decided by collection, ignoring
-    the ones still waiting. Compared with Kaplan-Meier, it shows how much leaving out pending cases understates delay."""
+    the ones still waiting. Compared with Kaplan-Meier, it shows how much leaving out pending cases understates delay.
+    With `entry` (digitisation_month), only cases filed once their district's records are complete count; main()
+    runs Kaplan-Meier on the same cases, so the two differ only in how they treat cases still waiting."""
     cut = collection_month(c)
     c = c.assign(fm=months(c["f"]), cut=(c["district_id"] // 1000).map(cut))
+    if entry is not None:
+        c = c.loc[c["fm"] >= c["district_id"].map(entry)]          # NaN entry (records never complete) drops out
     c = c.loc[c["cut"].notna() & (c["fm"] <= c["cut"]) & (c["d"] > 0)]
     dm = months(c["d"])
     c = c.assign(m=(dm - c["fm"]).clip(lower=0)).loc[dm <= c["cut"]]
@@ -110,12 +120,23 @@ def decided_only(c: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def as_national(c: pd.DataFrame, entry: pd.Series | None = None) -> pd.DataFrame:
+    """Every district as one unit (district_id 0), for national estimates. Each row keeps its own state's collection
+    month (cut_m) and, with `entry`, its district's entry month (entry_m). Pooling district_id alone would make
+    km_table find a single collection month for the whole country (February 2019) and censor every state there."""
+    out = c.assign(cut_m=(c["district_id"] // 1000).map(collection_month(c)))
+    if entry is not None:
+        out = out.assign(entry_m=c["district_id"].map(entry))
+    return out.assign(district_id=0)
+
+
 def km_table(c: pd.DataFrame, min_cases: int, entry: pd.Series | None = None) -> pd.DataFrame:
     """Kaplan-Meier by district x case type. With `entry` (per district, the month records become complete, see
     digitisation_month), cases filed earlier enter the risk set only at that month (delayed entry), and those
-    decided before it are dropped: the standard correction for left truncation."""
-    cut = collection_month(c)
-    c = c.assign(fm=months(c["f"]), cut=(c["district_id"] // 1000).map(cut))
+    decided before it are dropped: the standard correction for left truncation. Pooled tables carry per-row
+    collection and entry months instead (cut_m, entry_m; see as_national)."""
+    cut = c["cut_m"] if "cut_m" in c else (c["district_id"] // 1000).map(collection_month(c))
+    c = c.assign(fm=months(c["f"]), cut=cut)
     c = c.loc[c["cut"].notna() & (c["fm"] <= c["cut"])]
     dm = np.where(c["d"] > 0, months(c["d"]), np.nan)
     event = np.isfinite(dm) & (dm <= c["cut"].to_numpy())
@@ -146,18 +167,19 @@ def km_table(c: pd.DataFrame, min_cases: int, entry: pd.Series | None = None) ->
             gw = np.where((at_risk > 0) & (at_risk > dec), dec / (at_risk * (at_risk - dec)), 0.0)
         s = np.cumprod(1 - h)  # S(m): share still pending after m months
         var = s ** 2 * np.cumsum(gw)
-        reach = int(np.max(np.nonzero(at_risk > 0)[0])) if (at_risk > 0).any() else 0
+        thin = np.nonzero(at_risk < MIN_AT_RISK)[0]
+        reach = int(thin[0]) - 1 if len(thin) else H     # last month with enough cases still followed
 
         def at(m: int) -> float:
             return float(s[m]) if m <= reach else np.nan
 
         def q(p: float) -> float:
-            idx = np.nonzero(s <= 1 - p)[0]
+            idx = np.nonzero(s[:reach + 1] <= 1 - p)[0]
             return float(idx[0]) if len(idx) else np.nan
 
         se36 = float(np.sqrt(var[36])) if 36 <= reach else np.nan
         rows.append({"district_id": int(dist), "case_type": ct, "cases": n_total,
-                     "median_months": q(0.5), "p90_months": q(0.9),
+                     "median_months": q(0.5), "p90_months": q(0.9), "followed_months": reach,
                      "pending_after_1y": at(12), "pending_after_3y": at(36), "pending_after_5y": at(60),
                      "pending_after_3y_lo": max(at(36) - 1.96 * se36, 0.0) if 36 <= reach else np.nan,
                      "pending_after_3y_hi": min(at(36) + 1.96 * se36, 1.0) if 36 <= reach else np.nan,
@@ -195,13 +217,17 @@ def main() -> None:
                          compression={"method": "gzip", "mtime": 0})   # no timestamp: same data, same bytes
     t = t.drop(columns="curve_q")
     t.to_csv(args.out / f"by_district_{level}.csv", index=False)
-    pooled = c.assign(district_id=0) if entry is None else c.assign(entry_m=c["district_id"].map(entry), district_id=0)
+    pooled = as_national(c, entry)
     nat = km_table(pooled, args.min_cases).drop(columns="district_id")
     nat[["case_type", "curve_q"]].to_csv(args.out / f"curves_national_{level}.csv", index=False)
     nat = nat.drop(columns="curve_q")
     nat.to_csv(args.out / f"national_{level}.csv", index=False)
-    naive = decided_only(c).merge(nat[["case_type", "cases", "median_months", "pending_after_5y"]]
+    naive = decided_only(c, entry).merge(nat[["case_type", "cases", "median_months", "pending_after_5y"]]
                                   .rename(columns={"median_months": "median_months_kaplan_meier"}), on="case_type")
+    if entry is not None:   # Kaplan-Meier on exactly the cases decided_only draws from: no delayed entry needed
+        same = pooled.loc[months(c["f"]) >= c["district_id"].map(entry)]
+        naive = naive.merge(km_table(same, args.min_cases)[["case_type", "median_months"]]
+                            .rename(columns={"median_months": "median_months_kaplan_meier_same_cases"}), on="case_type")
     naive.round(3).to_csv(args.out / f"national_decided_only_{level}.csv", index=False)
     print(naive.round(1).to_string(index=False))
     pd.set_option("display.width", 200)

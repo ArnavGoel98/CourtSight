@@ -18,8 +18,9 @@ counts and the sum of log(next - last, in days, clipped to 1..730) per district 
    district_drivers.py (caseload per courtroom, size, criminal share, judge tenure, records-complete year) to check
    that the gap is not a stand-in for caseload. States whose hearing records look stale (West Bengal, Odisha:
    see coverage_audit.py) are left out, since a stale record can show a long gap that never happened; the
-   correlation with them included, and within states only, is reported alongside. Correlation, not cause: congested
-   courts may space hearings out.
+   correlation with them included, and within states only, is reported alongside. A stricter model also holds the
+   mean age of each district's pending cases fixed, since old cases may be listed less often. Correlation, not
+   cause, and between districts, not cases: congested courts may space hearings out.
 
 Outputs (results/hearings/): national.json, by_stage.csv, districts.csv, labels_top.csv, gap_fifths.csv,
 coefficients.csv
@@ -53,6 +54,7 @@ GROUPS: Final = [
     ("unclear", "Unclear, blank or not heard", ["unknown"], ["other/unknown"]),
 ]
 POLICE_REPORT: Final = re.compile(r"final form|charge ?sheet|awa\w* .*final", re.I)
+APPEARANCE: Final = re.compile(r"app[ea]a?re?a?nce|appearence|appereance|attendance|presence|production of accused", re.I)
 
 
 def gm(sum_log: pd.Series | float, n: pd.Series | float) -> pd.Series | float:
@@ -60,13 +62,16 @@ def gm(sum_log: pd.Series | float, n: pd.Series | float) -> pd.Series | float:
     return np.exp(sum_log / n)
 
 
-def stage_table(s: pd.DataFrame) -> pd.DataFrame:
+def stage_table(s: pd.DataFrame, gaps_from: pd.DataFrame | None = None) -> pd.DataFrame:
+    """Share of pending cases in each group (all of `s`) and the typical gap between hearings (from `gaps_from`,
+    by default `s`; main() passes the states whose hearing records are not stale)."""
+    g = s if gaps_from is None else gaps_from
     rows = []
     for key, name, stages, _ in GROUPS:
-        x = s.loc[s["stage"].isin(stages), ["n", "n_gap", "sum_log_gap"]].sum()
-        rows.append({"group": key, "name": name, "pending_listed": int(x["n"]),
-                     "share": x["n"] / s["n"].sum(),
-                     "gap_days": gm(x["sum_log_gap"], x["n_gap"]) if x["n_gap"] else np.nan})
+        x = s.loc[s["stage"].isin(stages), "n"].sum()
+        y = g.loc[g["stage"].isin(stages), ["n_gap", "sum_log_gap"]].sum()
+        rows.append({"group": key, "name": name, "pending_listed": int(x), "share": x / s["n"].sum(),
+                     "gap_days": gm(y["sum_log_gap"], y["n_gap"]) if y["n_gap"] else np.nan})
     return pd.DataFrame(rows)
 
 
@@ -84,13 +89,24 @@ def label_audit() -> tuple[pd.DataFrame, dict[str, float]]:
               "blank_label": round(float(a.loc[a["label"].isna(), "n"].sum() / total), 4),
               "no_sitting_notified": round(float(a.loc[a["label"].fillna("").str.contains("no sitting"), "n"].sum()
                                                  / total), 4)}
+    # "appearance" can be a routine date on which nothing else happens; summons, notices, warrants and process mean
+    # the court is still trying to get a party there. Split the group so the headline does not lean on the first.
+    svc = a.loc[a["group"] == "service"]
+    appear = svc["label"].fillna("").str.contains(APPEARANCE)
+    checks["service_appearance_labels"] = round(float(svc.loc[appear, "n"].sum() / total), 4)
+    checks["service_summons_notice_warrant_labels"] = round(float(svc.loc[~appear, "n"].sum() / total), 4)
     return top[["group", "label", "n", "share_of_group"]], checks
 
 
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     s = pd.read_parquet(DDL / "snapshot.parquet")
-    by_stage = stage_table(s)
+    act = pd.read_csv(HERE / "results" / "audit" / "pending_activity.csv").set_index("state")["not_listed_in_12m"]
+    stale_states = sorted(act.index[(act >= STALE) & (act.index != "All states")])
+    st_names = pd.read_csv(DDL / "district_key.csv").groupby("state_code")["state_name"].first()
+    stale_codes = [c for c, n in st_names.items() if n in stale_states]
+    live = s.loc[~(s["district_id"] // 1000).isin(stale_codes)]
+    by_stage = stage_table(s, gaps_from=live)
     by_stage.round(4).to_csv(OUT / "by_stage.csv", index=False)
     labels, checks = label_audit()
     labels.round(4).to_csv(OUT / "labels_top.csv", index=False)
@@ -124,8 +140,6 @@ def main() -> None:
     # gap and delay
     ttd = pd.read_csv(HERE / "results" / "time_to_decision" / "by_district_civil_criminal.csv")
     ttd = ttd.loc[ttd["cases"] >= 2000].pivot(index="district_id", columns="case_type", values="pending_after_3y")
-    act = pd.read_csv(HERE / "results" / "audit" / "pending_activity.csv").set_index("state")["not_listed_in_12m"]
-    stale_states = sorted(act.index[(act >= STALE) & (act.index != "All states")])
     every = d.set_index("district_id").join(ttd, how="inner")
     every = every.loc[every["with_next_date"] >= MIN_LISTED]
     rho_all = {k: round(float(spearmanr(*every[["gap_days", k]].dropna().to_numpy().T).statistic), 3)
@@ -147,22 +161,25 @@ def main() -> None:
                    for k in ("civil", "criminal")}
 
     # is the gap just caseload? OLS with district_drivers' structural features
+    # and is it just the age of the pending stock? Slow districts hold older cases, and older cases may be listed less
+    # often (stayed, dormant). Holding the stock's mean age fixed is a strict test: it is itself partly the outcome.
     f = pd.read_csv(HERE / "results" / "district_drivers" / "districts.csv").set_index("district_id")[STRUCTURAL]
-    z = x.join(f, how="inner").assign(log_gap_days=lambda v: np.log(v["gap_days"]))
-    feats = ["log_gap_days", *STRUCTURAL]
+    age = pd.read_csv(HERE / "results" / "waiting_years" / "districts.csv").set_index("district_id")["mean_age_years"]
+    z = x.join(f, how="inner").join(age.rename("pending_mean_age_years")).assign(log_gap_days=lambda v: np.log(v["gap_days"]))
     rows, r2 = [], {}
-    for kind in ("civil", "criminal"):
-        ok = z[[kind, *feats]].dropna()
-        X = ok[feats]
-        beta, ci, r2[kind] = ols_boot(((X - X.mean()) / X.std()).to_numpy(), ok[kind].to_numpy())
-        rows += [{"outcome": kind, "feature": n, "coef_per_sd": beta[i], "lo": ci[0, i], "hi": ci[1, i]}
-                 for i, n in enumerate(feats)]
+    for model, feats in (("structural", ["log_gap_days", *STRUCTURAL]),
+                         ("with_pending_age", ["log_gap_days", "pending_mean_age_years", *STRUCTURAL])):
+        for kind in ("civil", "criminal"):
+            ok = z[[kind, *feats]].dropna()
+            X = ok[feats]
+            beta, ci, r = ols_boot(((X - X.mean()) / X.std()).to_numpy(), ok[kind].to_numpy())
+            r2[f"{kind}_{model}"] = r
+            rows += [{"outcome": kind, "model": model, "feature": n, "coef_per_sd": beta[i], "lo": ci[0, i],
+                      "hi": ci[1, i]} for i, n in enumerate(feats)]
     co = pd.DataFrame(rows)
     co.round(4).to_csv(OUT / "coefficients.csv", index=False)
     load_rho = round(float(spearmanr(*z[["gap_days", "log_filings_per_court"]].dropna().to_numpy().T).statistic), 3)
 
-    st_names = pd.read_csv(DDL / "district_key.csv").groupby("state_code")["state_name"].first()
-    stale_codes = [c for c, n in st_names.items() if n in stale_states]
     tot = s[["n", "n_gap", "sum_log_gap"]].sum()
     g = by_stage.set_index("group")
     summary = {
@@ -182,7 +199,10 @@ def main() -> None:
         "spearman_gap_vs_pending_3y_within_states": within, "spearman_service_share_vs_pending_3y": rho_service,
         "spearman_stage_adjusted_gap_vs_pending_3y": rho_adj,
         "spearman_gap_vs_caseload_per_court": load_rho,
-        "r2_with_gap": {k: round(v, 3) for k, v in r2.items()},
+        "r2_with_gap": {k: round(r2[f"{k}_structural"], 3) for k in ("civil", "criminal")},
+        "r2_with_gap_and_pending_age": {k: round(r2[f"{k}_with_pending_age"], 3) for k in ("civil", "criminal")},
+        "spearman_gap_vs_pending_mean_age": round(float(spearmanr(*z[["gap_days", "pending_mean_age_years"]]
+                                                                  .dropna().to_numpy().T).statistic), 3),
         "label_checks": checks,
     }
     (OUT / "national.json").write_text(json.dumps(summary, indent=2) + "\n")

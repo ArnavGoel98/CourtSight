@@ -277,11 +277,15 @@ def build(sitemap: list[str]) -> int:
         cov_row = D["cov"].loc[unit] if unit in D["cov"].index else None
         act_v = float(D["act"].loc[s, "not_listed_in_12m"]) if s in D["act"].index else None
         state_notes = []
-        if cov_row is not None and cov_row["group"] != "too small to classify":
-            state_notes.append(f"{esc(unit)}'s eCourts records hold about <b>{pct(cov_row['coverage_2015_18'])}</b> of the "
+        if cov_row is not None and cov_row["group"] != "too small to classify" and cov_row["coverage_2015_18"] > 1.05:
+            state_notes.append(f"For {esc(unit)}, the case records used here hold <b>more</b> cases than the official figures "
+                               f"say were filed in 2015–18 ({pct(cov_row['coverage_2015_18'])}), which neither source should "
+                               "allow. One of them is off, so how complete these records are cannot be checked here.")
+        elif cov_row is not None and cov_row["group"] != "too small to classify":
+            state_notes.append(f"For {esc(unit)}, the case records used here hold about <b>{pct(cov_row['coverage_2015_18'])}</b> of the "
                                f"cases the official figures say were filed in 2015–18"
                                + (" (the official figures for this unit include another state or territory)" if "+" in unit else "")
-                               + ". Figures here describe the courts eCourts recorded.")
+                               + ". Figures here describe the courts these records cover.")
         elif unit is not None:
             state_notes.append("Official filing figures for this state are too small or erratic to check how complete the records are.")
         if act_v is not None and act_v >= 0.2:
@@ -410,7 +414,7 @@ def build(sitemap: list[str]) -> int:
 <h2>{esc(label)}: share still pending, by years since filing</h2>
 <div class="card">{chart}<div class="caption">Kaplan–Meier estimate. Cases still pending when the data was collected count as undecided up to that date. Dashed: all of India, same type of case.</div></div>
 <h2 style="margin-top:28px">Every type of case</h2>
-<div class="card">{table}<div class="caption">Rank: 1 = smallest share still pending after 3 years among all units in India with at least 200 cases of that type; the small range is where the rank lies 90% of the time once sampling noise is allowed for. Types with fewer than 200 cases are left out.</div></div>
+<div class="card">{table}<div class="caption">Rank: 1 = smallest share still pending after 3 years among all units in India with at least 200 cases of that type; the small range is where the rank lies 90% of the time once sampling noise is allowed for (it does not allow for the data problems listed below). Types with fewer than 200 cases are left out.</div></div>
 {ctx}
 {hearing_txt}
 <h2 style="margin-top:28px">Read this with care</h2>
@@ -429,14 +433,17 @@ def build(sitemap: list[str]) -> int:
                                        **{k: num(r.loc[ct, k]) for k in ("median_months", "p90_months", "pending_after_1y",
                                                                           "pending_after_3y", "pending_after_5y",
                                                                           "pending_after_3y_lo", "pending_after_3y_hi")},
-                                       **{k: num(r.loc[ct, k], 0) for k in ("rank", "rank_lo", "rank_hi", "of")},
+                                       **{k: num(r.loc[ct, k], 0) for k in ("rank", "rank_lo", "rank_hi", "of",
+                                                                             "followed_months")},
                                        "india": {k: num(nat.loc[ct, k]) for k in ("median_months", "pending_after_1y",
                                                                                    "pending_after_3y", "pending_after_5y")},
                                        "curve_quarterly": curve(r.loc[ct, "curve_q"]),
                                        "india_curve_quarterly": curve(nat.loc[ct, "curve_q"])}
                                   for ct in ORDER if ct in r.index},
                    "source": "Development Data Lab eCourts records, cases filed 2010-2018 (CC BY-NC-SA 4.0); CourtSight",
-                   "notes": "Kaplan-Meier estimates; curves give the share still pending every 3 months from filing."}
+                   "notes": "Kaplan-Meier estimates; curves give the share still pending every 3 months from filing and "
+                            "stop once fewer than 20 cases are still followed (followed_months). A null median or "
+                            "p90_months means longer than followed_months, not longer than 10 years."}
             (API / state_slug[s]).mkdir(exist_ok=True)
             (API / state_slug[s] / f"{dist_slug[(s, d)]}.json").write_text(json.dumps(api, separators=(",", ":"), ensure_ascii=False))
             api_index.append({"state": s, "district": d, "api": f"{state_slug[s]}/{dist_slug[(s, d)]}.json",
@@ -467,7 +474,7 @@ def build(sitemap: list[str]) -> int:
 <header class="hero" style="padding:18px 0 4px"><div class="dhead"><div>
   <div class="kicker">District court · {esc(s)} · results withheld</div>
   <h1>How long do court cases take in {esc(d)}?</h1>
-  <p class="lede">The eCourts records cannot answer this. They hold <b>{inr(v['filed_2010_2017'])}</b> cases filed here in 2010–2017 but only <b>{inr(v['decided_2010_2017'])}</b> decisions recorded in those years, against <b>{inr(v['decided_2018'])}</b> in 2018 alone. Decisions before 2018 were evidently not entered, so almost every case would look stuck.</p>
+  <p class="lede">The case records cannot answer this. They hold <b>{inr(v['filed_2010_2017'])}</b> cases filed here in 2010–2017 but only <b>{inr(v['decided_2010_2017'])}</b> decisions recorded in those years, against <b>{inr(v['decided_2018'])}</b> in 2018 alone. Decisions before 2018 were evidently not entered, so almost every case would look stuck.</p>
 </div>{loc}</div></header>
 <div class="card prose" style="max-width:none">
 <p>Published naively, {esc(d)} would rank among the slowest courts in India. An earlier version of this project did exactly that. A check now requires a district's records to show decisions as well as filings before its figures are used. {esc(d)} never passes, so its figures are withheld rather than shown wrong.</p>
@@ -475,7 +482,7 @@ def build(sitemap: list[str]) -> int:
 <div class="actions"><a class="btn ghost" href="index.html">Districts in {esc(s)}</a><a class="btn ghost" href="../../index.html#audit">How the data was checked</a></div>"""
             rel = f"d/{state_slug[s]}/{k}.html"
             (sdir / f"{k}.html").write_text(page(f"Court case times in {d}, {s}: results withheld | CourtSight",
-                                                 f"Why CourtSight withholds court delay figures for {d}, {s}: the eCourts records hold "
+                                                 f"Why CourtSight withholds court delay figures for {d}, {s}: the case records hold "
                                                  f"almost no decisions there before 2018.", rel, 2, body))
             sitemap.append(rel)
 

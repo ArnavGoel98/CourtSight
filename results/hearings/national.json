@@ -16,12 +16,12 @@
     "unclear": 0.0935
   },
   "gap_days_by_group": {
-    "service": 68.6,
-    "charge": 65.2,
-    "evidence": 48.8,
-    "hearing": 56.2,
-    "final": 51.4,
-    "unclear": 71.7
+    "service": 64.1,
+    "charge": 60.3,
+    "evidence": 46.2,
+    "hearing": 53.6,
+    "final": 49.7,
+    "unclear": 64.5
   },
   "stale_record_states_left_out": [
     "Mizoram",
@@ -47,7 +47,7 @@
     "criminal": -0.03
   },
   "spearman_stage_adjusted_gap_vs_pending_3y": {
-    "civil": 0.228,
+    "civil": 0.229,
     "criminal": 0.404
   },
   "spearman_gap_vs_caseload_per_court": 0.433,
@@ -55,10 +55,17 @@
     "civil": 0.202,
     "criminal": 0.318
   },
+  "r2_with_gap_and_pending_age": {
+    "civil": 0.41,
+    "criminal": 0.481
+  },
+  "spearman_gap_vs_pending_mean_age": 0.354,
   "label_checks": {
     "police_reports_filed_as_final": 0.0174,
     "generic_order_label_in_final": 0.0198,
     "blank_label": 0.0139,
-    "no_sitting_notified": 0.0049
+    "no_sitting_notified": 0.0049,
+    "service_appearance_labels": 0.188,
+    "service_summons_notice_warrant_labels": 0.1804
   }
 }

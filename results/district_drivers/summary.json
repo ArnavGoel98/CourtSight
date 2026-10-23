@@ -1,22 +1,22 @@
 {
   "civil": {
-    "r2_structural": 0.104,
-    "r2_with_throughput": 0.45,
-    "districts": 571,
-    "mean_pending_3y": 0.3167,
+    "r2_structural": 0.101,
+    "r2_with_throughput": 0.447,
+    "districts": 570,
+    "mean_pending_3y": 0.3173,
     "p10_p90_pending_3y": [
-      0.1698,
-      0.4801
+      0.1702,
+      0.4802
     ]
   },
   "criminal": {
-    "r2_structural": 0.083,
-    "r2_with_throughput": 0.572,
-    "districts": 583,
-    "mean_pending_3y": 0.2581,
+    "r2_structural": 0.085,
+    "r2_with_throughput": 0.57,
+    "districts": 581,
+    "mean_pending_3y": 0.259,
     "p10_p90_pending_3y": [
-      0.0732,
-      0.4639
+      0.0738,
+      0.4641
     ]
   },
   "feature_means": {
