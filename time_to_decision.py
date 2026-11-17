@@ -49,10 +49,11 @@ def load(compact: Path, level: str = "auto") -> tuple[pd.DataFrame, str]:
     return cube.assign(case_type=np.where(cube["crim"] == 1, "criminal", "civil")).drop(columns="crim"), "civil_criminal"
 
 
-COLLECTION_FRAC = 0.2  # see collection_month; data_audit.py checks 0.1 and 0.4
+COLLECTION_FRAC = 0.2  # state rule, see state_collection_month
+DISTRICT_FRAC = 0.5    # district rule, see collection_month; data_audit.py checks 0.35 and 0.65
 
 
-def collection_month(c: pd.DataFrame) -> pd.Series:
+def state_collection_month(c: pd.DataFrame) -> pd.Series:
     """Per state: last month with decisions >= 20% of the state's 2018 monthly mean."""
     dec = c.loc[(c["d"] >= 201801) & (c["d"] <= 202112)]
     per = dec.groupby([dec["district_id"] // 1000, "d"])["n"].sum().reset_index()
@@ -60,6 +61,27 @@ def collection_month(c: pd.DataFrame) -> pd.Series:
     base = per.loc[per["d"] // 100 == 2018].groupby("state")["n"].mean()
     per = per.join(base.rename("base"), on="state")
     return months(per.loc[per["n"] >= COLLECTION_FRAC * per["base"]].groupby("state")["d"].max())
+
+
+def collection_month(c: pd.DataFrame) -> pd.Series:
+    """Per district: the month its records end, after which a case counts as "not yet decided when last seen".
+
+    The records were collected at different times, district by district: in Gujarat most districts' decisions stop
+    in February 2019 while a few run to December 2019. Following a district past the month its own records end
+    counts months in which no decision could be recorded, and makes it look slow. So a district's records end at
+    the last month in which its decisions reach half its average 2018 month, and no later than its state's month
+    (state_collection_month), which also stands in for districts with no decisions in 2018. Decisions thin out
+    over a few months as collection proceeds; half is where the national figures stop moving (35%, 50%, 65% and
+    80% give the same results to within half a point, see data_audit.py). Ending a district's records early loses
+    a little follow-up and biases nothing; ending them late is the error."""
+    dec = c.loc[(c["d"] >= 201801) & (c["d"] <= 202112)]
+    per = dec.groupby(["district_id", "d"])["n"].sum().reset_index()
+    base = per.loc[per["d"] // 100 == 2018].groupby("district_id")["n"].sum() / 12
+    per = per.join(base.rename("base"), on="district_id")
+    own = months(per.loc[(per["base"] > 0) & (per["n"] >= DISTRICT_FRAC * per["base"])].groupby("district_id")["d"].max())
+    ids = pd.Index(np.sort(c["district_id"].unique()), name="district_id")
+    state = pd.Series(ids // 1000, index=ids).map(state_collection_month(c))
+    return pd.concat([state, own.reindex(ids)], axis=1).min(axis=1).rename("collection_m")
 
 
 def digitisation_month(c: pd.DataFrame, share: float = 0.5, decision_share: float = 0.2) -> pd.Series:
@@ -104,7 +126,7 @@ def decided_only(c: pd.DataFrame, entry: pd.Series | None = None) -> pd.DataFram
     With `entry` (digitisation_month), only cases filed once their district's records are complete count; main()
     runs Kaplan-Meier on the same cases, so the two differ only in how they treat cases still waiting."""
     cut = collection_month(c)
-    c = c.assign(fm=months(c["f"]), cut=(c["district_id"] // 1000).map(cut))
+    c = c.assign(fm=months(c["f"]), cut=c["district_id"].map(cut))
     if entry is not None:
         c = c.loc[c["fm"] >= c["district_id"].map(entry)]          # NaN entry (records never complete) drops out
     c = c.loc[c["cut"].notna() & (c["fm"] <= c["cut"]) & (c["d"] > 0)]
@@ -121,10 +143,10 @@ def decided_only(c: pd.DataFrame, entry: pd.Series | None = None) -> pd.DataFram
 
 
 def as_national(c: pd.DataFrame, entry: pd.Series | None = None) -> pd.DataFrame:
-    """Every district as one unit (district_id 0), for national estimates. Each row keeps its own state's collection
-    month (cut_m) and, with `entry`, its district's entry month (entry_m). Pooling district_id alone would make
-    km_table find a single collection month for the whole country (February 2019) and censor every state there."""
-    out = c.assign(cut_m=(c["district_id"] // 1000).map(collection_month(c)))
+    """Every district as one unit (district_id 0), for national estimates. Each row keeps its own district's
+    collection month (cut_m) and, with `entry`, its entry month (entry_m). Pooling district_id alone would make
+    km_table find a single collection month for the whole country and censor every district there."""
+    out = c.assign(cut_m=c["district_id"].map(collection_month(c)))
     if entry is not None:
         out = out.assign(entry_m=c["district_id"].map(entry))
     return out.assign(district_id=0)
@@ -135,7 +157,7 @@ def km_table(c: pd.DataFrame, min_cases: int, entry: pd.Series | None = None) ->
     digitisation_month), cases filed earlier enter the risk set only at that month (delayed entry), and those
     decided before it are dropped: the standard correction for left truncation. Pooled tables carry per-row
     collection and entry months instead (cut_m, entry_m; see as_national)."""
-    cut = c["cut_m"] if "cut_m" in c else (c["district_id"] // 1000).map(collection_month(c))
+    cut = c["cut_m"] if "cut_m" in c else c["district_id"].map(collection_month(c))
     c = c.assign(fm=months(c["f"]), cut=cut)
     c = c.loc[c["cut"].notna() & (c["fm"] <= c["cut"])]
     dm = np.where(c["d"] > 0, months(c["d"]), np.nan)

@@ -3,9 +3,9 @@
   "share_with_next_date": 0.9649,
   "gap_days_national": 59.9,
   "gap_days_district_p10_p50_p90": [
-    33.9,
-    49.2,
-    72.0
+    34.3,
+    50.7,
+    84.3
   ],
   "share_by_group": {
     "service": 0.3684,
@@ -16,50 +16,48 @@
     "unclear": 0.0935
   },
   "gap_days_by_group": {
-    "service": 64.1,
-    "charge": 60.3,
-    "evidence": 46.2,
-    "hearing": 53.6,
-    "final": 49.7,
-    "unclear": 64.5
+    "service": 68.6,
+    "charge": 65.2,
+    "evidence": 48.8,
+    "hearing": 56.2,
+    "final": 51.4,
+    "unclear": 71.7
   },
   "stale_record_states_left_out": [
-    "Mizoram",
-    "Orissa",
-    "West Bengal"
+    "Mizoram"
   ],
-  "gap_days_national_without_stale_states": 56.2,
-  "districts_compared": 528,
+  "gap_days_national_without_stale_states": 59.9,
+  "districts_compared": 577,
   "spearman_gap_vs_pending_3y": {
-    "civil": 0.198,
-    "criminal": 0.421
+    "civil": 0.279,
+    "criminal": 0.493
   },
   "spearman_gap_vs_pending_3y_all_states": {
-    "civil": 0.314,
-    "criminal": 0.502
+    "civil": 0.279,
+    "criminal": 0.491
   },
   "spearman_gap_vs_pending_3y_within_states": {
-    "civil": 0.332,
-    "criminal": 0.423
+    "civil": 0.333,
+    "criminal": 0.42
   },
   "spearman_service_share_vs_pending_3y": {
-    "civil": 0.145,
-    "criminal": -0.03
+    "civil": 0.129,
+    "criminal": 0.048
   },
   "spearman_stage_adjusted_gap_vs_pending_3y": {
-    "civil": 0.229,
-    "criminal": 0.404
+    "civil": 0.31,
+    "criminal": 0.47
   },
-  "spearman_gap_vs_caseload_per_court": 0.433,
+  "spearman_gap_vs_caseload_per_court": 0.311,
   "r2_with_gap": {
-    "civil": 0.202,
-    "criminal": 0.318
+    "civil": 0.218,
+    "criminal": 0.39
   },
   "r2_with_gap_and_pending_age": {
-    "civil": 0.41,
-    "criminal": 0.481
+    "civil": 0.528,
+    "criminal": 0.592
   },
-  "spearman_gap_vs_pending_mean_age": 0.354,
+  "spearman_gap_vs_pending_mean_age": 0.43,
   "label_checks": {
     "police_reports_filed_as_final": 0.0174,
     "generic_order_label_in_final": 0.0198,

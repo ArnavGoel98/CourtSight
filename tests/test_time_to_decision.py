@@ -99,6 +99,22 @@ def test_national_keeps_each_state_collection_month() -> None:
     assert np.isnan(one["p90_months"])   # the old pooling: state 1's pending cases never resolve
 
 
+def test_district_keeps_its_own_collection_month() -> None:
+    """Two districts in one state. District 1001's records end in Dec 2018; district 1002's run to Dec 2019, so the
+    state's month is Dec 2019. District 1001 has 40 civil cases filed Jan 2018: 20 decided after 5 months, 20 still
+    pending. They can be followed for 11 months, to Dec 2018, not for the 23 months to the state's date, during which
+    no decision of theirs could have been recorded."""
+    rows = [(1001, 201801, 201806, "civil", 20), (1001, 201801, 0, "civil", 20)]
+    rows += [(1001, 201701, 201800 + m, "other", 10) for m in range(1, 13)]
+    rows += [(1002, 201701, y * 100 + m, "other", 10) for y in (2018, 2019) for m in range(1, 13)]
+    c = pd.DataFrame(rows, columns=["district_id", "f", "d", "case_type", "n"])
+    ends = ttd.collection_month(c)
+    assert ends[1001] == 2018 * 12 + 11 and ends[1002] == 2019 * 12 + 11
+    assert ttd.state_collection_month(c)[1] == 2019 * 12 + 11
+    t = ttd.km_table(c, min_cases=10).set_index(["district_id", "case_type"]).loc[(1001, "civil")]
+    assert t["followed_months"] == 11 and t["median_months"] == 5
+
+
 if __name__ == "__main__":
     test_km_simple()
     test_delayed_entry()
@@ -106,4 +122,5 @@ if __name__ == "__main__":
     test_curve_stops_when_few_remain()
     test_decided_only()
     test_national_keeps_each_state_collection_month()
+    test_district_keeps_its_own_collection_month()
     print("time-to-decision tests passed")

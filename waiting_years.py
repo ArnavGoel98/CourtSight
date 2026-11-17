@@ -31,7 +31,7 @@ OUT: Final = HERE / "results" / "waiting_years"
 def load() -> pd.DataFrame:
     c = pd.concat(pd.read_parquet(p) for p in sorted((HERE / "ddl_compact" / "cube").glob("*.parquet")))
     cut = collection_month(c)
-    c = c.assign(fm=months(c["f"]), cut=(c["district_id"] // 1000).map(cut))
+    c = c.assign(fm=months(c["f"]), cut=c["district_id"].map(cut))
     c = c.loc[c["cut"].notna() & (c["fm"] <= c["cut"])].copy()
     dm = np.where(c["d"] > 0, months(c["d"]), np.nan)
     c["pending"] = ~(np.isfinite(dm) & (dm <= c["cut"].to_numpy()))

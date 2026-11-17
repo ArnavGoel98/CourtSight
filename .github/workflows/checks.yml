@@ -58,3 +58,5 @@ jobs:
           python tests/compare_outputs.py /tmp/committed/ttd results/time_to_decision
           python tests/compare_outputs.py /tmp/committed/audit results/audit
           python tests/compare_outputs.py /tmp/committed/hearings results/hearings
+      - name: A second, independent calculation agrees with the published results
+        run: python tests/test_independent.py
