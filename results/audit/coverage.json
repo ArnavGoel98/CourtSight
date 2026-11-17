@@ -70,15 +70,15 @@
       "2017": 0.556
     }
   },
-  "pending_not_listed_in_12m": 0.049,
-  "pending_not_listed_in_24m": 0.004,
+  "pending_not_listed_in_12m": 0.009,
+  "pending_not_listed_in_24m": 0.003,
   "pending_not_listed_in_12m_worst": {
-    "West Bengal": 0.53,
-    "Orissa": 0.29,
-    "Mizoram": 0.22
+    "Mizoram": 0.21,
+    "West Bengal": 0.05,
+    "Orissa": 0.05
   },
   "pending_not_listed_in_12m_bihar": 0.012,
-  "age_check_max_gap_points": 3.7,
-  "spearman_state_coverage_vs_civil_suit_pending_3y": -0.086,
+  "age_check_max_gap_points": 3.9,
+  "spearman_state_coverage_vs_civil_suit_pending_3y": -0.022,
   "states_in_spearman": 22
 }

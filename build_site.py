@@ -268,6 +268,13 @@ def unit_counts() -> dict[str, str]:
     return {"n_dist": str(t["district_id"].nunique() - special), "n_special": str(special)}
 
 
+def ym(s: str) -> str:
+    """'2018-09' -> 'September 2018'."""
+    y, m = s.split("-")
+    return ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
+            "November", "December"][int(m) - 1] + " " + y
+
+
 def paper_vars(d: dict) -> dict[str, str]:
     """Numbers quoted in the paper's prose, all taken from the same data as its figures."""
     P, ttd, W, F = d["pending"], {r["type"]: r for r in d["ttd"]}, d["waiting"], d["forecast"]
@@ -285,7 +292,8 @@ def paper_vars(d: dict) -> dict[str, str]:
     return {
         "date": "October 2026", "first": yrs[0], "last": yrs[-1], "pending_first": cr(P[yrs[0]]), "pending_last": cr(P[yrs[-1]]),
         "cases_m": f"{W['cases_filed'] / 1e6:.1f}", "districts_ttd": unit_counts()["n_dist"],
-        "coll_first": "December 2018", "coll_last": "July 2020",
+        "coll_first": ym(d["audit"]["first_and_last_district_collection_month"][0]),
+        "coll_last": ym(d["audit"]["first_and_last_district_collection_month"][1]),
         "civ_med": f"{ttd['civ_suit']['median_months']:.0f}", "civ_5y": f"{ttd['civ_suit']['pending_after_5y'] * 100:.0f}",
         "fam_med": f"{ttd['civ_family']['median_months']:.0f}",
         "civil_med": f"{nat.loc['civil', 'median_months']:.0f}", "crim_med": f"{nat.loc['criminal', 'median_months']:.0f}",
@@ -366,7 +374,16 @@ def audit_vars(a: dict) -> dict[str, str]:
         "au_share": pct(a["share_of_cases_filed_before_records_complete"]),
         "au_civ_med_naive": f"{t['median_months__uncorrected']:.0f}", "au_civ_med": f"{t['median_months__corrected_50']:.0f}",
         "au_med30": f"{t['median_months__corrected_30']:.0f}", "au_med70": f"{t['median_months__corrected_70']:.0f}",
-        "au_medc10": f"{t['median_months__collection_10']:.0f}", "au_medc40": f"{t['median_months__collection_40']:.0f}",
+        "au_medc_lo": f"{min(t[f'median_months__collection_{k}'] for k in (35, 65, 80)):.0f}",
+        "au_medc_hi": f"{max(t[f'median_months__collection_{k}'] for k in (35, 65, 80)):.0f}",
+        "au_med_state": f"{t['median_months__state_collection_months']:.0f}",
+        "au_3y_state": pct(t["pending_after_3y__state_collection_months"]),
+        "au_dist_end": str(a["districts_ending_3_months_or_more_before_state"]),
+        "au_dist_end_share": pct(a["share_of_cases_in_those_districts"]),
+        "au_end_state": pct(a["decisions_vs_year_before__state_dates"]["0_months_before_end"]),
+        "au_end_dist": pct(a["decisions_vs_year_before__district_dates"]["0_months_before_end"]),
+        "au_low5": str(a["district_figures_lower_by_over_5pp_with_district_dates"]),
+        "au_low_of": f"{a['district_figures_compared_state_vs_district_dates']:,}",
         "au_rows5": f"{a['rows_shift_over_5pp']:,}", "au_rows": f"{a['rows_compared']:,}",
         "au_rshift": str(a["civil_suit_median_rank_shift"]), "au_rmax": str(a["civil_suit_max_rank_shift"]),
         "au_rwidth": str(a["civil_suit_median_rank_interval_width"]),
@@ -421,6 +438,7 @@ def coverage_vars(a: dict) -> dict[str, str]:
         "pa_12": f"{cv['pending_not_listed_in_12m'] * 100:.1f}", "pa_24": f"{cv['pending_not_listed_in_24m'] * 100:.1f}",
         "pa_bihar": f"{cv['pending_not_listed_in_12m_bihar'] * 100:.1f}",
         "pa_wb": pct(cv["pending_not_listed_in_12m_worst"]["West Bengal"]),
+        "pa_live": pct(1 - cv["pending_not_listed_in_12m"]),
         "pa_od": pct(cv["pending_not_listed_in_12m_worst"]["Orissa"]),
         "sp_verdict": speedup_verdict(sp),
         "sp_m10": pct(sp["fixed_case_mix"][0]), "sp_m17": pct(sp["fixed_case_mix"][7]),

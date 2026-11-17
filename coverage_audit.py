@@ -77,6 +77,7 @@ def speedup(c: pd.DataFrame, entry: pd.Series, groups: pd.Series, units: pd.Seri
     fm = T.months(c["f"])
     dm = np.where(c["d"] > 0, T.months(c["d"]), np.nan)
     keep = (fm >= c["district_id"].map(entry).fillna(np.inf)) & (c["f"] // 100 <= 2017)
+    keep &= fm + 12 <= c["district_id"].map(T.collection_month(c))     # the district's records run a full year on
     d = pd.DataFrame({"year": c["f"] // 100, "case_type": c["case_type"], "n": c["n"],
                       "d12": c["n"] * (np.isfinite(dm) & (dm - fm <= 12)),
                       "group": (c["district_id"] // 1000).map(units).map(groups)})[keep.to_numpy()]
@@ -96,11 +97,12 @@ def speedup(c: pd.DataFrame, entry: pd.Series, groups: pd.Series, units: pd.Seri
 
 
 def pending_activity(c: pd.DataFrame) -> pd.DataFrame:
-    """By state: share of cases pending at collection last listed more than 12 / 24 months before it."""
+    """By state: share of cases pending at collection last listed more than 12 / 24 months before their district's
+    records end."""
     cut = T.collection_month(c)
     s = pd.read_parquet(HERE / "ddl_compact" / "snapshot.parquet")
     sc = s["district_id"] // 1000
-    age = sc.map(cut) - T.months(s["t_ym"])
+    age = s["district_id"].map(cut) - T.months(s["t_ym"])
     names = pd.read_csv(HERE / "ddl_compact" / "district_key.csv").groupby("state_code")["state_name"].first()
     d = pd.DataFrame({"state": sc.map(names), "n": s["n"], "o12": s["n"] * (age > 12), "o24": s["n"] * (age > 24)})
     g = d.groupby("state")[["n", "o12", "o24"]].sum()
@@ -118,7 +120,7 @@ NJDG_2020: Final = {"under_1y": 32.0, "1_3y": 28.0, "3_5y": 15.0, "5_10y": 15.28
 def age_check() -> dict[str, object]:
     import waiting_years as W
     c = W.load()
-    cut = c.groupby(c["district_id"] // 1000)["cut"].first()
+    cut = c.groupby(c["district_id"] // 1000)["cut"].max()      # the state's last district
     ok = cut.index[cut <= T.months(pd.Series([201912])).iloc[0]]
     p = c.loc[c["pending"] & (c["district_id"] // 1000).isin(ok)]
     yrs = p["age"] // 12
